@@ -1,0 +1,340 @@
+rosario2022:
+  type: Chapter
+  title: "Learning Management Systems in Education: Research and Challenges"
+  author: 
+    - "Rosário, A. T."
+    - "Dias, J. C."
+  date: 2022
+  page-range: 47-77
+  serial-number: "DOI\x3a\x0010.4018/978-1-6684-4706-2.ch003"
+  url:
+    value: https://doi.org/10.4018/978-1-6684-4706-2.ch003
+    date: 2025-11-29
+  parent:
+    type: Book
+    title: Digital Active Methodologies for Educative Learning Management
+    editor: 
+      - "Geada, N."
+      - "Jamil, G. L."
+    publisher:
+      name: IGI Global
+      location: Hershey, PA
+
+ac-moscow2025:
+  type: Web
+  title: Спецпроект о школьниках Москвы
+  author: Аналитический Центр Москвы
+  date: 2025
+  url:
+    value: https://ac.mos.ru/special-projects/moscow-school-students/
+    date: 2025-12-21
+  language: ru-RU
+  publisher:
+    location: Москва
+
+tumanova2023:
+  type: Book
+  title: Проектирование программных систем
+  genre: учебное пособие
+  author: 
+    - "Туманова, М. Б."
+    - "Михайлова, Е. К."
+    - "Муравьева, Е. А."
+  date: 2023
+  page-total: 138
+  serial-number: "ISBN\x00978-5-7339-2050-4"
+  publisher:
+    name: РТУ МИРЭА
+    location: Москва
+  parent:
+    type: Web
+    title: Лань
+    organization: электронно-библиотечная система
+    url:
+      value: https://e.lanbook.com/book/398273
+      date: 2025-11-29
+
+kiseleva2017:
+  type: Book
+  title: Программная инженерия
+  volume: 2
+  genre: учебное пособие
+  author: "Киселева, Т. В."
+  date: 2017
+  page-total: 100
+  language: ru-RU
+  publisher:
+    name: СКФУ
+    location: Ставрополь
+  parent:
+    type: Web
+    title: Лань
+    organization: электронно-библиотечная система
+    url:
+      value: https://e.lanbook.com/book/155149
+      date: 2025-11-30
+
+minakova2024:
+  type: Book
+  title: "Программная инженерия: Основные принципы, методы и инструменты"
+  genre: учебник для вузов
+  author: "Минакова, О. В."
+  date: 2024
+  page-total: 212
+  serial-number: "ISBN\x00978-5-507-49278-7"
+  language: ru-RU
+  publisher:
+    name: Лань
+    location: Санкт-Петербург
+  parent:
+    type: Web
+    title: Лань
+    organization: электронно-библиотечная система
+    url:
+      value: https://e.lanbook.com/book/414989
+      date: 2025-12-06
+
+fsd-docs:
+  type: Web
+  title: "Feature-Sliced Design: официальная документация"
+  url:
+    value: https://feature-sliced.github.io/documentation/ru/
+    date: 2025-12-06
+  language: ru-RU
+
+vodyakho2022:
+  type: Book
+  title: Архитектурные решения информационных систем
+  genre: учебник для вузов
+  author:
+    - "Водяхо, А. И."
+    - "Выговский, Л. С."
+    - "Дубенецкий, В. А."
+    - "Цехановский, В. В."
+  date: 2022
+  edition: "3"
+  page-total: 356
+  serial-number: "ISBN\x00978-5-507-44710-7"
+  language: ru-RU
+  publisher:
+    name: Лань
+    location: Санкт-Петербург
+  parent:
+    type: Web
+    title: Лань
+    organization: электронно-библиотечная система
+    url:
+      value: https://e.lanbook.com/book/254624
+      date: 2025-12-07
+
+martin2021:
+  type: Book
+  title: Чистая архитектура. Искусство разработки программного обеспечения
+  author: "Мартин, Р."
+  date: 2021
+  edition: "2"
+  page-total: 352
+  serial-number: "ISBN\x00978-5-4461-1903-1"
+  language: ru-RU
+  publisher:
+    name: Питер
+    location: Санкт-Петербург
+
+percyval2022:
+  type: Book
+  title: "Паттерны разработки на Python: TDD, DDD и событийно-ориентированная архитектура"
+  author:
+    - "Персиваль, Г."
+    - "Грегори, Б."
+  date: 2022
+  page-total: 336
+  serial-number: "ISBN\x00978-5-4461-1969-7"
+  language: ru-RU
+  publisher:
+    name: Питер
+    location: Санкт-Петербург
+
+alpatov2024:
+  type: Book
+  title: Интерфейсы прикладного программирования
+  genre: учебное пособие
+  author: "Алпатов, А. Н."
+  date: 2024
+  page-total: 157
+  serial-number: "ISBN\x00978-5-7339-2342-0"
+  language: ru-RU
+  publisher:
+    name: РТУ МИРЭА
+    location: Москва
+  parent:
+    type: Web
+    title: Лань
+    organization: электронно-библиотечная система
+    url:
+      value: https://e.lanbook.com/book/457043
+      date: 2025-12-07
+
+eliseev2024:
+  type: Book
+  title: Разработка программных интерфейсов веб-приложений с использованием фреймворка FastAPI
+  genre: учебное пособие
+  author:
+    - "Елисеев, А. И."
+    - "Минин, Ю. В."
+  date: 2024
+  page-total: 81
+  serial-number: "ISBN\x00978-5-8265-2821-1"
+  language: ru-RU
+  publisher:
+    name: ТГТУ
+    location: Тамбов
+  parent:
+    type: Web
+    title: Лань
+    organization: электронно-библиотечная система
+    url:
+      value: https://e.lanbook.com/book/472310
+      date: 2025-12-07
+
+volk2025:
+  type: Book
+  title: Базы данных
+  genre: учебник
+  author:
+    - "Волк, В. К."
+    - "Осеев, В. Ю."
+    - "Черепанов, О. С."
+  date: 2025
+  page-total: 544
+  serial-number: "ISBN\x00978-5-9729-2594-0"
+  language: ru-RU
+  publisher:
+    name: Инфра-Инженерия
+    location: Вологда
+  parent:
+    type: Web
+    title: Лань
+    organization: электронно-библиотечная система
+    url:
+      value: https://e.lanbook.com/book/499772
+      date: 2025-12-07
+
+tuzovsky2021:
+  type: Book
+  title: Проектирование и разработка web-приложений
+  genre: учебное пособие для вузов
+  author: "Тузовский, А. Ф."
+  date: 2021
+  page-total: 218
+  serial-number: "ISBN\x00978-5-534-00515-8"
+  language: ru-RU
+  publisher:
+    name: Юрайт
+    location: Москва
+
+sqlalchemy-docs:
+  type: Web
+  title: SQLAlchemy 2.0 Documentation
+  url:
+    value: https://docs.sqlalchemy.org/en/20/
+    date: 2026-05-11
+
+gost7322017:
+  type: Report
+  title: "ГОСТ 7.32-2017. Система стандартов по информации, библиотечному и издательскому делу. Отчёт о научно-исследовательской работе. Структура и правила оформления"
+  date: 2017
+  language: ru-RU
+  publisher:
+    name: Стандартинформ
+    location: Москва
+
+hoffman2021:
+  type: Book
+  title: Безопасность веб-приложений
+  author: "Хоффман, Э."
+  date: 2021
+  page-total: 336
+  serial-number: "ISBN\x00978-5-4461-1706-8"
+  language: ru-RU
+  publisher:
+    name: Питер
+    location: Санкт-Петербург
+
+fastapi-docs:
+  type: Web
+  title: FastAPI — официальная документация
+  author: "Ramírez, S."
+  url:
+    value: https://fastapi.tiangolo.com/
+    date: 2026-05-11
+
+python-docs:
+  type: Web
+  title: Python 3.12 Documentation
+  url:
+    value: https://docs.python.org/3.12/
+    date: 2026-05-11
+
+stackoverflow2025:
+  type: Web
+  title: Stack Overflow Developer Survey 2025
+  date: 2025
+  url:
+    value: https://survey.stackoverflow.co/2025/technology#1-web-frameworks-and-technologies
+    date: 2025-12-07
+
+alembic-docs:
+  type: Web
+  title: Alembic — официальная документация
+  url:
+    value: https://alembic.sqlalchemy.org/
+    date: 2026-05-11
+
+pydantic-docs:
+  type: Web
+  title: Pydantic V2 Documentation
+  url:
+    value: https://docs.pydantic.dev/latest/
+    date: 2026-05-11
+
+react-docs:
+  type: Web
+  title: React Documentation
+  url:
+    value: https://react.dev/
+    date: 2026-05-11
+
+docker-docs:
+  type: Web
+  title: Docker Compose documentation
+  url:
+    value: https://docs.docker.com/compose/
+    date: 2026-05-11
+
+postgresql-docs:
+  type: Web
+  title: PostgreSQL Documentation
+  url:
+    value: https://www.postgresql.org/docs/
+    date: 2026-05-11
+
+balanov2025:
+  type: Book
+  title: "Комплексное руководство по разработке: от мобильных приложений до веб-технологий"
+  genre: учебное пособие для вузов
+  author: "Баланов, А. Н."
+  date: 2025
+  edition: "2"
+  page-total: 412
+  serial-number: "ISBN\x00978-5-507-53193-6"
+  language: ru-RU
+  publisher:
+    name: Лань
+    location: Санкт-Петербург
+  parent:
+    type: Web
+    title: Лань
+    organization: электронно-библиотечная система
+    url:
+      value: https://e.lanbook.com/book/478178
+      date: 2025-12-07

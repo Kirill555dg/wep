@@ -15,7 +15,6 @@ Thumbs.db
 *~
 .cursor/
 .opencode/
-coursework/
 
 # Python (Backend)
 apps/backend/__pycache__/
@@ -54,3 +53,4 @@ apps/frontend/coverage/
 # Temporary files
 *.tmp
 *.temp
+AGENTS.md
