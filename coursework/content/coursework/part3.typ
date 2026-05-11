@@ -2,192 +2,139 @@
 
 = Разработка архитектуры приложения на основе Clean Architecture
 
-== Применение Clean Architecture к серверной части
+== Слои архитектуры
 
-На основе выбранного архитектурного паттерна спроектирована архитектура серверной части системы управления обучением. Архитектура организована в соответствии с принципом разделения на концентрические слои, где каждый слой имеет строго определённую зону ответственности, а зависимости направлены внутрь — от внешних инфраструктурных компонентов к внутренней бизнес-логике @martin2021. Принцип многослойной организации, общие подходы к разделению логики и управлению зависимостями в сложных программных системах также подробно рассматриваются в литературе по архитектуре информационных систем @vodyakho2022.
+На основе выбранного паттерна спроектирована архитектура серверной части. Код организован в четыре слоя с однонаправленными зависимостями: от внешних к внутренним @martin2021 @vodyakho2022.
 
-В рамках разработанной архитектуры выделены следующие слои:
+- *API Layer* — внешний слой: приём HTTP-запросов, валидация через Pydantic, маршрутизация, формирование ответов. Не содержит бизнес-логики — делегирует вызовы сервисному слою.
 
-- *API Layer (Controllers)* — внешний слой, отвечающий за приём HTTP-запросов, валидацию входных данных через Pydantic-схемы и формирование HTTP-ответов. Реализован с использованием FastAPI-роутеров. Не содержит бизнес-логики, только делегирование вызовов сервисному слою.
+- *Service Layer* — слой бизнес-логики: реализация сценариев использования. Сервисы не зависят от HTTP-контекста, используют репозитории для доступа к данным и могут тестироваться изолированно.
 
-- *Service Layer (Use Cases)* — слой бизнес-логики, реализующий сценарии использования системы. Каждый сервис инкапсулирует определённую функциональную область: аутентификация, управление классами, работа с уроками, домашними заданиями, тестирование и т.д. Сервисы не имеют прямых зависимостей от HTTP-контекста или базы данных, используя абстракции репозиториев.
+- *Repository Layer* — слой доступа к данным: паттерн Repository скрывает детали SQLAlchemy ORM от сервисного слоя.
 
-- *Repository Layer (Interface Adapters)* — слой доступа к данным, реализующий паттерн Repository. Предоставляет интерфейсы для выполнения операций CRUD и специфических запросов, скрывая детали реализации SQLAlchemy ORM.
+- *Models Layer* — инфраструктурный слой: ORM-модели, конфигурация базы данных, миграции, внешние интеграции (Redis для realtime-чата).
 
-- *Models Layer (Frameworks & Drivers)* — самый внутренний инфраструктурный слой, содержащий определения ORM-моделей, конфигурацию базы данных, настройки миграций и внешние интеграции (Redis для realtime-чата).
+Дополнительно выделены вспомогательные пакеты: *schemas* (Pydantic DTO для валидации входных данных и формирования ответов), *core* (конфигурация, JWT, хеширование), *realtime* (WebSocket-подсистема). Все они находятся вне основных слоёв и не нарушают правило зависимостей.
 
-Правило зависимостей (Dependency Rule) соблюдается следующим образом: API-слой зависит от Service-слоя, Service-слой зависит от Repository-слоя, Repository-слой использует Models. Модели не зависят ни от какого другого слоя проекта. Обратные зависимости исключены — ни один внутренний слой не импортирует компоненты внешних слоёв.
-
-Данная организация кода реализована в структуре директорий серверного приложения:
+Структура директорий непосредственно отражает разбивку на слои:
 
 ```
 app/
-├── main.py                    # Entry point
-├── api/                       # API Layer
-│   ├── v1/                   #  REST endpoints
-│   ├── dependencies.py       #  Dependency Injection
-│   ├── errors.py             #  Обработка ошибок
-│   ├── openapi.py            #  Настройка OpenAPI
-│   └── middleware/           #  Middleware (CORS, request_id)
-├── services/                  # Service Layer (бизнес-логика)
-│   ├── auth.py               #  Аутентификация
-│   ├── classroom.py           #  Управление классами
-│   ├── lesson.py             #  Управление уроками
-│   ├── homework.py           #  Домашние задания
-│   ├── problem.py            #  База задач
-│   ├── testing.py            #  Приём ответов, проверка
-│   ├── result.py             #  Статистика и прогресс
-│   ├── theory.py             #  Теоретические материалы
-│   └── chat.py               #  Чат класса
-├── repositories/             # Repository Layer (доступ к данным)
-│   ├── base.py               #  Базовый репозиторий (CRUD)
-│   ├── user.py               #  Пользователи
-│   ├── classroom.py          #  Классы
-│   ├── lesson.py             #  Уроки
-│   ├── homework.py           #  Домашние задания
-│   └── communication.py     #  Чат и сообщения
-├── models/                   # Models Layer (ORM)
-│   ├── users.py              #  Таблицы пользователей
-│   ├── classes.py            #  Учебные классы
-│   ├── lessons.py            #  Уроки
-│   ├── homework.py           #  Домашние задания
-│   ├── problems.py           #  Задачи
-│   ├── theory.py             #  Теоретические материалы
-│   ├── files.py              #  Файлы
-│   └── communication.py     #  Сообщения чата
-├── schemas/                   # Pydantic DTO
-├── core/                      # Конфигурация и утилиты
-│   ├── config.py             #  Настройки (.env)
-│   ├── security.py           #  Argon2 + JWT
-│   └── pagination.py         #  Пагинация
-├── db/                        # База данных
-│   ├── session.py            #  AsyncSession
-│   └── url.py                #  URL-хелперы
-├── domain/                    # Доменные ошибки
-├── realtime/                  # WebSocket и Redis Pub/Sub
-└── scripts/                   # Утилиты (seed, export OpenAPI)
+├── api/           # API Layer: роутеры, DI, ошибки, middleware
+│   ├── v1/        #   эндпоинты по группам (auth, classrooms, …)
+│   ├── http_errors.py    # фабрики HTTPException
+│   └── errors.py         # глобальные обработчики
+├── services/      # Service Layer: бизнес-сценарии
+├── repositories/  # Repository Layer: SQL-запросы через ORM
+├── models/        # Models Layer: ORM-модели SQLAlchemy
+├── schemas/       # Pydantic DTO
+├── core/          # конфигурация, безопасность, утилиты
+├── db/            # сессия AsyncSession и URL-хелперы
+├── realtime/      # WebSocket-чат и Redis Pub/Sub
+└── scripts/       # утилиты: seed, export OpenAPI
 ```
-
-Таким образом, структура директорий непосредственно отражает выбранную Clean Architecture. Каждый слой размещён в отдельном пакете, и зависимости строго направлены от внешних пакетов к внутренним.
 
 == Dependency Injection как механизм связывания слоёв
 
-Ключевым механизмом, обеспечивающим соблюдение правила зависимостей в разработанной архитектуре, является Dependency Injection (DI). FastAPI предоставляет встроенную поддержку DI через механизм зависимостей (Depends), который используется для связывания слоёв без создания жёстких зависимостей между ними.
-
-На уровне API создаются функции-фабрики, которые конструируют сервисы с необходимыми зависимостями. Пример реализации DI для аутентификации приведён в листинге @di-example.
+FastAPI предоставляет встроенный механизм Dependency Injection через `Depends`. Каждый эндпоинт получает нужный сервис через зависимость-фабрику, а та — сессию базы данных. Схема DI для слоя аутентификации приведена в листинге @di-example.
 
 #figure(
   ```python
   # app/api/dependencies.py
-  from fastapi import Depends
-  from sqlalchemy.ext.asyncio import AsyncSession
-  from app.db.session import get_db
-  from app.services.auth import AuthService
-  from app.repositories.user import UserRepository
-
-  async def get_auth_service(
-      db: AsyncSession = Depends(get_db),
+  def get_auth_service(
+      db: AsyncSession = Depends(db_session.get_db),
   ) -> AuthService:
       return AuthService(db)
 
   async def get_current_user(
-      credentials: HTTPAuthorizationCredentials = Depends(security),
-      db: AsyncSession = Depends(get_db),
+      token: TokenContext = Depends(get_current_user_id),
+      db: AsyncSession = Depends(db_session.get_db),
   ) -> User:
-      """Извлекает и проверяет JWT-токен, возвращает пользователя."""
-      payload = decode_access_token(credentials.credentials)
-      user_repo = UserRepository(db)
-      user = await user_repo.get_by_id(int(payload["sub"]))
+      user = await UserRepository(db).get_by_id(token.user_id)
       if not user:
-          raise HTTPException(status_code=401)
+          raise HTTPException(status_code=404, detail="User not found")
+      if token.role != user.role:
+          raise HTTPException(
+              status_code=401,
+              detail={"code": "role_changed", "message": "Re-authenticate"},
+          )
       return user
   ```,
-  caption: [Реализация Dependency Injection для сервисов аутентификации],
+  caption: [Dependency Injection для сервиса аутентификации],
 ) <di-example>
 
-В данном листинге показано, как Dependency Injection позволяет инстанцировать сервисы с их зависимостями (сессия базы данных, репозитории) без создания глобальных переменных или жёстких связей. Каждый тест может подставить свою реализацию репозитория, заменив реальную базу данных на mock.
+Такая схема обеспечивает слабую связанность: в тестах любая зависимость заменяется через `app.dependency_overrides` без изменения кода обработчика. Для ролевых проверок (`get_current_teacher`, `get_current_student`) DI-цепочка расширяется дополнительными зависимостями, исключая дублирование проверок в каждом эндпоинте.
 
-== Диаграмма компонентов архитектуры
+== Обработка ошибок
 
-На рисунке @components-diagram представлена диаграмма компонентов архитектуры, отражающая взаимодействие между слоями системы. Внешний слой (API Controller) принимает HTTP-запросы от клиента и делегирует выполнение бизнес-операций соответствующим сервисам. Сервисы используют репозитории для доступа к данным, а репозитории выполняют SQL-запросы через ORM SQLAlchemy к СУБД PostgreSQL.
+В архитектуре принят следующий подход к ошибкам:
+- *Lookup-методы* сервисов (поиск по id и т.д.) возвращают `None` при отсутствии сущности. Маршрутизатор проверяет результат и явно поднимает `HTTPException`.
+- *Команды* сервисов (создание, обновление, оркестрация с несколькими проверками) поднимают `ServiceError(message, code=...)` — единственное исключение сервисного слоя. Код ошибки несёт семантику, а HTTP-статус определяет обработчик эндпоинта.
+- Неожиданные исключения, не пойманные явно, приводят к ответу `500 Internal Server Error` — индикатору ошибки в коде сервера.
+
+В модуле `app/api/http_errors.py` определены фабрики `not_found()`, `forbidden()`, `bad_request()` и `from_service_error()`, которые строят `HTTPException` с унифицированным телом ответа `{"error": {"code", "message"}, "request_id": ...}`. Глобальный обработчик (`app/api/errors.py`) оборачивает любой `HTTPException` в тот же конверт — клиент получает единообразный формат ошибок независимо от места их возникновения.
+
+== Диаграмма компонентов
+
+На рисунке @components-diagram показано взаимодействие между слоями: API-контроллер принимает HTTP-запросы и делегирует выполнение сервисам; сервисы обращаются к репозиториям; репозитории выполняют SQL через ORM к PostgreSQL.
 
 #figure(
   image("../../assets/components-diagram.png", width: 100%),
-  caption: [Диаграмма основных компонентов системы, отражающая Clean Architecture],
+  caption: [Диаграмма компонентов системы, отражающая Clean Architecture],
 ) <components-diagram>
 
-Ключевые компоненты серверной части включают:
-- *API Controller* — точка входа для HTTP-запросов, маршрутизация и валидация.
-- *AuthService* — аутентификация и сессия (JWT + Argon2).
-- *ClassroomService* — управление классами и членством.
-- *LessonService* — управление уроками.
-- *HomeworkService* — управление домашними заданиями.
-- *ProblemService* — база задач (создание, редактирование).
-- *TestingService* — приём ответов и автоматическая проверка.
-- *ResultService* — статистика и прогресс.
-- *ChatService* — хранение и выдача истории сообщений.
-- *Realtime chat runtime* — WebSocket для чата в реальном времени.
-- *Repositories* — слой доступа к данным.
-
-Каждый сервис соответствует одному use case (сценарию использования) и реализует бизнес-логику независимо от HTTP-контекста.
+Полный список сервисов, соответствующих функциональным группам: `AuthService`, `ClassroomService`, `LessonService`, `HomeworkService`, `ProblemService`, `TestingService`, `ResultService`, `TheoryService`, `ChatService`.
 
 == Проектирование базы данных
 
-Спроектирована реляционная база данных, охватывающая все ключевые сущности предметной области: пользователей, учебные классы, уроки, домашние задания, задачи, результаты тестирования и сообщения чата. ER-диаграмма данных представлена на рисунке @er-diagram.
+Спроектирована реляционная база данных, охватывающая все ключевые сущности предметной области. ER-диаграмма представлена на рисунке @er-diagram.
 
 #figure(
   image("../../assets/er-diagram.png", width: 100%),
   caption: [ER-диаграмма данных системы управления обучением],
 ) <er-diagram>
 
-Основные сущности базы данных включают:
-
-- *user* — центральная сущность системы, хранящая общие данные пользователя (имя, email, аватар).
-- *login_data* — изолированные данные аутентификации (хеш пароля Argon2).
-- *teacher* и *student* — специализированные сущности с дополнительными атрибутами для соответствующих ролей.
-- *class_group* — учебный класс, объединяющий студентов под руководством преподавателя.
-- *lesson* — урок в рамках класса (тема, порядковый номер, статус публикации).
+Основные сущности:
+- *users* — профиль пользователя (логин, email, ФИО, активная роль).
+- *login_data* — хеш пароля, изолированный от профиля для разграничения доступа.
+- *teachers* / *students* — профили ролей; один пользователь может иметь оба, переключая активную роль.
+- *classrooms* — учебный класс с кодом приглашения.
+- *student_classroom* — членство студента в классе («многие ко многим»).
+- *lessons* — урок, привязанный к классу.
 - *homework* — домашнее задание, привязанное к уроку.
-- *problem* — задача, которая может быть использована в разных домашних заданиях (связь \"многие ко многим\").
-- *statistics* — результат выполнения задачи студентом (ответ, статус проверки, количество попыток).
-- *chat* и *message* — чат класса и сообщения.
-- *invite* — приглашение в класс.
-- *themes* — иерархия тем для структурирования учебного контента.
+- *problems* — независимая база задач, переиспользуемая в разных домашних заданиях.
+- *homework_problem* — связь задания и задачи с атрибутом «баллы».
+- *statistics* — результат выполнения задания студентом.
+- *theme / theory* — иерархия тем и теоретические материалы.
+- *chat / message* — чат класса и его сообщения.
 
-Реализация ORM-моделей выполнена с использованием SQLAlchemy с асинхронным драйвером asyncpg. Пример модели пользователя приведён в листинге @user-model-example.
+Пример ORM-модели пользователя приведён в листинге @user-model-example. Принципиальная особенность схемы — отделение `login_data` от `users`: это изолирует хеш пароля от обычных выборок профиля.
 
 #figure(
   ```python
   # app/models/users.py
-  from sqlalchemy import Column, String, Boolean, DateTime
-  from sqlalchemy.dialects.postgresql import UUID
-  from sqlalchemy.orm import relationship
-  from app.db.session import Base
-  import uuid
-  from datetime import datetime, timezone
-
   class User(Base):
-      __tablename__ = "user"
+      __tablename__ = "users"
 
-      id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-      username = Column(String(50), unique=True, nullable=False, index=True)
-      email = Column(String(255), unique=True, nullable=False, index=True)
+      id         = Column(Integer, primary_key=True, index=True)
+      username   = Column(String(100), unique=True, nullable=False, index=True)
+      email      = Column(String(255), unique=True, nullable=False, index=True)
       first_name = Column(String(100), nullable=False)
-      last_name = Column(String(100), nullable=False)
-      avatar_url = Column(String(500), nullable=True)
-      is_active = Column(Boolean, default=True)
-      created_at = Column(
-          DateTime(timezone=True),
-          default=lambda: datetime.now(timezone.utc),
-      )
+      last_name  = Column(String(100), nullable=False)
+      full_name  = Column(String(255), nullable=False)
+      role       = Column(String(20), nullable=False, default="student")
+      is_active  = Column(Boolean, default=True, nullable=False)
+      created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+      login_data = relationship("LoginData", uselist=False, cascade="all, delete-orphan")
+      teacher    = relationship("Teacher",   uselist=False, cascade="all, delete-orphan")
+      student    = relationship("Student",   uselist=False, cascade="all, delete-orphan")
   ```,
   caption: [ORM-модель пользователя (SQLAlchemy)],
 ) <user-model-example>
 
+Управление миграциями выполняется через Alembic: каждое изменение схемы оформляется в виде пронумерованной ревизии @alembic-docs.
+
 == Выводы по главе
 
-В данной главе разработана детальная архитектура серверной части системы управления обучением на основе Clean Architecture. Описаны четыре слоя архитектуры: API, Service, Repository и Models, их зоны ответственности и взаимодействие. Приведена структура директорий проекта, непосредственно отражающая выбранный архитектурный паттерн.
-
-Описана реализация Dependency Injection как механизма связывания слоёв, обеспечивающего слабую связанность и тестируемость компонентов. Приведена диаграмма компонентов, отражающая распределение ответственности между модулями системы.
-
-Спроектирована реляционная база данных, охватывающая все ключевые сущности предметной области. ER-диаграмма и пример ORM-модели демонстрируют применение Clean Architecture на уровне работы с данными. Разработанная архитектура является основой для реализации серверной части в следующей главе.
+Разработана детальная архитектура серверной части на основе Clean Architecture. Описаны четыре слоя и их зоны ответственности, показана структура директорий. Обоснован подход к обработке ошибок: сервисы возвращают `None` для lookup-операций и поднимают `ServiceError` для команд; HTTP-семантику определяют маршрутизаторы. Описан механизм Dependency Injection, обеспечивающий слабую связанность и тестируемость. Спроектирована реляционная схема базы данных, разработанная архитектура является основой для реализации серверной части.

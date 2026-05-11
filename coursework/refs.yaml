@@ -262,7 +262,7 @@ hoffman2021:
 
 fastapi-docs:
   type: Web
-  title: FastAPI — официальная документация
+  title: FastAPI – официальная документация
   author: "Ramírez, S."
   url:
     value: https://fastapi.tiangolo.com/
@@ -285,7 +285,7 @@ stackoverflow2025:
 
 alembic-docs:
   type: Web
-  title: Alembic — официальная документация
+  title: Alembic – официальная документация
   url:
     value: https://alembic.sqlalchemy.org/
     date: 2026-05-11
@@ -317,6 +317,37 @@ postgresql-docs:
   url:
     value: https://www.postgresql.org/docs/
     date: 2026-05-11
+
+moodle-site:
+  type: Web
+  title: "Moodle — Open-source learning platform"
+  url:
+    value: https://moodle.org/
+    date: 2026-05-11
+
+google-classroom:
+  type: Web
+  title: "Google Classroom — официальный сайт"
+  url:
+    value: https://edu.google.com/intl/ru/workspace-for-education/classroom/
+    date: 2026-05-11
+  language: ru-RU
+
+stepik:
+  type: Web
+  title: "Stepik — онлайн-платформа для обучения"
+  url:
+    value: https://stepik.org/
+    date: 2026-05-11
+  language: ru-RU
+
+foxford:
+  type: Web
+  title: "Фоксфорд — онлайн-школа для учеников 1–11 классов"
+  url:
+    value: https://foxford.ru/
+    date: 2026-05-11
+  language: ru-RU
 
 balanov2025:
   type: Book

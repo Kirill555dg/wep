@@ -4,364 +4,223 @@
 
 == Реализация REST API на FastAPI
 
-Серверная часть системы реализована на языке Python 3.12+ с использованием веб-фреймворка FastAPI, обеспечивающего асинхронную обработку запросов, автоматическую валидацию данных через Pydantic v2 @pydantic-docs и генерацию OpenAPI-спецификации @eliseev2024 @fastapi-docs. При проектировании API использованы стандартные подходы REST, описанные в специализированной литературе @alpatov2024. Архитектура серверной части полностью соответствует Clean Architecture, описанной в предыдущей главе.
+Серверная часть реализована на Python 3.12+ с использованием FastAPI @fastapi-docs @eliseev2024. Все маршруты сгруппированы по функциональным областям и зарегистрированы единым корневым роутером в `app/api/v1/__init__.py`:
 
-REST API предоставляет следующие группы эндпоинтов, сгруппированные по функциональным областям:
+```
+/api/v1/auth/       — аутентификация и управление ролями
+/api/v1/classrooms/ — классы, приглашения, чат, WebSocket
+/api/v1/lessons/    — уроки
+/api/v1/homework/   — домашние задания
+/api/v1/problems/   — база задач
+/api/v1/testing/    — приём ответов, автопроверка
+/api/v1/statistics/ — прогресс и статистика
+/api/v1/theory/     — теоретические материалы
+```
 
-- *Auth* — регистрация, аутентификация, получение профиля текущего пользователя (/api/v1/auth/register, /login, /me).
-- *Classrooms* — управление классами: создание, получение списка, вступление по приглашению (/api/v1/classes/).
-- *Lessons* — управление уроками: создание, публикация, получение содержимого (/api/v1/lessons/).
-- *Homework* — домашние задания: создание, получение состава задач (/api/v1/homework/).
-- *Problems* — база задач: создание, редактирование (/api/v1/problems/).
-- *Testing* — приём ответов на задачи: отправка ответа, получение результата (/api/v1/testing/).
-- *Statistics* — статистика выполнения: прогресс студента, результаты по классу (/api/v1/statistics/).
-- *Theory* — теоретические материалы (/api/v1/theory/).
-- *Chat* — сообщения чата класса (/api/v1/chat/).
-
-При разработке эндпоинтов соблюдается принцип разделения ответственности: каждый эндпоинт делегирует выполнение бизнес-операции соответствующему сервису и не содержит бизнес-логики непосредственно. Пример реализации эндпоинта аутентификации приведён в листинге @auth-endpoint-example.
+При проектировании API соблюдаются стандартные принципы REST @alpatov2024. Каждый обработчик выполняет единственную задачу: валидирует входные данные через Pydantic-схему, вызывает сервис и транслирует результат в HTTP-ответ. Пример эндпоинтов аутентификации приведён в листинге @auth-endpoint-example.
 
 #figure(
   ```python
   # app/api/v1/auth.py
-  import fastapi
-  from fastapi import status as http_status
-  from app.api import dependencies as deps
-  from app.models import users as user_models
-  from app.schemas import users as user_schemas
-  from app.services import auth as auth_service_module
-
-  router = fastapi.APIRouter()
-
-  @router.post(
-      "/register",
-      response_model=user_schemas.UserResponse,
-      status_code=http_status.HTTP_201_CREATED,
-  )
+  @router.post("/register", response_model=UserResponse, status_code=201)
   async def register(
-      user_data: user_schemas.UserCreate,
-      auth_service: auth_service_module.AuthService =
-          fastapi.Depends(deps.get_auth_service),
-  ) -> user_schemas.UserResponse:
-      """Регистрация нового пользователя."""
-      return await auth_service.register_user(user_data)
+      user_data: UserCreate,
+      auth_service: AuthService = Depends(deps.get_auth_service),
+  ) -> UserResponse:
+      try:
+          return await auth_service.register_user(user_data)
+      except ServiceError as exc:
+          if exc.code == "email_taken":
+              raise http_errors.bad_request(exc.message, code=exc.code)
+          raise
 
-  @router.post("/login", response_model=user_schemas.TokenResponse)
+  @router.post("/login", response_model=TokenResponse)
   async def login(
-      credentials: user_schemas.LoginRequest,
-      auth_service: auth_service_module.AuthService =
-          fastapi.Depends(deps.get_auth_service),
-  ) -> user_schemas.TokenResponse:
-      """Аутентификация, возврат JWT-токена."""
-      token = await auth_service.authenticate(credentials)
-      if not token:
-          raise fastapi.HTTPException(
-              status_code=http_status.HTTP_401_UNAUTHORIZED,
-              detail="Invalid credentials",
-          )
+      credentials: LoginRequest,
+      auth_service: AuthService = Depends(deps.get_auth_service),
+  ) -> TokenResponse:
+      try:
+          token = await auth_service.authenticate(credentials)
+      except ServiceError as exc:
+          if exc.code == "inactive_user":
+              raise http_errors.forbidden(exc.message, code=exc.code)
+          raise
+      if token is None:
+          raise http_errors.unauthorized("Invalid username/email or password")
       return token
   ```,
-  caption: [Реализация REST-эндпоинтов аутентификации],
+  caption: [Реализация эндпоинтов аутентификации],
 ) <auth-endpoint-example>
 
-Каждый эндпоинт использует Dependency Injection для получения экземпляра сервиса, что обеспечивает тестируемость и слабую связанность.
+Листинг демонстрирует принцип явной обработки ошибок: обработчик знает семантику каждого кода и выбирает HTTP-статус сам, без скрытой машинерии. Если возникает незнакомое исключение — ответ 500, что сигнализирует об ошибке на стороне сервера.
 
 == Реализация сервисного слоя
 
-Сервисный слой (Service Layer) содержит бизнес-логику приложения. Каждый сервис реализует определённый сценарий использования (use case) и использует репозитории для доступа к данным. Сервисы не имеют прямых зависимостей от HTTP-контекста или FastAPI, что позволяет тестировать их изолированно.
-
-Пример реализации сервиса аутентификации представлен в листинге @auth-service-example. Сервис инкапсулирует логику регистрации, проверки существования email, хеширования пароля и создания JWT-токена.
+Сервисный слой реализует бизнес-сценарии и не зависит от HTTP-контекста. Сервисы используют репозитории для доступа к данным. В листинге @auth-service-example показан сервис аутентификации.
 
 #figure(
   ```python
   # app/services/auth.py
-  from sqlalchemy.ext.asyncio import AsyncSession
-  from app.core import security as core_security
-  from app.core import datetime_extensions as dte
-  from app.domain import errors as domain_errors
-  from app.repositories import user as user_repository
-  from app.schemas import users as user_schemas
-
   class AuthService:
-      """Сервис аутентификации и управления пользователями."""
-
       def __init__(self, db: AsyncSession):
-          self.db = db
-          self.user_repo = user_repository.UserRepository(db)
-          self.login_repo = user_repository.LoginDataRepository(db)
+          self.user_repo  = UserRepository(db)
+          self.login_repo = LoginDataRepository(db)
+          self.teacher_repo = TeacherRepository(db)
+          self.student_repo = StudentRepository(db)
 
-      async def register_user(
-          self, user_data: user_schemas.UserCreate
-      ) -> user_schemas.UserResponse:
-          """Регистрация нового пользователя."""
-          existing = await self.user_repo.get_by_email(user_data.email)
-          if existing:
-              raise domain_errors.BadRequestError(
-                  "Email already registered"
-              )
-
-          # Создание пользователя и login_data
-          user = await self.user_repo.create({...})
-          hashed = core_security.get_password_hash(user_data.password)
-          await self.login_repo.create({
-              "user_id": user.id,
-              "password_hash": hashed,
+      async def register_user(self, data: UserCreate) -> UserResponse:
+          if await self.user_repo.get_by_email(data.email):
+              raise ServiceError("Email already registered", code="email_taken")
+          user = await self.user_repo.create({
+              "username": data.username or data.email.split("@")[0],
+              "email": data.email, "first_name": data.first_name,
+              "last_name": data.last_name, "role": data.role.value,
+              "is_active": True, ...
           })
-          return user_schemas.UserResponse.model_validate(user)
+          hashed = security.get_password_hash(data.password)
+          await self.login_repo.create_for_user(user.id, hashed)
+          # профиль роли создаётся только для активной роли
+          if user.role == "teacher":
+              await self.teacher_repo.create({"user_id": user.id})
+          else:
+              await self.student_repo.create({"user_id": user.id})
+          return UserResponse.model_validate(user)
 
       async def authenticate(
-          self, credentials: user_schemas.LoginRequest
-      ) -> user_schemas.TokenResponse | None:
-          """Аутентификация по email/username и паролю."""
-          user = await self.user_repo.get_by_email_or_username(
-              credentials.username_or_email
+          self, login: LoginRequest,
+      ) -> TokenResponse | None:
+          user = await self.user_repo.get_by_username_or_email(
+              login.username_or_email
           )
-          if not user:
+          if not user: return None
+          if not user.is_active:
+              raise ServiceError("User account is inactive", code="inactive_user")
+          info = await self.login_repo.get_by_user_id(user.id)
+          if not info or not security.verify_password(login.password, info.hashed_password):
               return None
-          login_data = await self.login_repo.get_by_user_id(user.id)
-          if not login_data:
-              return None
-          if not core_security.verify_password(
-              credentials.password, login_data.password_hash
-          ):
-              return None
-          # Генерация JWT
-          token = core_security.create_access_token({
-              "sub": str(user.id),
-              "role": user.role,
-          })
-          return user_schemas.TokenResponse(
-              access_token=token,
-              token_type="bearer",
-              user=user_schemas.UserResponse.model_validate(user),
-          )
+          token = security.create_access_token({"sub": str(user.id), "role": user.role})
+          return TokenResponse(access_token=token,
+                               user=UserResponse.model_validate(user))
   ```,
   caption: [Реализация сервиса аутентификации],
 ) <auth-service-example>
 
-Данный пример демонстрирует ключевые принципы Clean Architecture в сервисном слое: сервис не импортирует ничего из FastAPI, использует репозитории для доступа к данным и возвращает DTO (UserResponse, TokenResponse).
-
-== Реализация слоя репозиториев
-
-Слой репозиториев реализует паттерн Repository, изолируя логику SQL-запросов от сервисного слоя. Базовый репозиторий предоставляет общие CRUD-операции, а специализированные репозитории расширяют его доменными методами.
+Сервис TestingService реализует ключевой сценарий автоматической проверки ответов студента (листинг @testing-service-example).
 
 #figure(
   ```python
-  # app/repositories/base.py
-  import typing as tp
-  import sqlalchemy as sa
-  from sqlalchemy.ext import asyncio as sa_asyncio
-  from app.db import session as db_session
+  # app/services/testing.py — метод submit_answer
+  async def submit_answer(
+      self, answer_data: AnswerSubmit, student_user_id: int,
+  ) -> StatisticsResponse:
+      student = await self.student_repo.get_by_user_id(student_user_id)
+      if not student:
+          raise ServiceError("Only students can submit answers", code="forbidden")
 
-  T = tp.TypeVar("T", bound=db_session.Base)
+      homework = await self.homework_repo.get_by_id(answer_data.homework_id)
+      problem  = await self.problem_repo.get_by_id(answer_data.problem_id)
+      if not homework or not problem:
+          raise ServiceError("Homework or problem not found", code="not_found")
 
-  class BaseRepository(tp.Generic[T]):
-      """Базовый репозиторий с CRUD-операциями."""
+      hw_problems = await self.hw_problem_repo.get_by_homework(answer_data.homework_id)
+      hw_problem = next(
+          (hp for hp in hw_problems if hp.problem_id == answer_data.problem_id), None
+      )
+      if not hw_problem:
+          raise ServiceError("Problem not in this homework", code="problem_not_in_homework")
 
-      def __init__(self, model: type[T], db: sa_asyncio.AsyncSession):
-          self.model = model
-          self.db = db
+      stats = await self.stats_repo.get_or_create_stats(
+          student.id, answer_data.homework_id, homework.max_score,
+      )
+      is_correct = self._check_answer(answer_data.answer, problem.correct_answer)
+      new_score = (
+          min(stats.score + hw_problem.points, stats.max_score) if is_correct
+          else stats.score
+      )
+      updated = await self.stats_repo.update(stats.id, {
+          "score": new_score, "status": "in_progress",
+          "attempts_count": stats.attempts_count + 1,
+          "time_spent_minutes": stats.time_spent_minutes + answer_data.time_spent_minutes,
+      })
+      return StatisticsResponse.model_validate(updated)
 
-      async def get_by_id(self, id: int) -> T | None:
-          stmt = sa.select(self.model).where(
-              self.model.id == id
-          )
-          result = await self.db.execute(stmt)
-          return result.scalar_one_or_none()
-
-      async def create(self, obj_in: dict[str, tp.Any]) -> T:
-          db_obj = self.model(**obj_in)
-          self.db.add(db_obj)
-          await self.db.commit()
-          await self.db.refresh(db_obj)
-          return db_obj
-
-      async def update(
-          self, id: int, obj_in: dict[str, tp.Any]
-      ) -> T | None:
-          db_obj = await self.get_by_id(id)
-          if not db_obj:
-              return None
-          for field, value in obj_in.items():
-              if hasattr(db_obj, field):
-                  setattr(db_obj, field, value)
-          await self.db.commit()
-          await self.db.refresh(db_obj)
-          return db_obj
+  def _check_answer(self, student: str, correct: str | None) -> bool:
+      if not correct: return False
+      return student.strip().lower() == correct.strip().lower()
   ```,
-  caption: [Реализация базового репозитория],
-) <base-repository-example>
+  caption: [Реализация автоматической проверки ответа],
+) <testing-service-example>
 
-Базовый репозиторий параметризован типом модели (tp.Generic[T]), что обеспечивает типобезопасность при создании специализированных репозиториев. Пример специализированного репозитория пользователя приведён в листинге @user-repository-example.
+== Слой безопасности
 
-#figure(
-  ```python
-  # app/repositories/user.py
-  from app.repositories.base import BaseRepository
-  from app.models.users import User, LoginData
+Безопасность реализована на двух уровнях: хеширование паролей и аутентификация через JWT.
 
-  class UserRepository(BaseRepository[User]):
-      """Репозиторий для работы с пользователями."""
-
-      def __init__(self, db):
-          super().__init__(User, db)
-
-      async def get_by_email(self, email: str) -> User | None:
-          import sqlalchemy as sa
-          stmt = sa.select(User).where(User.email == email)
-          result = await self.db.execute(stmt)
-          return result.scalar_one_or_none()
-
-      async def get_by_email_or_username(
-          self, login: str
-      ) -> User | None:
-          import sqlalchemy as sa
-          stmt = sa.select(User).where(
-              sa.or_(User.email == login, User.username == login)
-          )
-          result = await self.db.execute(stmt)
-          return result.scalar_one_or_none()
-  ```,
-  caption: [Специализированный репозиторий пользователя],
-) <user-repository-example>
-
-== Реализация слоя безопасности
-
-Безопасность серверной части реализована на двух уровнях: хеширование паролей с использованием алгоритма Argon2id и аутентификация через JSON Web Token (JWT).
-
-Argon2id является современным стандартом хеширования паролей, устойчивым к атакам с использованием GPU и ASIC. Данный алгоритм рекомендован в качестве основного для защиты учётных данных веб-приложений @hoffman2021. Реализация хеширования приведена в листинге @security-example.
+Пароли хешируются алгоритмом Argon2id — устойчивым к атакам с использованием GPU и ASIC, рекомендованным для хранения учётных данных @hoffman2021. JWT-токены формируются с кратким сроком действия и содержат идентификатор пользователя и активную роль, что позволяет обнаруживать смену роли без обращения к базе данных.
 
 #figure(
   ```python
   # app/core/security.py
-  import argon2
-  import jose.jwt as jose_jwt
-  from app.core import config as core_config
-  from app.core import datetime_extensions as dte
-
-  # Argon2id с рекомендуемыми параметрами
   ph = argon2.PasswordHasher(
-      time_cost=2,        # Количество итераций
-      memory_cost=65536,  # Память 64 MB
-      parallelism=1,      # Потоков
-      hash_len=32,        # Длина хеша
-      salt_len=16,        # Длина соли
+      time_cost=2, memory_cost=65536,  # 64 MB
+      parallelism=1, hash_len=32, salt_len=16,
   )
 
-  def verify_password(plain_password: str, hashed_password: str) -> bool:
-      """Верификация пароля через Argon2id."""
+  def verify_password(plain: str, hashed: str) -> bool:
       try:
-          ph.verify(hashed_password, plain_password)
+          ph.verify(hashed, plain)
           return True
       except argon2.exceptions.VerifyMismatchError:
           return False
 
   def create_access_token(data: dict) -> str:
-      """Создание JWT-токена с expiration."""
-      to_encode = data.copy()
-      expire = dte.now_utc() + core_config.settings.ACCESS_TOKEN_EXPIRE
-      to_encode.update({"exp": expire})
-      return jose_jwt.encode(
-          to_encode,
-          core_config.settings.SECRET_KEY,
-          algorithm=core_config.settings.ALGORITHM,
-      )
+      payload = {**data, "exp": utc_now() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)}
+      return jose_jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
   ```,
-  caption: [Реализация безопасности: Argon2id + JWT],
+  caption: [Реализация безопасности: Argon2id и JWT],
 ) <security-example>
 
-== Конфигурация и запуск приложения
+== Управление конфигурацией и запуск
 
-Конфигурация приложения осуществляется через переменные окружения с использованием библиотеки pydantic-settings. Основные параметры включают подключение к базе данных, настройки CORS, секретный ключ для JWT и параметры Redis (опционально, для realtime-чата).
+Конфигурация приложения хранится в переменных окружения, загружаемых через `pydantic-settings` @pydantic-docs. Точка входа (`app/main.py`) подключает middleware (CORS, `RequestIdMiddleware`), глобальные обработчики ошибок и API-роутер с префиксом `/api/v1`. При наличии `REDIS_URL` в момент старта инициализируется Redis Pub/Sub-брокер для многоэкземплярного WebSocket-чата; без него приложение стартует без realtime-компонента. Swagger UI доступен по адресу `/api/docs`, OpenAPI JSON — по `/api/openapi.json`. Листинги основных конфигурационных файлов и точки входа вынесены в приложение А.
 
-#figure(
-  ```python
-  # app/core/config.py
-  from pydantic_settings import BaseSettings
+== Тестируемость
 
-  class Settings(BaseSettings):
-      APP_NAME: str = "Web Education Platform API"
-      APP_VERSION: str = "1.0.0"
-      DEBUG: bool = True
-      API_V1_PREFIX: str = "/api/v1"
-      DATABASE_URL: str = "postgresql://..."
-      REDIS_URL: str | None = None  # Опционально
-      SECRET_KEY: str = "change-me"
-      ALGORITHM: str = "HS256"
-      ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-      BACKEND_CORS_ORIGINS: list[str] = [
-          "http://localhost:5173"
-      ]
+Принципы Clean Architecture обеспечили практическую изоляцию сервисного слоя от веб-слоя. Тесты используют сервисы напрямую, без поднятия FastAPI. Для каждого теста создаётся отдельная схема PostgreSQL, которая накатывает таблицы из метаданных SQLAlchemy и удаляется по завершении. Это позволяет проверять бизнес-логику в реалистичных условиях при полной изоляции между тестами @sqlalchemy-docs. В наборе реализованы тесты для `AuthService`, `TestingService`, `ChatService`, `ProblemService`, `ResultService`, `TheoryService`, модулей realtime.
 
-      model_config = {"env_file": ".env"}
+== Клиентское представление
 
-  settings = Settings()
-  ```,
-  caption: [Конфигурация приложения через pydantic-settings],
-) <config-example>
+Клиентская часть платформы реализована на React 18 с TypeScript @react-docs. Архитектура фронтенда построена по методологии Feature-Sliced Design (FSD) @fsd-docs, которая структурирует код в шесть слоёв по убыванию области ответственности:
 
-Точка входа приложения (листинг @main-entrypoint) инициализирует FastAPI, подключает middleware (CORS, RequestIdMiddleware), регистрирует обработчики доменных ошибок и монтирует API-роутер с префиксом /api/v1.
-
-#figure(
-  ```python
-  # app/main.py (ключевые элементы)
-  import fastapi
-  from fastapi.middleware import cors as fastapi_cors
-  from app.api import errors as api_errors
-  from app.api import openapi as api_openapi
-  from app.api.middleware import request_id as request_id_middleware
-  from app.api import v1 as api_v1
-  from app.core import config as core_config
-
-  app = fastapi.FastAPI(
-      title=core_config.settings.APP_NAME,
-      version=core_config.settings.APP_VERSION,
-      debug=core_config.settings.DEBUG,
-      docs_url="/api/docs",
-      openapi_url="/api/openapi.json",
-  )
-
-  app.add_middleware(fastapi_cors.CORSMiddleware, ...)
-  app.add_middleware(request_id_middleware.RequestIdMiddleware)
-  api_errors.register_exception_handlers(app)
-  api_openapi.install_openapi_patch(app)
-  app.include_router(
-      api_v1.api_router,
-      prefix=core_config.settings.API_V1_PREFIX,
-  )
-  ```,
-  caption: [Точка входа приложения FastAPI],
-) <main-entrypoint>
-
-== Интеграция с realtime-чатом
-
-В дополнение к REST API серверная часть включает поддержку WebSocket-чата для обмена сообщениями в реальном времени. Механизм realtime-чата реализован с использованием Connection Manager и опционального Redis Pub/Sub для поддержки многоэкземплярного развёртывания:
-
-```python
-# app/main.py (startup)
-from app.realtime import connection_manager as cm
-from app.realtime import redis_pubsub as rp
-
-@app.on_event("startup")
-async def on_startup():
-    app.state.chat_connection_manager = cm.ConnectionManager()
-    if core_config.settings.REDIS_URL:
-        redis_client = redis_asyncio.from_url(
-            core_config.settings.REDIS_URL
-        )
-        app.state.chat_broker = rp.RedisPubSubBroker(
-            redis_client,
-            manager=app.state.chat_connection_manager,
-        )
+```
+src/
+├── app/       — инициализация, провайдеры, роутинг
+├── pages/     — страницы (Login, Classrooms, Lesson, …)
+├── widgets/   — составные блоки (Header, Sidebar, ChatPanel)
+├── features/  — сценарии пользователя (JoinClassroom, SubmitAnswer, …)
+├── entities/  — доменные данные (Classroom, Lesson, User, Message)
+└── shared/    — переиспользуемые утилиты, UI-kit, HTTP-клиент
 ```
 
-Redis является опциональным компонентом: если REDIS_URL не задан, приложение работает без realtime-функций, что упрощает локальную разработку.
+Взаимодействие с сервером ведётся через axios-клиент в `shared/api/axios.ts`. Серверный контракт описан в файле `openapi.json`, генерируемом бэкенд-командой `python -m app.scripts.export_openapi`. Управление серверным состоянием реализовано через TanStack Query v4, локальное состояние — через Zustand. Формы валидируются с помощью react-hook-form и zod. UI построен на примитивах Radix UI и стилизован через Tailwind CSS.
+
+На рисунках @ui-classrooms и @ui-lesson показан интерфейс основных страниц системы.
+
+#figure(
+  rect(width: 100%, height: 6cm, fill: luma(230))[
+    #align(center + horizon)[_Скриншот: страница списка классов преподавателя_]
+  ],
+  caption: [Главная страница преподавателя со списком учебных классов],
+) <ui-classrooms>
+
+#figure(
+  rect(width: 100%, height: 6cm, fill: luma(230))[
+    #align(center + horizon)[_Скриншот: страница урока с домашним заданием_]
+  ],
+  caption: [Страница урока с домашним заданием для студента],
+) <ui-lesson>
+
+Связь фронтенда с бэкендом реализована через единый API-контракт OpenAPI: изменение серверного эндпоинта отражается в спецификации и может быть подхвачено кодогенерацией на стороне клиента, что обеспечивает согласованность интерфейсов без ручной синхронизации.
 
 == Выводы по главе
 
-В данной главе описана реализация серверной части системы управления обучением на основе спроектированной Clean Architecture. Разработан REST API на FastAPI, включающий эндпоинты для аутентификации, управления классами, уроками, домашними заданиями, тестированием и чатом. Каждый эндпоинт следует принципу разделения ответственности, делегируя бизнес-логику сервисам.
-
-Реализован сервисный слой с примерами аутентификации и управления пользователями. Сервисы не зависят от HTTP-контекста и могут тестироваться изолированно. Слой репозиториев, основанный на базовом CRUD-репозитории, изолирует SQL-запросы от бизнес-логики.
-
-Обеспечена безопасность приложения: хеширование паролей через Argon2id и аутентификация через JWT. Реализована конфигурация через переменные окружения (pydantic-settings) и опциональная поддержка realtime-чата через Redis Pub/Sub.
-
-Разработанная серверная часть обеспечивает полный цикл операций, необходимых для функционирования системы управления обучением, и полностью соответствует принципам Clean Architecture.
+Реализована серверная часть на Python 3.12+ с использованием FastAPI, PostgreSQL и SQLAlchemy. REST API включает девять групп эндпоинтов, покрывающих все функциональные требования системы. Обработка ошибок построена явно: сервисы возвращают `None` для lookup-операций и поднимают `ServiceError` для командных сценариев; HTTP-статус выбирает маршрутизатор. Обеспечена безопасность: Argon2id для хранения паролей и JWT для аутентификации. Тестируемость архитектуры подтверждена набором автоматизированных тестов, работающих на уровне сервисного слоя без HTTP. Реализована клиентская часть на React + TypeScript по методологии Feature-Sliced Design, потребляющая REST API через OpenAPI-контракт.
