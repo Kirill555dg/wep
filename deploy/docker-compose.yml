@@ -35,48 +35,18 @@ services:
     networks:
       - wep_network
 
-  backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
-    container_name: wep_backend
-    restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-wep_user}:${POSTGRES_PASSWORD:-wep_password}@postgres:5432/${POSTGRES_DB:-wep_education}
-      REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
-      DEBUG: ${DEBUG:-false}
-    ports:
-      - "8023:8023"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - wep_network
-    command: >
-      sh -c "
-        echo 'Waiting for database...' &&
-        sleep 5 &&
-        echo 'Running migrations...' &&
-        alembic upgrade head &&
-        echo 'Starting application...' &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8023
-      "
-
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    container_name: wep_frontend
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - wep_network
+  # Backend и Frontend будут добавлены после проектирования схемы деплоя
+  # backend:
+  #   build:
+  #     context: ../backend
+  #     dockerfile: Dockerfile
+  #   ...
+  
+  # frontend:
+  #   build:
+  #     context: ../frontend
+  #     dockerfile: Dockerfile
+  #   ...
 
 volumes:
   postgres_data:

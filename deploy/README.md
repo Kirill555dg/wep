@@ -1,6 +1,6 @@
 # WEP Deploy
 
-Docker Compose конфигурация для развертывания Web Education Platform.
+Docker Compose конфигурация для инфраструктуры Web Education Platform.
 
 ## Запуск
 
@@ -15,8 +15,6 @@ docker-compose up -d
 
 - **PostgreSQL**: localhost:5432
 - **Redis**: localhost:6379
-- **Backend API**: http://localhost:8023
-- **Frontend**: http://localhost:80
 
 ## Остановка
 
@@ -26,3 +24,8 @@ docker-compose down
 # С удалением volumes
 docker-compose down -v
 ```
+
+## Примечание
+
+Backend и Frontend запускаются локально для разработки.
+Схема production деплоя будет спроектирована отдельно.

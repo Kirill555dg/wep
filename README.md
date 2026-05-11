@@ -36,9 +36,11 @@ wep/
 git clone https://github.com/kerrodar/wep.git
 cd wep
 
-# Запустить через Docker Compose
+# Запустить инфраструктуру (PostgreSQL, Redis)
 cd deploy
 docker-compose up -d
+
+# Backend и Frontend запускаются локально (см. соответствующие README)
 ```
 
 ## Разработка
