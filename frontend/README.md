@@ -25,7 +25,7 @@ Feature-Sliced Design (FSD):
 ```bash
 npm install
 
-cp env.example .env
+cp .env.example .env
 # Отредактировать .env
 
 npm run dev

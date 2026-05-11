@@ -1,0 +1,18 @@
+{
+  "id": "u1",
+  "firstName": "Иван",
+  "lastName": "Смирнов",
+  "middleName": "Александрович",
+  "email": "teacher@school.edu",
+  "role": "teacher",
+  "gender": "male",
+  "avatar": "/avatar/male3.png",
+  "phone": "+7 (999) 123-45-67",
+  "address": "г. Москва, ул. Примерная, д. 42",
+  "birthDate": "1982-03-15",
+  "about": "Преподаватель математики. Работаю в школе №123 более 10 лет.",
+  "contacts": {
+    "telegram": "https://t.me/example_DNnviJDfui",
+    "vk": "https://vk.com/example_DNnviJDfui"
+  }
+}
