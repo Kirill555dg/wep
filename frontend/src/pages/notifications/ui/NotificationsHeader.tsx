@@ -31,7 +31,7 @@ export function NotificationsHeader({ unreadCount, activeTab, onTabChange, onMar
         <span className="hidden sm:inline">Прочитать все</span>
       </Button>
 
-      {/* Фильтр — адаптивен */}
+      {/* Фильтр – адаптивен */}
       <div className="order-last sm:order-none flex-1 w-min=[200px]">
         <NotificationsFilterDropdown value={activeTab} onChange={onTabChange} />
       </div>

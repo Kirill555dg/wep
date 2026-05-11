@@ -10,7 +10,7 @@ export const notificationsApi = {
   },
 
   async markAsRead(id: number): Promise<void> {
-    // в реальности — PUT-запрос
+    // в реальности – PUT-запрос
     return new Promise((resolve) => setTimeout(resolve, 100))
   },
 

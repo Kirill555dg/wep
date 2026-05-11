@@ -204,7 +204,7 @@ async def seed_dev_data() -> None:
             material = await theory_repo.create(
                 {
                     "subsection_id": subsection_id,
-                    "title": f"Linear equations — part {idx}",
+                    "title": f"Linear equations – part {idx}",
                     "content": f"# Linear equations (part {idx})\\n\\nSeeded material for development.",
                     "order_number": idx,
                     "estimated_read_time": 5,

@@ -38,7 +38,7 @@ export const mockNotifications: Notification[] = [
     id: 4,
     type: "deadline",
     title: "Скоро дедлайн",
-    description: "Срок сдачи задания 'Анализ стихотворения' — завтра",
+    description: "Срок сдачи задания 'Анализ стихотворения' – завтра",
     date: "2025-05-10T09:30:00",
     read: false,
     link: "/student/class/3/homework/7",

@@ -14,7 +14,7 @@ export function Footer({ mode = "compact" }: FooterProps) {
             <div>
               <h3 className="text-lg font-semibold mb-4">О платформе</h3>
               <p className="text-blue-200">
-                WEP — современная образовательная платформа для эффективного взаимодействия учителей и учеников.
+                WEP – современная образовательная платформа для эффективного взаимодействия учителей и учеников.
               </p>
             </div>
             <div>

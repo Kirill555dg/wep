@@ -64,7 +64,7 @@ export function ResponsiveHeader({ title, overrideBack }: Props) {
             </div>
           </div>
 
-          {/* Центр — Логотип */}
+          {/* Центр – Логотип */}
           <div className="flex justify-center pointer-events-none">
             <button onClick={() => navigate("/")} className="flex items-center pointer-events-auto">
               <div className="bg-blue-900 rounded-full p-2">
