@@ -5,13 +5,13 @@ Chat service (classroom chat).
 from sqlalchemy.ext import asyncio as sa_asyncio
 
 from app.core import pagination as core_pagination
-from app.domain import errors as domain_errors
 from app.models import users as user_models
 from app.repositories import classroom as classroom_repository
 from app.repositories import communication as communication_repository
 from app.repositories import user as user_repository
 from app.schemas import communication as communication_schemas
 from app.services import access_control as access_control
+from app.services import exceptions as service_exceptions
 
 
 class ChatService:
@@ -64,12 +64,18 @@ class ChatService:
         if user.role == "student":
             student = await self.student_repo.get_by_user_id(user.id)
             if not student:
-                raise domain_errors.ForbiddenError("Only classroom members can access chat")
+                raise service_exceptions.ServiceError(
+                    "Only classroom members can access chat", code="forbidden",
+                )
             if not await self.student_classroom_repo.is_student_in_classroom(student.id, classroom.id):
-                raise domain_errors.ForbiddenError("Only classroom members can access chat")
+                raise service_exceptions.ServiceError(
+                    "Only classroom members can access chat", code="forbidden",
+                )
             return
 
-        raise domain_errors.ForbiddenError("Only classroom members can access chat")
+        raise service_exceptions.ServiceError(
+            "Only classroom members can access chat", code="forbidden",
+        )
 
     async def require_access(self, classroom_id: int, *, user: user_models.User) -> None:
         """Ensure user can access classroom chat."""

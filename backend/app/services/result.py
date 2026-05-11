@@ -1,11 +1,13 @@
 """
-Result service for aggregating student progress
+Result service for aggregating student progress.
+
+Lookup-style methods that depend on a student profile return ``None`` when
+the profile is missing; the route translates this into HTTP 404.
 """
 
 from sqlalchemy.ext import asyncio as sa_asyncio
 
 from app.core import pagination as core_pagination
-from app.domain import errors as domain_errors
 from app.repositories import classroom as classroom_repository
 from app.repositories import homework as homework_repository
 from app.repositories import user as user_repository
@@ -32,29 +34,19 @@ class ResultService:
         student_user_id: int,
         skip: int = core_pagination.DEFAULT_SKIP,
         limit: int = core_pagination.DEFAULT_LIMIT,
-    ) -> list[homework_schemas.StatisticsResponse]:
-        """
-        Get all statistics for student
-
-        Args:
-            student_user_id: User ID of student
-            skip: Pagination offset
-            limit: Pagination limit
-
-        Returns:
-            List of statistics
-        """
+    ) -> list[homework_schemas.StatisticsResponse] | None:
+        """Return all statistics for a student, or ``None`` if profile missing."""
         student = await self.student_repo.get_by_user_id(student_user_id)
         if not student:
-            raise domain_errors.NotFoundError("Student not found")
+            return None
 
         stats = await self.stats_repo.get_by_student(student.id, skip, limit)
         return [homework_schemas.StatisticsResponse.model_validate(s) for s in stats]
 
-    async def count_student_statistics(self, student_user_id: int) -> int:
+    async def count_student_statistics(self, student_user_id: int) -> int | None:
         student = await self.student_repo.get_by_user_id(student_user_id)
         if not student:
-            raise domain_errors.NotFoundError("Student not found")
+            return None
         return await self.stats_repo.count_by_student(student.id)
 
     async def get_homework_statistics(
@@ -88,19 +80,13 @@ class ResultService:
     async def count_homework_statistics(self, homework_id: int) -> int:
         return await self.stats_repo.count_by_homework(homework_id)
 
-    async def get_student_progress(self, student_user_id: int) -> progress_schemas.StudentProgressResponse:
-        """
-        Get overall student progress
-
-        Args:
-            student_user_id: User ID of student
-
-        Returns:
-            Progress summary
-        """
+    async def get_student_progress(
+        self, student_user_id: int,
+    ) -> progress_schemas.StudentProgressResponse | None:
+        """Return overall student progress, or ``None`` if profile is missing."""
         student = await self.student_repo.get_by_user_id(student_user_id)
         if not student:
-            raise domain_errors.NotFoundError("Student not found")
+            return None
 
         summary = await self.stats_repo.get_student_progress_summary(student.id)
         return progress_schemas.StudentProgressResponse.model_validate(summary)

@@ -1,19 +1,22 @@
 """
-Testing/Answer submission endpoints
+Testing/answer-submission endpoints.
 """
 
 import typing as tp
 
 import fastapi
+from fastapi import status as http_status
 from sqlalchemy.ext import asyncio as sa_asyncio
 
 from app.api import dependencies as deps
+from app.api import http_errors
 from app.core import config as core_config
 from app.db import session as db_session
 from app.repositories import classroom as classroom_repository
 from app.repositories import user as user_repository
 from app.models import users as user_models
 from app.schemas import homework as homework_schemas
+from app.services import exceptions as service_exceptions
 from app.services import testing as testing_service_module
 
 router = fastapi.APIRouter()
@@ -25,17 +28,19 @@ async def submit_answer(
     current_user: user_models.User = fastapi.Depends(deps.get_current_student),
     testing_service: testing_service_module.TestingService = fastapi.Depends(deps.get_testing_service),
 ):
-    """
-    Submit answer for a problem (students only)
+    """Submit an answer for a problem (students only).
 
-    - **homework_id**: ID of the homework
-    - **problem_id**: ID of the problem
-    - **answer**: Student's answer (string)
-    - **time_spent_minutes**: Time spent on this problem
-
-    Returns updated statistics with score
+    Returns updated attempt statistics with the new score.
     """
-    return await testing_service.submit_answer(answer_data, current_user.id)
+    try:
+        return await testing_service.submit_answer(answer_data, current_user.id)
+    except service_exceptions.ServiceError as exc:
+        if exc.code == "forbidden":
+            raise http_errors.forbidden(exc.message, code=exc.code)
+        if exc.code in ("homework_not_found", "problem_not_found"):
+            raise http_errors.not_found(exc.message, code=exc.code)
+        # problem_not_in_homework → 400
+        raise http_errors.bad_request(exc.message, code=exc.code)
 
 
 @router.post(
@@ -47,12 +52,14 @@ async def submit_homework(
     current_user: user_models.User = fastapi.Depends(deps.get_current_student),
     testing_service: testing_service_module.TestingService = fastapi.Depends(deps.get_testing_service),
 ):
-    """
-    Submit homework for final grading (students only)
-
-    Marks homework as submitted. No more answers can be submitted after this.
-    """
-    return await testing_service.submit_homework(homework_id, current_user.id)
+    """Submit homework for final grading (students only)."""
+    try:
+        return await testing_service.submit_homework(homework_id, current_user.id)
+    except service_exceptions.ServiceError as exc:
+        if exc.code == "forbidden":
+            raise http_errors.forbidden(exc.message, code=exc.code)
+        # no_attempts → 404
+        raise http_errors.not_found(exc.message, code=exc.code)
 
 
 @router.get(
@@ -64,39 +71,31 @@ async def get_homework_status(
     current_user: user_models.User = fastapi.Depends(deps.get_current_student),
     testing_service: testing_service_module.TestingService = fastapi.Depends(deps.get_testing_service),
 ):
-    """
-    Get current status/progress for homework (students only)
-
-    Returns statistics including score, attempts, time spent
-    """
-    return await testing_service.get_homework_status(homework_id, current_user.id)
+    """Return current attempt statistics for a homework (students only)."""
+    result = await testing_service.get_homework_status(homework_id, current_user.id)
+    if result is None:
+        raise http_errors.not_found("No attempts found for this homework")
+    return result
 
 
 @router.get("/dev-seed-info")
 async def dev_seed_info(
     db: sa_asyncio.AsyncSession = fastapi.Depends(db_session.get_db),
 ) -> dict[str, tp.Any]:
-    """
-    Helper endpoint for frontend development.
-
-    Returns seed credentials and IDs (DEBUG-only).
-    """
+    """Return seed credentials and IDs for frontend development (DEBUG only)."""
     if not core_config.settings.DEBUG:
-        raise fastapi.HTTPException(status_code=404, detail="Not found")
+        raise fastapi.HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Not found")
 
     user_repo = user_repository.UserRepository(db)
     teacher_repo = user_repository.TeacherRepository(db)
     classroom_repo = classroom_repository.ClassroomRepository(db)
 
     teacher_email = "teacher@wep.dev"
-    teacher_password = "TeacherPass123!"
-    student_password = "StudentPass123!"
-
     teacher_user = await user_repo.get_by_email(teacher_email)
     if not teacher_user:
         return {
             "seeded": False,
-            "hint": "Run `make bootstrap` (db-reset + migrate + seed-dev) in backend/ or `python -m app.scripts.seed_dev_data`.",
+            "hint": "Run `python -m app.scripts.seed_dev_data`.",
         }
 
     teacher_profile = await teacher_repo.get_by_user_id(teacher_user.id)
@@ -116,9 +115,9 @@ async def dev_seed_info(
 
     return {
         "seeded": True,
-        "teacher": {"username_or_email": teacher_email, "password": teacher_password},
+        "teacher": {"username_or_email": teacher_email, "password": "TeacherPass123!"},
         "students": {
-            "password": student_password,
+            "password": "StudentPass123!",
             "emails": [f"student{i}@wep.dev" for i in range(1, 11)],
         },
         "classrooms": classroom_items,

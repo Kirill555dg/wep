@@ -1,21 +1,29 @@
 """
-Authentication service
+Authentication service.
 """
 
 from sqlalchemy.ext import asyncio as sa_asyncio
 
 from app.core import security as core_security
 from app.core import datetime_extensions as dte
-from app.domain import errors as domain_errors
 from app.repositories import user as user_repository
 from app.schemas import users as user_schemas
+from app.services import exceptions as service_exceptions
 
 
 class AuthService:
     """
-    Service for authentication and user management
+    Service for authentication and user management.
 
-    Handles user registration, login, and role-based operations
+    Failure semantics:
+      - ``register_user`` raises :class:`ServiceError` with code
+        ``"email_taken"`` when the email is already registered.
+      - ``authenticate`` returns ``None`` for invalid credentials and raises
+        :class:`ServiceError` with code ``"inactive_user"`` when the user is
+        marked inactive.
+      - ``get_*`` methods return ``None`` when the requested user is missing,
+        so the calling route can decide whether ``404`` or another response
+        is appropriate.
     """
 
     def __init__(self, db: sa_asyncio.AsyncSession):
@@ -26,26 +34,20 @@ class AuthService:
         self.student_repo = user_repository.StudentRepository(db)
 
     async def register_user(self, user_data: user_schemas.UserCreate) -> user_schemas.UserResponse:
-        """
-        Register new user
-
-        Args:
-            user_data: User registration data
-
-        Returns:
-            Created user
+        """Register a new user.
 
         Raises:
-            DomainError: If email already exists
+            ServiceError(code="email_taken"): If the email is already used.
         """
         generated_username = user_data.username or user_data.email.split("@")[0]
 
-        # Check if email exists
         existing_email = await self.user_repo.get_by_email(user_data.email)
         if existing_email:
-            raise domain_errors.BadRequestError("Email already registered")
+            raise service_exceptions.ServiceError(
+                "Email already registered",
+                code="email_taken",
+            )
 
-        # Create user
         user = await self.user_repo.create(
             {
                 "username": generated_username,
@@ -63,12 +65,11 @@ class AuthService:
             }
         )
 
-        # Create login data
         hashed_password = core_security.get_password_hash(user_data.password)
         await self.login_repo.create_for_user(user.id, hashed_password)
 
-        # Create profile only for selected role.
-        # Additional roles can be enabled later via `switch_role`.
+        # Create profile only for the active role. The other role can be
+        # enabled later via `switch_role`.
         if user.role == user_schemas.UserRole.TEACHER.value:
             await self.teacher_repo.create({"user_id": user.id})
         else:
@@ -92,40 +93,34 @@ class AuthService:
         self,
         login_data: user_schemas.LoginRequest,
     ) -> user_schemas.TokenResponse | None:
-        """
-        Authenticate user and return JWT token
-
-        Args:
-            login_data: Login credentials
+        """Authenticate user and return JWT token.
 
         Returns:
-            JWT token and user data
+            ``TokenResponse`` on success, ``None`` for invalid credentials.
 
         Raises:
-            HTTPException: If credentials are invalid
+            ServiceError(code="inactive_user"): The user exists but is
+                deactivated.
         """
-        # Find user by username or email
         user = await self.user_repo.get_by_username_or_email(login_data.username_or_email)
         if not user:
             return None
 
-        # Check if user is active
         if not user.is_active:
-            raise domain_errors.ForbiddenError("User account is inactive")
+            raise service_exceptions.ServiceError(
+                "User account is inactive",
+                code="inactive_user",
+            )
 
-        # Get login data
         login_info = await self.login_repo.get_by_user_id(user.id)
         if not login_info:
             return None
 
-        # Verify password
         if not core_security.verify_password(login_data.password, login_info.hashed_password):
             return None
 
-        # Update last login
         await self.login_repo.update(login_info.id, {"last_login": dte.utc_now()})
 
-        # Create access token
         access_token = core_security.create_access_token(data={"sub": str(user.id), "role": user.role})
 
         return user_schemas.TokenResponse(
@@ -146,22 +141,15 @@ class AuthService:
         )
 
     async def get_user_role(self, user_id: int) -> str | None:
-        """
-        Get user role (teacher or student)
-
-        Args:
-            user_id: User ID
-
-        Returns:
-            "teacher" or "student" or None
-        """
+        """Return active role for a user, or ``None`` if the user is missing."""
         user = await self.user_repo.get_by_id(user_id)
         return user.role if user else None
 
-    async def get_roles(self, user_id: int) -> user_schemas.UserRolesResponse:
+    async def get_roles(self, user_id: int) -> user_schemas.UserRolesResponse | None:
+        """Return active and enabled roles, or ``None`` if user is missing."""
         user = await self.user_repo.get_with_profile(user_id)
         if not user:
-            raise domain_errors.NotFoundError("User not found")
+            return None
 
         enabled: list[user_schemas.UserRole] = []
         if user.student is not None:
@@ -174,12 +162,21 @@ class AuthService:
             enabled_roles=enabled,
         )
 
-    async def switch_role(self, user_id: int, role: user_schemas.UserRole) -> user_schemas.UserRolesResponse:
+    async def switch_role(
+        self,
+        user_id: int,
+        role: user_schemas.UserRole,
+    ) -> user_schemas.UserRolesResponse | None:
+        """Switch the active role.
+
+        Returns:
+            Updated roles, or ``None`` if user is missing.
+        """
         user = await self.user_repo.get_by_id(user_id)
         if not user:
-            raise domain_errors.NotFoundError("User not found")
+            return None
 
-        # Ensure role profile exists.
+        # Ensure target role profile exists.
         if role == user_schemas.UserRole.TEACHER:
             if not await self.teacher_repo.get_by_user_id(user_id):
                 await self.teacher_repo.create({"user_id": user_id})
@@ -190,21 +187,9 @@ class AuthService:
         await self.user_repo.update(user_id, {"role": role.value})
         return await self.get_roles(user_id)
 
-    async def get_current_user(self, user_id: int) -> user_schemas.UserResponse:
-        """
-        Get current authenticated user
-
-        Args:
-            user_id: User ID from JWT token
-
-        Returns:
-            User data
-
-        Raises:
-            DomainError: If user not found
-        """
+    async def get_current_user(self, user_id: int) -> user_schemas.UserResponse | None:
+        """Return the current authenticated user or ``None`` if missing."""
         user = await self.user_repo.get_by_id(user_id)
         if not user:
-            raise domain_errors.NotFoundError("User not found")
-
+            return None
         return user_schemas.UserResponse.model_validate(user)

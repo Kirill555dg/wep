@@ -1,10 +1,11 @@
 """
-Statistics and results endpoints
+Statistics and results endpoints.
 """
 
 import fastapi
 
 from app.api import dependencies as deps
+from app.api import http_errors
 from app.api import pagination as api_pagination
 from app.models import users as user_models
 from app.schemas import pagination as pagination_schemas
@@ -21,13 +22,11 @@ async def get_my_statistics(
     current_user: user_models.User = fastapi.Depends(deps.get_current_student),
     result_service: result_service_module.ResultService = fastapi.Depends(deps.get_result_service),
 ):
-    """
-    Get all statistics for current student
-
-    Returns all homework attempts with scores and status
-    """
+    """Return all homework attempt statistics for the current student."""
     items = await result_service.get_student_statistics(current_user.id, pagination.skip, pagination.limit)
     total = await result_service.count_student_statistics(current_user.id)
+    if items is None or total is None:
+        raise http_errors.not_found("Student profile not found")
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
 
 
@@ -36,19 +35,11 @@ async def get_my_progress(
     current_user: user_models.User = fastapi.Depends(deps.get_current_student),
     result_service: result_service_module.ResultService = fastapi.Depends(deps.get_result_service),
 ):
-    """
-    Get overall progress for current student
-
-    Returns:
-    - total_homeworks: Total number of assigned homeworks
-    - completed: Number of completed homeworks
-    - in_progress: Number of homeworks in progress
-    - not_started: Number of not started homeworks
-    - average_score_percentage: Average score percentage
-    - total_attempts: Total number of attempts
-    - total_time_spent_minutes: Total time spent
-    """
-    return await result_service.get_student_progress(current_user.id)
+    """Return overall progress summary for the current student."""
+    result = await result_service.get_student_progress(current_user.id)
+    if result is None:
+        raise http_errors.not_found("Student profile not found")
+    return result
 
 
 @router.get(
@@ -61,13 +52,9 @@ async def get_homework_statistics(
     current_user: user_models.User = fastapi.Depends(deps.get_current_teacher),
     result_service: result_service_module.ResultService = fastapi.Depends(deps.get_result_service),
 ):
-    """
-    Get statistics for all students for a specific homework (teachers only)
-
-    Returns all student attempts for the homework
-    """
+    """Return attempt statistics for all students on a specific homework (teachers only)."""
     items = await result_service.get_homework_statistics(
-        homework_id, current_user.id, pagination.skip, pagination.limit
+        homework_id, current_user.id, pagination.skip, pagination.limit,
     )
     total = await result_service.count_homework_statistics(homework_id)
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
@@ -82,15 +69,7 @@ async def get_classroom_progress(
     current_user: user_models.User = fastapi.Depends(deps.get_current_teacher),
     result_service: result_service_module.ResultService = fastapi.Depends(deps.get_result_service),
 ):
-    """
-    Get overall progress for a classroom (teachers only)
-
-    Returns:
-    - total_students: Number of students in classroom
-    - total_homeworks_assigned: Total homeworks assigned
-    - completed_homeworks: Number of completed homeworks
-    - average_completion_rate: Average completion rate (%)
-    """
+    """Return progress summary for a classroom (teachers only)."""
     return await result_service.get_classroom_progress(classroom_id, current_user.id)
 
 
@@ -104,11 +83,9 @@ async def get_student_statistics_by_teacher(
     current_user: user_models.User = fastapi.Depends(deps.get_current_teacher),
     result_service: result_service_module.ResultService = fastapi.Depends(deps.get_result_service),
 ):
-    """
-    Get statistics for a specific student (teachers only)
-
-    Teachers can view any student's statistics
-    """
+    """Return statistics for a specific student (teachers only)."""
     items = await result_service.get_student_statistics(student_user_id, pagination.skip, pagination.limit)
     total = await result_service.count_student_statistics(student_user_id)
+    if items is None or total is None:
+        raise http_errors.not_found("Student not found")
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)

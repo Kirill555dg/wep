@@ -4,7 +4,7 @@ Tests for ChatService.
 
 import pytest
 
-from app.domain import errors as domain_errors
+from app.services import exceptions as service_exceptions
 from app.repositories import user as user_repository
 from app.schemas import classrooms as classroom_schemas
 from app.schemas import communication as communication_schemas
@@ -116,6 +116,8 @@ async def test_chat_service_rejects_non_member_student(db_session):
     outsider = await user_repo.get_by_id(outsider_resp.id)
     assert outsider is not None
 
-    with pytest.raises(domain_errors.ForbiddenError):
+    with pytest.raises(service_exceptions.ServiceError) as exc_info:
         await chat_service.list_messages(created_classroom.id, user=outsider, skip=0, limit=10)
+
+    assert exc_info.value.code == "forbidden"
 

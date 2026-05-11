@@ -4,7 +4,7 @@ Tests for AuthService
 
 import pytest
 
-from app.domain import errors as domain_errors
+from app.services import exceptions as service_exceptions
 from app.core import security as core_security
 from app.repositories import user as user_repository
 from app.schemas import users as user_schemas
@@ -144,10 +144,11 @@ async def test_register_duplicate_email(db_session):
         role="teacher",
     )
 
-    with pytest.raises(domain_errors.BadRequestError) as exc_info:
+    with pytest.raises(service_exceptions.ServiceError) as exc_info:
         await auth_service.register_user(duplicate_data)
 
-    assert "already registered" in str(exc_info.value).lower()
+    assert exc_info.value.code == "email_taken"
+    assert "already registered" in exc_info.value.message.lower()
 
 
 async def test_authenticate_success(db_session):

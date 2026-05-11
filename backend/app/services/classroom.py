@@ -1,24 +1,30 @@
 """
-Classroom service
+Classroom service.
+
+Failure semantics:
+  - ``get_classroom`` returns ``None`` when the classroom is missing; routes
+    translate this into HTTP 404.
+  - Action methods (``create_classroom``, ``join_classroom``, ``update_classroom``,
+    ``get_classroom_students``) raise :class:`ServiceError` with a domain code
+    when access checks fail or constraints are violated.
 """
 
 import nanoid
 from sqlalchemy.ext import asyncio as sa_asyncio
 
-from app.domain import errors as domain_errors
 from app.core import pagination as core_pagination
 from app.repositories import classroom as classroom_repository
 from app.repositories import user as user_repository
 from app.schemas import communication as communication_schemas
 from app.schemas import classrooms as classroom_schemas
 from app.services import access_control as access_control
+from app.services import exceptions as service_exceptions
 
 
 class ClassroomService:
-    """
-    Service for classroom management
+    """Service for classroom management.
 
-    Handles classroom creation, invites, student enrollment
+    Handles classroom creation, invites and student enrollment.
     """
 
     def __init__(self, db: sa_asyncio.AsyncSession):
@@ -65,11 +71,13 @@ class ClassroomService:
         response.students_count = 0
         return response
 
-    async def get_classroom(self, classroom_id: int) -> classroom_schemas.ClassroomResponse:
-        """Get classroom by ID"""
+    async def get_classroom(
+        self, classroom_id: int,
+    ) -> classroom_schemas.ClassroomResponse | None:
+        """Return classroom by id, or ``None`` if not found."""
         classroom = await self.classroom_repo.get_by_id(classroom_id)
         if not classroom:
-            raise domain_errors.NotFoundError("Classroom not found")
+            return None
 
         response = classroom_schemas.ClassroomResponse.model_validate(classroom)
         response.students_count = await self.student_classroom_repo.count_students_in_classroom(
@@ -146,9 +154,7 @@ class ClassroomService:
         updated = await self.classroom_repo.update(
             classroom_id, classroom_data.model_dump(exclude_unset=True)
         )
-        if not updated:
-            raise domain_errors.InternalError("Failed to update classroom")
-
+        assert updated is not None  # classroom existence was validated above
         return classroom_schemas.ClassroomResponse.model_validate(updated)
 
     async def join_classroom(
@@ -169,25 +175,33 @@ class ClassroomService:
         Raises:
             HTTPException: If invite invalid or user not a student
         """
-        # Verify user is a student
+        # Verify user is a student.
         student = await self.student_repo.get_by_user_id(student_user_id)
         if not student:
-            raise domain_errors.ForbiddenError("Only students can join classrooms")
+            raise service_exceptions.ServiceError(
+                "Only students can join classrooms", code="forbidden",
+            )
 
-        # Find classroom by invite code
+        # Find classroom by invite code.
         classroom = await self.classroom_repo.get_by_invite_code(join_data.invite_code)
         if not classroom:
-            raise domain_errors.NotFoundError("Invalid invite code")
+            raise service_exceptions.ServiceError(
+                "Invalid invite code", code="invite_invalid",
+            )
 
-        # Check if already member
+        # Check membership.
         existing = await self.student_classroom_repo.get_membership(student.id, classroom.id)
         if existing and existing.is_active:
-            raise domain_errors.BadRequestError("Already a member of this classroom")
+            raise service_exceptions.ServiceError(
+                "Already a member of this classroom", code="already_member",
+            )
 
-        # Check max students
+        # Check capacity.
         current_students = await self.student_classroom_repo.count_students_in_classroom(classroom.id)
         if classroom.max_students and current_students >= classroom.max_students:
-            raise domain_errors.BadRequestError("Classroom is full")
+            raise service_exceptions.ServiceError(
+                "Classroom is full", code="classroom_full",
+            )
 
         # Enroll student
         if existing:

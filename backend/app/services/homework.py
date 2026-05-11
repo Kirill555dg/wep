@@ -4,7 +4,6 @@ Homework service
 
 from sqlalchemy.ext import asyncio as sa_asyncio
 
-from app.domain import errors as domain_errors
 from app.core import pagination as core_pagination
 from app.models import users as user_models
 from app.repositories import classroom as classroom_repository
@@ -13,6 +12,7 @@ from app.repositories import lesson as lesson_repository
 from app.repositories import user as user_repository
 from app.schemas import homework as homework_schemas
 from app.services import access_control as access_control
+from app.services import exceptions as service_exceptions
 
 
 class HomeworkService:
@@ -50,12 +50,14 @@ class HomeworkService:
         Raises:
             DomainError: If not authorized
         """
-        # Verify lesson exists
+        # Verify lesson exists.
         lesson = await self.lesson_repo.get_by_id(homework_data.lesson_id)
         if not lesson:
-            raise domain_errors.NotFoundError("Lesson not found")
+            raise service_exceptions.ServiceError(
+                "Lesson not found", code="lesson_not_found",
+            )
 
-        # Verify teacher owns classroom
+        # Verify teacher owns classroom.
         classroom = access_control.require_classroom(
             await self.classroom_repo.get_by_id(lesson.classroom_id),
             detail="Classroom not found",
@@ -87,54 +89,51 @@ class HomeworkService:
         return response
 
     async def get_homework(
-        self, homework_id: int, user: user_models.User
-    ) -> homework_schemas.HomeworkDetailResponse:
-        """
-        Get homework by ID
+        self, homework_id: int, user: user_models.User,
+    ) -> homework_schemas.HomeworkDetailResponse | None:
+        """Return homework with access check.
 
-        Args:
-            homework_id: Homework ID
-            user_id: User ID (for permission check)
-
-        Returns:
-            Homework data
+        Returns ``None`` if either the homework or its parent lesson is missing.
+        Raises ``ServiceError`` (``unpublished``) if a non-owner tries to access
+        an unpublished homework.
         """
         homework = await self.homework_repo.get_by_id(homework_id)
         if not homework:
-            raise domain_errors.NotFoundError("Homework not found")
+            return None
 
-        # Check if published for students
         lesson = await self.lesson_repo.get_by_id(homework.lesson_id)
         if not lesson:
-            raise domain_errors.NotFoundError("Lesson not found")
+            return None
 
         classroom = await self.classroom_repo.get_by_id(lesson.classroom_id)
         teacher = await self.teacher_repo.get_by_user_id(user.id) if user.role == "teacher" else None
 
-        # If not teacher of this classroom and homework not published, deny access
         is_teacher = teacher and classroom and classroom.teacher_id == teacher.id
         if not is_teacher and not homework.is_published:
-            raise domain_errors.ForbiddenError("Homework not published yet")
+            raise service_exceptions.ServiceError(
+                "Homework not published yet", code="unpublished",
+            )
 
         response = homework_schemas.HomeworkDetailResponse.model_validate(homework)
         response.problems_count = len(await self.hw_problem_repo.get_by_homework(homework_id))
         return response
 
     async def get_homework_problems(
-        self, homework_id: int, user: user_models.User
-    ) -> list[homework_schemas.ProblemResponse | homework_schemas.ProblemFullResponse]:
-        """
-        Get problems for homework
+        self, homework_id: int, user: user_models.User,
+    ) -> list[homework_schemas.ProblemResponse | homework_schemas.ProblemFullResponse] | None:
+        """Return problems for a homework.
 
-        Teachers get full info (with answers), students get limited info
+        Teachers see the full problem (including correct answers), students
+        see the limited view. Returns ``None`` if the homework or its lesson
+        is missing.
         """
         homework = await self.homework_repo.get_by_id(homework_id)
         if not homework:
-            raise domain_errors.NotFoundError("Homework not found")
+            return None
 
         lesson = await self.lesson_repo.get_by_id(homework.lesson_id)
         if not lesson:
-            raise domain_errors.NotFoundError("Lesson not found")
+            return None
 
         classroom = await self.classroom_repo.get_by_id(lesson.classroom_id)
         teacher = await self.teacher_repo.get_by_user_id(user.id) if user.role == "teacher" else None
@@ -160,16 +159,18 @@ class HomeworkService:
         homework_id: int,
         homework_data: homework_schemas.HomeworkUpdate,
         teacher_user_id: int,
-    ) -> homework_schemas.HomeworkResponse:
-        """Update homework (teacher only)"""
+    ) -> homework_schemas.HomeworkResponse | None:
+        """Update homework; returns ``None`` if the homework does not exist.
+
+        Raises ``ServiceError`` if the user is not the classroom owner.
+        """
         homework = await self.homework_repo.get_by_id(homework_id)
         if not homework:
-            raise domain_errors.NotFoundError("Homework not found")
+            return None
 
-        # Verify teacher owns classroom
         lesson = await self.lesson_repo.get_by_id(homework.lesson_id)
         if not lesson:
-            raise domain_errors.NotFoundError("Lesson not found")
+            return None
 
         classroom = access_control.require_classroom(
             await self.classroom_repo.get_by_id(lesson.classroom_id),
@@ -186,11 +187,9 @@ class HomeworkService:
         )
 
         updated = await self.homework_repo.update(
-            homework_id, homework_data.model_dump(exclude_unset=True)
+            homework_id, homework_data.model_dump(exclude_unset=True),
         )
-        if not updated:
-            raise domain_errors.InternalError("Failed to update homework")
-
+        assert updated is not None  # existence validated above
         return homework_schemas.HomeworkResponse.model_validate(updated)
 
     async def get_lesson_homework(

@@ -1,18 +1,24 @@
 """
-Problem Service
-Manages problem creation, retrieval, and management
+Problem service.
+
+Manages problem creation, retrieval, update and deletion.
+
+Failure semantics:
+  - Lookup-style methods (``get_problem_by_id``) return ``None`` if the
+    problem is missing. Routes translate ``None`` into HTTP 404.
+  - ``update_problem`` and ``delete_problem`` return ``None`` / ``False``
+    when the problem does not exist.
 """
 
 import typing as tp
 
-from app.domain import errors as domain_errors
 from app.core import pagination as core_pagination
 from app.repositories import homework as homework_repository
 from app.schemas import homework as homework_schemas
 
 
 class ProblemService:
-    """Service for managing problems"""
+    """Service for managing problems."""
 
     def __init__(self, problem_repo: homework_repository.ProblemRepository):
         self.problem_repo = problem_repo
@@ -22,17 +28,7 @@ class ProblemService:
         problem_data: homework_schemas.ProblemCreate,
         teacher_id: int,
     ) -> tp.Any:
-        """
-        Create a new problem
-
-        Args:
-            problem_data: Problem data
-            teacher_id: ID of the teacher creating the problem
-
-        Returns:
-            Created problem
-        """
-        # Convert Pydantic model to dict
+        """Create a new problem."""
         data = problem_data.model_dump()
         if "difficulty" in data and data["difficulty"] is not None:
             try:
@@ -41,63 +37,30 @@ class ProblemService:
                 data["difficulty"] = 1
         data["problem_type"] = str(data.get("problem_type", "text"))
 
-        # Create problem
-        problem = await self.problem_repo.create(data)
-        return problem
+        return await self.problem_repo.create(data)
 
     async def get_all_problems(
         self,
         skip: int = core_pagination.DEFAULT_SKIP,
         limit: int = core_pagination.DEFAULT_LIMIT,
     ) -> list[tp.Any]:
-        """
-        Get all problems
-
-        Args:
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-
-        Returns:
-            List of problems
-        """
+        """Return problems with pagination."""
         return await self.problem_repo.get_all(skip, limit)
 
     async def count_all_problems(self) -> int:
         return await self.problem_repo.count()
 
     async def get_problem_by_id(self, problem_id: int) -> tp.Any | None:
-        """
-        Get problem by ID
-
-        Args:
-            problem_id: Problem ID
-
-        Returns:
-            Problem if found, None otherwise
-        """
-        problem = await self.problem_repo.get_by_id(problem_id)
-        if not problem:
-            raise domain_errors.NotFoundError("Problem not found")
-        return problem
+        """Return a problem by id, or ``None`` if not found."""
+        return await self.problem_repo.get_by_id(problem_id)
 
     async def update_problem(
-        self, problem_id: int, problem_data: homework_schemas.ProblemUpdate, teacher_id: int
-    ) -> tp.Any:
-        """
-        Update a problem
-
-        Args:
-            problem_id: Problem ID
-            problem_data: Updated problem data
-            teacher_id: ID of the teacher updating the problem
-
-        Returns:
-            Updated problem
-
-        Raises:
-            HTTPException: If problem not found
-        """
-        # Convert Pydantic model to dict, excluding unset fields
+        self,
+        problem_id: int,
+        problem_data: homework_schemas.ProblemUpdate,
+        teacher_id: int,
+    ) -> tp.Any | None:
+        """Update a problem; returns ``None`` if it does not exist."""
         data = problem_data.model_dump(exclude_unset=True)
         if "difficulty" in data:
             try:
@@ -107,27 +70,8 @@ class ProblemService:
         if "problem_type" in data and data["problem_type"] is not None:
             data["problem_type"] = str(data["problem_type"])
 
-        # Update problem
-        problem = await self.problem_repo.update(problem_id, data)
-        if not problem:
-            raise domain_errors.NotFoundError("Problem not found")
-        return problem
+        return await self.problem_repo.update(problem_id, data)
 
     async def delete_problem(self, problem_id: int, teacher_id: int) -> bool:
-        """
-        Delete a problem
-
-        Args:
-            problem_id: Problem ID
-            teacher_id: ID of the teacher deleting the problem
-
-        Returns:
-            True if deleted successfully
-
-        Raises:
-            HTTPException: If problem not found
-        """
-        success = await self.problem_repo.delete(problem_id)
-        if not success:
-            raise domain_errors.NotFoundError("Problem not found")
-        return True
+        """Delete a problem; returns ``False`` if it does not exist."""
+        return await self.problem_repo.delete(problem_id)

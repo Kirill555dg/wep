@@ -1,11 +1,12 @@
 """
-Problem management endpoints
+Problem management endpoints.
 """
 
 import fastapi
 from fastapi import status as http_status
 
 from app.api import dependencies as deps
+from app.api import http_errors
 from app.api import pagination as api_pagination
 from app.models import users as user_models
 from app.schemas import pagination as pagination_schemas
@@ -25,17 +26,7 @@ async def create_problem(
     current_user: user_models.User = fastapi.Depends(deps.get_current_teacher),
     problem_service: problem_service_module.ProblemService = fastapi.Depends(deps.get_problem_service),
 ):
-    """
-    Create new problem (teachers only)
-
-    - **title**: Problem title
-    - **description**: Problem description/text
-    - **problem_type**: Type of problem
-    - **difficulty**: Difficulty level
-    - **correct_answer**: Correct answer
-    - **explanation**: Explanation of solution
-    - **hints**: Hints (optional)
-    """
+    """Create a new problem (teachers only)."""
     problem = await problem_service.create_problem(problem_data, current_user.id)
     return homework_schemas.ProblemFullResponse.model_validate(problem)
 
@@ -46,15 +37,11 @@ async def get_problems(
     current_user: user_models.User = fastapi.Depends(deps.get_current_teacher),
     problem_service: problem_service_module.ProblemService = fastapi.Depends(deps.get_problem_service),
 ):
-    """
-    Get all problems (teachers only)
-
-    Teachers can see all problems with correct answers
-    """
+    """Return all problems with full details (teachers only)."""
     problems = await problem_service.get_all_problems(pagination.skip, pagination.limit)
     total = await problem_service.count_all_problems()
     return pagination_schemas.Page(
-        items=[homework_schemas.ProblemFullResponse.model_validate(problem_item) for problem_item in problems],
+        items=[homework_schemas.ProblemFullResponse.model_validate(p) for p in problems],
         total=total,
         skip=pagination.skip,
         limit=pagination.limit,
@@ -67,10 +54,10 @@ async def get_problem(
     current_user: user_models.User = fastapi.Depends(deps.get_current_teacher),
     problem_service: problem_service_module.ProblemService = fastapi.Depends(deps.get_problem_service),
 ):
-    """
-    Get problem by ID (teachers only)
-    """
+    """Return a problem by id (teachers only)."""
     problem = await problem_service.get_problem_by_id(problem_id)
+    if problem is None:
+        raise http_errors.not_found("Problem not found")
     return homework_schemas.ProblemFullResponse.model_validate(problem)
 
 
@@ -81,10 +68,10 @@ async def update_problem(
     current_user: user_models.User = fastapi.Depends(deps.get_current_teacher),
     problem_service: problem_service_module.ProblemService = fastapi.Depends(deps.get_problem_service),
 ):
-    """
-    Update problem (teachers only)
-    """
+    """Update a problem (teachers only)."""
     problem = await problem_service.update_problem(problem_id, problem_data, current_user.id)
+    if problem is None:
+        raise http_errors.not_found("Problem not found")
     return homework_schemas.ProblemFullResponse.model_validate(problem)
 
 
@@ -94,8 +81,8 @@ async def delete_problem(
     current_user: user_models.User = fastapi.Depends(deps.get_current_teacher),
     problem_service: problem_service_module.ProblemService = fastapi.Depends(deps.get_problem_service),
 ):
-    """
-    Delete problem (teachers only)
-    """
-    await problem_service.delete_problem(problem_id, current_user.id)
+    """Delete a problem (teachers only)."""
+    deleted = await problem_service.delete_problem(problem_id, current_user.id)
+    if not deleted:
+        raise http_errors.not_found("Problem not found")
     return None

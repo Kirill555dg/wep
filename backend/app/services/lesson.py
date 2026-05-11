@@ -4,7 +4,6 @@ Lesson service
 
 from sqlalchemy.ext import asyncio as sa_asyncio
 
-from app.domain import errors as domain_errors
 from app.core import pagination as core_pagination
 from app.models import users as user_models
 from app.repositories import classroom as classroom_repository
@@ -76,11 +75,11 @@ class LessonService:
 
         return lesson_schemas.LessonResponse.model_validate(lesson)
 
-    async def get_lesson(self, lesson_id: int) -> lesson_schemas.LessonDetailResponse:
-        """Get lesson by ID"""
+    async def get_lesson(self, lesson_id: int) -> lesson_schemas.LessonDetailResponse | None:
+        """Return a lesson by id, or ``None`` if it does not exist."""
         lesson = await self.lesson_repo.get_by_id(lesson_id)
         if not lesson:
-            raise domain_errors.NotFoundError("Lesson not found")
+            return None
 
         response = lesson_schemas.LessonDetailResponse.model_validate(lesson)
         response.materials_count = len(await self.lesson_material_repo.get_by_lesson(lesson_id))
@@ -124,13 +123,15 @@ class LessonService:
         lesson_id: int,
         lesson_data: lesson_schemas.LessonUpdate,
         teacher_user_id: int,
-    ) -> lesson_schemas.LessonResponse:
-        """Update lesson (teacher only)"""
+    ) -> lesson_schemas.LessonResponse | None:
+        """Update lesson; returns ``None`` if the lesson does not exist.
+
+        Raises ``ServiceError`` if the current user is not the classroom owner.
+        """
         lesson = await self.lesson_repo.get_by_id(lesson_id)
         if not lesson:
-            raise domain_errors.NotFoundError("Lesson not found")
+            return None
 
-        # Verify teacher owns classroom
         classroom = access_control.require_classroom(
             await self.classroom_repo.get_by_id(lesson.classroom_id),
             detail="Classroom not found",
@@ -146,18 +147,18 @@ class LessonService:
         )
 
         updated = await self.lesson_repo.update(lesson_id, lesson_data.model_dump(exclude_unset=True))
-        if not updated:
-            raise domain_errors.InternalError("Failed to update lesson")
-
+        assert updated is not None  # lesson existence was validated above
         return lesson_schemas.LessonResponse.model_validate(updated)
 
     async def delete_lesson(self, lesson_id: int, teacher_user_id: int) -> bool:
-        """Delete lesson (teacher only)"""
+        """Delete a lesson; returns ``False`` if the lesson does not exist.
+
+        Raises ``ServiceError`` if the current user is not the classroom owner.
+        """
         lesson = await self.lesson_repo.get_by_id(lesson_id)
         if not lesson:
-            raise domain_errors.NotFoundError("Lesson not found")
+            return False
 
-        # Verify teacher owns classroom
         classroom = access_control.require_classroom(
             await self.classroom_repo.get_by_id(lesson.classroom_id),
             detail="Classroom not found",

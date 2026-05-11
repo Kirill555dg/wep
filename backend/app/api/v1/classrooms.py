@@ -13,9 +13,9 @@ import starlette.websockets as starlette_websockets
 from sqlalchemy.ext import asyncio as sa_asyncio
 
 from app.api import dependencies as deps
+from app.api import http_errors as http_errors
 from app.api import pagination as api_pagination
 from app.db import session as db_session
-from app.domain import errors as domain_errors
 from app.core import config as core_config
 from app.models import users as user_models
 from app.realtime import auth as realtime_auth
@@ -25,6 +25,7 @@ from app.schemas import classrooms as classroom_schemas
 from app.schemas import pagination as pagination_schemas
 from app.services import chat as chat_service_module
 from app.services import classroom as classroom_service_module
+from app.services import exceptions as service_exceptions
 
 router = fastapi.APIRouter()
 
@@ -49,7 +50,11 @@ async def create_classroom(
     - **grade_level**: Grade level (1-12)
     - **description**: Optional description
     """
-    return await classroom_service.create_classroom(classroom_data, current_user.id)
+    try:
+        return await classroom_service.create_classroom(classroom_data, current_user.id)
+    except service_exceptions.ServiceError as exc:
+        # The only orchestrated failure here is the teacher-profile check.
+        raise http_errors.from_service_error(exc, http_status.HTTP_403_FORBIDDEN)
 
 
 @router.get("", response_model=pagination_schemas.Page[classroom_schemas.ClassroomResponse])
@@ -84,10 +89,11 @@ async def get_classroom(
         deps.get_classroom_service
     ),
 ):
-    """
-    Get classroom details by ID
-    """
-    return await classroom_service.get_classroom(classroom_id)
+    """Get classroom details by id."""
+    classroom = await classroom_service.get_classroom(classroom_id)
+    if classroom is None:
+        raise http_errors.not_found("Classroom not found")
+    return classroom
 
 
 @router.patch("/{classroom_id}", response_model=classroom_schemas.ClassroomResponse)
@@ -99,10 +105,16 @@ async def update_classroom(
         deps.get_classroom_service
     ),
 ):
-    """
-    Update classroom (teachers only, owner only)
-    """
-    return await classroom_service.update_classroom(classroom_id, classroom_data, current_user.id)
+    """Update classroom (owner only)."""
+    try:
+        return await classroom_service.update_classroom(classroom_id, classroom_data, current_user.id)
+    except service_exceptions.ServiceError as exc:
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if exc.code == "not_found"
+            else http_status.HTTP_403_FORBIDDEN
+        )
+        raise http_errors.from_service_error(exc, status_code)
 
 
 @router.post("/join", response_model=classroom_schemas.ClassroomResponse)
@@ -113,12 +125,19 @@ async def join_classroom(
         deps.get_classroom_service
     ),
 ):
-    """
-    Join classroom via invite code (students only)
+    """Join classroom via invite code (students only).
 
     - **invite_code**: Unique invite code from teacher
     """
-    return await classroom_service.join_classroom(join_data, current_user.id)
+    try:
+        return await classroom_service.join_classroom(join_data, current_user.id)
+    except service_exceptions.ServiceError as exc:
+        if exc.code == "invite_invalid":
+            raise http_errors.not_found(exc.message, code=exc.code)
+        if exc.code == "forbidden":
+            raise http_errors.forbidden(exc.message, code=exc.code)
+        # already_member / classroom_full → 400
+        raise http_errors.bad_request(exc.message, code=exc.code)
 
 
 @router.get(
@@ -138,10 +157,18 @@ async def get_classroom_students(
 
     Returns student information with enrollment dates
     """
-    items = await classroom_service.get_classroom_students(
-        classroom_id, current_user.id, pagination.skip, pagination.limit
-    )
-    total = await classroom_service.count_classroom_students(classroom_id, current_user.id)
+    try:
+        items = await classroom_service.get_classroom_students(
+            classroom_id, current_user.id, pagination.skip, pagination.limit
+        )
+        total = await classroom_service.count_classroom_students(classroom_id, current_user.id)
+    except service_exceptions.ServiceError as exc:
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if exc.code == "not_found"
+            else http_status.HTTP_403_FORBIDDEN
+        )
+        raise http_errors.from_service_error(exc, status_code)
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
 
 
@@ -157,15 +184,23 @@ async def list_chat_messages(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
     chat_service: chat_service_module.ChatService = fastapi.Depends(deps.get_chat_service),
 ):
-    items = await chat_service.list_messages(
-        classroom_id,
-        user=current_user,
-        skip=pagination.skip,
-        limit=pagination.limit,
-        before_id=before_id,
-        tail=tail,
-    )
-    total = await chat_service.count_messages(classroom_id, user=current_user)
+    try:
+        items = await chat_service.list_messages(
+            classroom_id,
+            user=current_user,
+            skip=pagination.skip,
+            limit=pagination.limit,
+            before_id=before_id,
+            tail=tail,
+        )
+        total = await chat_service.count_messages(classroom_id, user=current_user)
+    except service_exceptions.ServiceError as exc:
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if exc.code == "not_found"
+            else http_status.HTTP_403_FORBIDDEN
+        )
+        raise http_errors.from_service_error(exc, status_code)
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
 
 
@@ -179,7 +214,15 @@ async def post_chat_message(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
     chat_service: chat_service_module.ChatService = fastapi.Depends(deps.get_chat_service),
 ):
-    return await chat_service.post_message(classroom_id, user=current_user, payload=payload)
+    try:
+        return await chat_service.post_message(classroom_id, user=current_user, payload=payload)
+    except service_exceptions.ServiceError as exc:
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if exc.code == "not_found"
+            else http_status.HTTP_403_FORBIDDEN
+        )
+        raise http_errors.from_service_error(exc, status_code)
 
 
 @router.websocket("/{classroom_id}/chat/ws")
@@ -218,9 +261,9 @@ async def classroom_chat_ws(
         user = await realtime_auth.require_current_user(websocket, db)
         chat_service = chat_service_module.ChatService(db)
         await chat_service.require_access(classroom_id, user=user)
-    except domain_errors.DomainError as e:
+    except service_exceptions.ServiceError as exc:
         await websocket.accept()
-        await _send_ws_error(code=e.code or "unauthorized", message=e.message, meta=e.meta or None)
+        await _send_ws_error(code=exc.code, message=exc.message, meta=exc.meta or None)
         await websocket.close(code=1008)
         return
 

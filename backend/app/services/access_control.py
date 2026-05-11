@@ -1,17 +1,14 @@
 """
-Access control helpers for services layer.
+Access control helpers for the services layer.
 
-These helpers centralize common authorization checks, such as:
-- verifying a user is a teacher (has Teacher profile)
-- verifying a teacher owns a classroom
-
-We keep the checks in the services layer (not a generic "utils") because they
-represent domain-level access rules.
+These helpers centralize common authorization checks and convert missing
+profile/classroom references into ``ServiceError``. Routes are expected to
+catch ``ServiceError`` and produce the appropriate HTTP response.
 """
 
-from app.domain import errors as domain_errors
 from app.models import classes as classes_models
 from app.models import users as user_models
+from app.services import exceptions as service_exceptions
 
 
 def require_teacher_profile(
@@ -19,9 +16,9 @@ def require_teacher_profile(
     *,
     detail: str,
 ) -> user_models.Teacher:
-    """Ensure user has teacher profile."""
+    """Return the teacher profile or raise ``ServiceError`` (``forbidden``)."""
     if not teacher:
-        raise domain_errors.ForbiddenError(detail)
+        raise service_exceptions.ServiceError(detail, code="forbidden")
     return teacher
 
 
@@ -30,9 +27,9 @@ def require_classroom(
     *,
     detail: str = "Classroom not found",
 ) -> classes_models.Classroom:
-    """Ensure classroom exists."""
+    """Return the classroom or raise ``ServiceError`` (``not_found``)."""
     if not classroom:
-        raise domain_errors.NotFoundError(detail)
+        raise service_exceptions.ServiceError(detail, code="not_found")
     return classroom
 
 
@@ -42,7 +39,6 @@ def require_teacher_owns_classroom(
     classroom: classes_models.Classroom,
     detail: str,
 ) -> None:
-    """Ensure the teacher owns the given classroom."""
+    """Raise ``ServiceError`` (``forbidden``) if the teacher does not own the classroom."""
     if classroom.teacher_id != teacher.id:
-        raise domain_errors.ForbiddenError(detail)
-
+        raise service_exceptions.ServiceError(detail, code="forbidden")

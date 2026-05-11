@@ -1,15 +1,17 @@
 """
-Homework management endpoints
+Homework management endpoints.
 """
 
 import fastapi
 from fastapi import status as http_status
 
 from app.api import dependencies as deps
+from app.api import http_errors
 from app.api import pagination as api_pagination
 from app.models import users as user_models
 from app.schemas import pagination as pagination_schemas
 from app.schemas import homework as homework_schemas
+from app.services import exceptions as service_exceptions
 from app.services import homework as homework_service_module
 
 router = fastapi.APIRouter()
@@ -27,18 +29,16 @@ async def create_homework(
         deps.get_homework_service
     ),
 ):
-    """
-    Create new homework assignment (teachers only)
-
-    - **lesson_id**: ID of the lesson
-    - **title**: Homework title
-    - **description**: Optional description
-    - **max_score**: Maximum score (default 100)
-    - **deadline**: Optional deadline date/time
-    - **problem_ids**: List of problem IDs to include
-    - **problem_points**: Optional list of points for each problem
-    """
-    return await homework_service.create_homework(homework_data, current_user.id)
+    """Create a new homework assignment (classroom owner only)."""
+    try:
+        return await homework_service.create_homework(homework_data, current_user.id)
+    except service_exceptions.ServiceError as exc:
+        status_code = (
+            http_status.HTTP_404_NOT_FOUND
+            if exc.code in ("lesson_not_found", "not_found")
+            else http_status.HTTP_403_FORBIDDEN
+        )
+        raise http_errors.from_service_error(exc, status_code)
 
 
 @router.get(
@@ -53,14 +53,12 @@ async def get_lesson_homework(
         deps.get_homework_service
     ),
 ):
-    """
-    Get all homework for a lesson
+    """Return homework for a lesson.
 
-    - Teachers see all homework (including unpublished)
-    - Students see only published homework
+    Teachers see all homework; students see only published homework.
     """
     items = await homework_service.get_lesson_homework(
-        lesson_id, current_user, pagination.skip, pagination.limit
+        lesson_id, current_user, pagination.skip, pagination.limit,
     )
     total = await homework_service.count_lesson_homework(lesson_id, current_user)
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
@@ -74,13 +72,16 @@ async def get_homework(
         deps.get_homework_service
     ),
 ):
-    """
-    Get homework details by ID
-
-    Returns homework information.
-    Students can only see published homework.
-    """
-    return await homework_service.get_homework(homework_id, current_user)
+    """Return homework details; students can only see published homework."""
+    try:
+        result = await homework_service.get_homework(homework_id, current_user)
+    except service_exceptions.ServiceError as exc:
+        if exc.code == "unpublished":
+            raise http_errors.forbidden(exc.message, code=exc.code)
+        raise
+    if result is None:
+        raise http_errors.not_found("Homework not found")
+    return result
 
 
 @router.get(
@@ -94,13 +95,14 @@ async def get_homework_problems(
         deps.get_homework_service
     ),
 ):
-    """
-    Get all problems for homework
+    """Return problems for a homework.
 
-    - Teachers see problems with correct answers
-    - Students see problems without correct answers
+    Teachers see the full problem including correct answers; students see the limited view.
     """
-    return await homework_service.get_homework_problems(homework_id, current_user)
+    result = await homework_service.get_homework_problems(homework_id, current_user)
+    if result is None:
+        raise http_errors.not_found("Homework not found")
+    return result
 
 
 @router.patch("/{homework_id}", response_model=homework_schemas.HomeworkResponse)
@@ -112,10 +114,14 @@ async def update_homework(
         deps.get_homework_service
     ),
 ):
-    """
-    Update homework (teachers only, owner only)
-    """
-    return await homework_service.update_homework(homework_id, homework_data, current_user.id)
+    """Update homework (classroom owner only)."""
+    try:
+        result = await homework_service.update_homework(homework_id, homework_data, current_user.id)
+    except service_exceptions.ServiceError as exc:
+        raise http_errors.from_service_error(exc, http_status.HTTP_403_FORBIDDEN)
+    if result is None:
+        raise http_errors.not_found("Homework not found")
+    return result
 
 
 @router.delete("/{homework_id}", status_code=http_status.HTTP_204_NO_CONTENT)
@@ -126,10 +132,5 @@ async def delete_homework(
         deps.get_homework_service
     ),
 ):
-    """
-    Delete homework (teachers only, owner only)
-
-    Note: This would need to be implemented in HomeworkService
-    """
-    # Placeholder - would need implementation
+    """Delete homework (classroom owner only). Not yet implemented."""
     return None

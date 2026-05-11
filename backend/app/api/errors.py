@@ -1,7 +1,14 @@
 """
-API-level error mapping.
+API-level error handling.
 
-Converts domain errors (raised by services) into HTTP responses.
+Strategy:
+- Services return optional results (e.g. ``None`` when an entity is missing)
+  or raise no custom exceptions. API handlers translate these results into
+  ``HTTPException`` with explicit status codes and a structured payload.
+- This module wraps every HTTP error into a single response envelope:
+  ``{"error": {"code", "message", "meta"}, "request_id": ...}``.
+- Unhandled exceptions are reported as ``500 Internal Server Error`` and
+  indicate a bug on the server side.
 """
 
 import typing as tp
@@ -16,7 +23,6 @@ import starlette.status as http_status
 
 from app.core import config as core_config
 from app.core import request_context as request_context
-from app.domain import errors as domain_errors
 
 
 logger = logging.getLogger("app.api.errors")
@@ -33,6 +39,8 @@ def build_error_content(
     meta: dict[str, tp.Any] | None = None,
     request_id: str | None = None,
 ) -> dict[str, tp.Any]:
+    """Build a unified error envelope used by every error response."""
+
     meta_payload: dict[str, tp.Any] = meta or {}
     payload: dict[str, tp.Any] = {
         "error": {
@@ -45,74 +53,47 @@ def build_error_content(
     return payload
 
 
-def _status_code(exc: domain_errors.DomainError) -> int:
-    if isinstance(exc, domain_errors.BadRequestError):
-        return http_status.HTTP_400_BAD_REQUEST
-    if isinstance(exc, domain_errors.UnauthorizedError):
-        return http_status.HTTP_401_UNAUTHORIZED
-    if isinstance(exc, domain_errors.ForbiddenError):
-        return http_status.HTTP_403_FORBIDDEN
-    if isinstance(exc, domain_errors.NotFoundError):
-        return http_status.HTTP_404_NOT_FOUND
-    if isinstance(exc, domain_errors.ConflictError):
-        return http_status.HTTP_409_CONFLICT
-    if isinstance(exc, domain_errors.InternalError):
-        return http_status.HTTP_500_INTERNAL_SERVER_ERROR
-    return http_status.HTTP_400_BAD_REQUEST
-
-
-def _domain_code(exc: domain_errors.DomainError) -> str:
-    if exc.code:
-        return exc.code
-    if isinstance(exc, domain_errors.BadRequestError):
+def _default_code_for_status(status_code: int) -> str:
+    if status_code == http_status.HTTP_400_BAD_REQUEST:
         return "bad_request"
-    if isinstance(exc, domain_errors.UnauthorizedError):
+    if status_code == http_status.HTTP_401_UNAUTHORIZED:
         return "unauthorized"
-    if isinstance(exc, domain_errors.ForbiddenError):
+    if status_code == http_status.HTTP_403_FORBIDDEN:
         return "forbidden"
-    if isinstance(exc, domain_errors.NotFoundError):
+    if status_code == http_status.HTTP_404_NOT_FOUND:
         return "not_found"
-    if isinstance(exc, domain_errors.ConflictError):
+    if status_code == http_status.HTTP_409_CONFLICT:
         return "conflict"
-    if isinstance(exc, domain_errors.InternalError):
+    if status_code == http_status.HTTP_422_UNPROCESSABLE_ENTITY:
+        return "validation_error"
+    if status_code >= 500:
         return "internal_error"
-    return "domain_error"
+    return "http_error"
 
 
 def _http_exception_content(exc: starlette_exceptions.HTTPException) -> dict[str, tp.Any]:
+    """Convert ``HTTPException.detail`` (string or dict) into the envelope."""
+
     detail = exc.detail
     if isinstance(detail, dict):
-        code = str(detail.get("code") or "http_error")
+        code = str(detail.get("code") or _default_code_for_status(exc.status_code))
         message = str(detail.get("message") or detail.get("detail") or "Request failed")
         meta = detail.get("meta")
-        return build_error_content(code=code, message=message, meta=tp.cast(dict[str, tp.Any] | None, meta))
+        return build_error_content(
+            code=code,
+            message=message,
+            meta=tp.cast(dict[str, tp.Any] | None, meta),
+        )
 
     message = str(detail) if detail is not None else "Request failed"
-    default_code = "http_error"
-    if exc.status_code == http_status.HTTP_401_UNAUTHORIZED:
-        default_code = "unauthorized"
-    elif exc.status_code == http_status.HTTP_403_FORBIDDEN:
-        default_code = "forbidden"
-    elif exc.status_code == http_status.HTTP_404_NOT_FOUND:
-        default_code = "not_found"
-    return build_error_content(code=default_code, message=message)
+    return build_error_content(
+        code=_default_code_for_status(exc.status_code),
+        message=message,
+    )
 
 
 def register_exception_handlers(app: fastapi.FastAPI) -> None:
-    @app.exception_handler(domain_errors.DomainError)
-    async def domain_error_handler(
-        request: fastapi.Request,  # noqa: ARG001
-        exc: domain_errors.DomainError,
-    ) -> fastapi_responses.JSONResponse:
-        payload = build_error_content(
-            code=_domain_code(exc),
-            message=exc.message,
-            meta=exc.meta or None,
-        )
-        return fastapi_responses.JSONResponse(
-            status_code=_status_code(exc),
-            content=payload,
-        )
+    """Install the three exception handlers used by the application."""
 
     @app.exception_handler(starlette_exceptions.HTTPException)
     async def http_exception_handler(
@@ -137,11 +118,18 @@ def register_exception_handlers(app: fastapi.FastAPI) -> None:
         if core_config.settings.DEBUG:
             meta["body"] = body
 
-        logger.warning("request_validation_error", extra={"path": request.url.path, "errors": errors})
+        logger.warning(
+            "request_validation_error",
+            extra={"path": request.url.path, "errors": errors},
+        )
 
         return fastapi_responses.JSONResponse(
             status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content=build_error_content(code="validation_error", message="Validation error", meta=meta),
+            content=build_error_content(
+                code="validation_error",
+                message="Validation error",
+                meta=meta,
+            ),
         )
 
     @app.exception_handler(Exception)
@@ -151,7 +139,7 @@ def register_exception_handlers(app: fastapi.FastAPI) -> None:
     ) -> fastapi_responses.JSONResponse:
         logger.exception("unhandled_exception")
 
-        # Keep response stable and non-leaky; details can be exposed only in DEBUG.
+        # Hide internals in production; expose them in DEBUG to ease diagnosis.
         meta: dict[str, tp.Any] | None = None
         if core_config.settings.DEBUG:
             meta = {"exception": type(exc).__name__, "detail": str(exc)}
@@ -164,4 +152,3 @@ def register_exception_handlers(app: fastapi.FastAPI) -> None:
                 meta=meta,
             ),
         )
-

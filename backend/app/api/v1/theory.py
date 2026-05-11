@@ -1,16 +1,17 @@
 """
-Theory content endpoints (subjects/sections/subsections/materials).
+Theory content endpoints (subjects / sections / subsections / materials).
 """
 
 import fastapi
 
 from app.api import dependencies as deps
+from app.api import http_errors
 from app.api import pagination as api_pagination
 from app.models import users as user_models
 from app.schemas import pagination as pagination_schemas
 from app.schemas import theory as theory_schemas
+from app.services import exceptions as service_exceptions
 from app.services import theory as theory_service_module
-
 
 router = fastapi.APIRouter()
 
@@ -21,6 +22,7 @@ async def list_subjects(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
     theory_service: theory_service_module.TheoryService = fastapi.Depends(deps.get_theory_service),
 ):
+    """Return all active subjects."""
     items = await theory_service.list_subjects(skip=pagination.skip, limit=pagination.limit)
     total = await theory_service.count_subjects()
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
@@ -32,7 +34,11 @@ async def get_subject(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
     theory_service: theory_service_module.TheoryService = fastapi.Depends(deps.get_theory_service),
 ):
-    return await theory_service.get_subject(subject_id)
+    """Return a subject by id."""
+    result = await theory_service.get_subject(subject_id)
+    if result is None:
+        raise http_errors.not_found("Subject not found")
+    return result
 
 
 @router.get(
@@ -45,8 +51,11 @@ async def list_sections(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
     theory_service: theory_service_module.TheoryService = fastapi.Depends(deps.get_theory_service),
 ):
+    """Return sections for a subject."""
     items = await theory_service.list_sections(subject_id, skip=pagination.skip, limit=pagination.limit)
     total = await theory_service.count_sections(subject_id)
+    if items is None or total is None:
+        raise http_errors.not_found("Subject not found")
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
 
 
@@ -60,8 +69,11 @@ async def list_subsections(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
     theory_service: theory_service_module.TheoryService = fastapi.Depends(deps.get_theory_service),
 ):
+    """Return subsections for a section."""
     items = await theory_service.list_subsections(section_id, skip=pagination.skip, limit=pagination.limit)
     total = await theory_service.count_subsections(section_id)
+    if items is None or total is None:
+        raise http_errors.not_found("Section not found")
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
 
 
@@ -75,13 +87,13 @@ async def list_materials(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
     theory_service: theory_service_module.TheoryService = fastapi.Depends(deps.get_theory_service),
 ):
+    """Return theory materials for a subsection."""
     items = await theory_service.list_materials(
-        subsection_id,
-        user=current_user,
-        skip=pagination.skip,
-        limit=pagination.limit,
+        subsection_id, user=current_user, skip=pagination.skip, limit=pagination.limit,
     )
     total = await theory_service.count_materials(subsection_id, user=current_user)
+    if items is None or total is None:
+        raise http_errors.not_found("Subsection not found")
     return pagination_schemas.Page(items=items, total=total, skip=pagination.skip, limit=pagination.limit)
 
 
@@ -91,5 +103,13 @@ async def get_material(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
     theory_service: theory_service_module.TheoryService = fastapi.Depends(deps.get_theory_service),
 ):
-    return await theory_service.get_material(material_id, user=current_user)
-
+    """Return a theory material; students cannot access unpublished materials."""
+    try:
+        result = await theory_service.get_material(material_id, user=current_user)
+    except service_exceptions.ServiceError as exc:
+        if exc.code == "unpublished":
+            raise http_errors.forbidden(exc.message, code=exc.code)
+        raise
+    if result is None:
+        raise http_errors.not_found("Theory material not found")
+    return result

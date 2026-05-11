@@ -1,5 +1,9 @@
 """
 WebSocket authentication helpers.
+
+Failures are signalled via :class:`ServiceError` from the services layer.
+The WebSocket entry point catches it and translates to a closing frame with
+a structured payload.
 """
 
 import logging
@@ -8,9 +12,9 @@ import fastapi
 from sqlalchemy.ext import asyncio as sa_asyncio
 
 from app.core import security as core_security
-from app.domain import errors as domain_errors
 from app.models import users as user_models
 from app.repositories import user as user_repository
+from app.services import exceptions as service_exceptions
 
 
 logger = logging.getLogger("app.realtime.auth")
@@ -40,37 +44,45 @@ async def require_current_user(
 ) -> user_models.User:
     token = extract_websocket_token(websocket)
     if not token:
-        raise domain_errors.UnauthorizedError("Missing token")
+        raise service_exceptions.ServiceError("Missing token", code="unauthorized")
 
     payload = core_security.decode_access_token(token)
     if not payload:
-        raise domain_errors.UnauthorizedError("Invalid or expired token")
+        raise service_exceptions.ServiceError(
+            "Invalid or expired token", code="unauthorized",
+        )
 
     user_id_str = payload.get("sub")
     if not user_id_str:
-        raise domain_errors.UnauthorizedError("Invalid token payload")
+        raise service_exceptions.ServiceError(
+            "Invalid token payload", code="unauthorized",
+        )
 
     try:
         user_id = int(user_id_str)
     except Exception:
-        raise domain_errors.UnauthorizedError("Invalid user ID in token")
+        raise service_exceptions.ServiceError(
+            "Invalid user ID in token", code="unauthorized",
+        )
 
     repo = user_repository.UserRepository(db)
     user = await repo.get_by_id(user_id)
     if not user:
-        raise domain_errors.NotFoundError("User not found")
+        raise service_exceptions.ServiceError("User not found", code="not_found")
     if not user.is_active:
-        raise domain_errors.ForbiddenError("User account is inactive")
+        raise service_exceptions.ServiceError(
+            "User account is inactive", code="forbidden",
+        )
 
     token_role = payload.get("role")
     if token_role is None:
-        raise domain_errors.UnauthorizedError("Token missing role", code="token_missing_role")
+        raise service_exceptions.ServiceError(
+            "Token missing role", code="token_missing_role",
+        )
     if str(token_role) != str(user.role):
-        raise domain_errors.UnauthorizedError(
-            "Role changed, please re-authenticate",
-            code="role_changed",
+        raise service_exceptions.ServiceError(
+            "Role changed, please re-authenticate", code="role_changed",
         )
 
     logger.debug("ws_user_authenticated", extra={"user_id": user.id})
     return user
-
