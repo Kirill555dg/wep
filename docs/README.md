@@ -19,6 +19,8 @@
 ### Разработчикам
 
 - [Быстрый старт](developer/getting-started.md)
+- [Backend - руководство разработчика](developer/backend-guide.md)
+- [Frontend - руководство разработчика](developer/frontend-guide.md)
 - [Архитектура системы](architecture/system-overview.md)
 - [Backend архитектура](architecture/backend.md)
 - [Frontend архитектура](architecture/frontend.md)

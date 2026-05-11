@@ -130,3 +130,5 @@ open http://localhost:5173
 - [Структура backend](../architecture/backend.md)
 - [Структура frontend](../architecture/frontend.md)
 - [Работа с API](../api/rest-api.md)
+- [Backend - руководство разработчика](backend-guide.md)
+- [Frontend - руководство разработчика](frontend-guide.md)
