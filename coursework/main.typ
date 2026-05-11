@@ -78,9 +78,8 @@
   block(breakable: false, below: const.leading-one, { it })
 }
 #show figure.where(kind: raw): it => {
-  set par(justify: false)
-  align(left, it.caption)
   block(breakable: false, below: const.leading-one, {
+    align(left, it.caption)
     set text(size: const.text-size.small)
     table(
       columns: (1fr,),
@@ -106,6 +105,4 @@
 #include "content/05-conclusion.typ"
 
 #bibliography("refs.yaml")
-
-#include "content/06-appendixes.typ"
 

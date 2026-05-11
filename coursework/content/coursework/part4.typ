@@ -17,7 +17,14 @@
 /api/v1/theory/     – теоретические материалы
 ```
 
-При проектировании API соблюдаются стандартные принципы REST @alpatov2024. Каждый обработчик выполняет единственную задачу: валидирует входные данные через Pydantic-схему, вызывает сервис и транслирует результат в HTTP-ответ. Пример эндпоинтов аутентификации приведён в листинге @auth-endpoint-example.
+При проектировании API соблюдаются стандартные принципы REST @alpatov2024. Взаимодействие строится вокруг ресурсов, доступ к которым осуществляется через стандартные HTTP-методы (GET, POST, PATCH, DELETE). Принцип взаимодействия между клиентом и сервером посредством REST API проиллюстрирован на рисунке @rest-api-principle.
+
+#figure(
+  image("../../assets/rest-api-principle.png", width: 85%),
+  caption: [Принцип взаимодействия через REST API],
+) <rest-api-principle>
+
+Каждый обработчик выполняет единственную задачу: валидирует входные данные через Pydantic-схему, вызывает сервис и транслирует результат в HTTP-ответ. Пример эндпоинта аутентификации приведён в листинге @auth-endpoint-example.
 
 #figure(
   ```python
@@ -93,38 +100,30 @@
   caption: [Реализация сервиса аутентификации],
 ) <auth-service-example>
 
-Сервис TestingService реализует ключевой сценарий автоматической проверки ответов студента (листинг @testing-service-example).
+Сервис TestingService реализует ключевой сценарий автоматической проверки ответов студента. Код соответствующего фрагмента приведён в листинге @testing-service-example.
 
 #figure(
   ```python
-  # app/services/testing.py – метод submit_answer
+  # app/services/testing.py — фрагмент метода submit_answer
   async def submit_answer(
       self, answer_data: AnswerSubmit, student_user_id: int,
   ) -> StatisticsResponse:
-      student = await self.student_repo.get_by_user_id(student_user_id)
-      if not student:
-          raise ServiceError("Only students can submit answers", code="forbidden")
-
-      homework = await self.homework_repo.get_by_id(answer_data.homework_id)
-      problem  = await self.problem_repo.get_by_id(answer_data.problem_id)
-      if not homework or not problem:
-          raise ServiceError("Homework or problem not found", code="not_found")
-
-      hw_problems = await self.hw_problem_repo.get_by_homework(answer_data.homework_id)
-      hw_problem = next(
-          (hp for hp in hw_problems if hp.problem_id == answer_data.problem_id), None
-      )
-      if not hw_problem:
-          raise ServiceError("Problem not in this homework", code="problem_not_in_homework")
+      # ... [Проверка прав доступа, существования задачи и её принадлежности к ДЗ] ...
 
       stats = await self.stats_repo.get_or_create_stats(
           student.id, answer_data.homework_id, homework.max_score,
       )
+      
+      # Автоматическая проверка ответа студента
       is_correct = self._check_answer(answer_data.answer, problem.correct_answer)
+      
+      # Начисление баллов с ограничением по максимальному баллу
       new_score = (
           min(stats.score + hw_problem.points, stats.max_score) if is_correct
           else stats.score
       )
+      
+      # Фиксация попытки и затраченного времени
       updated = await self.stats_repo.update(stats.id, {
           "score": new_score, "status": "in_progress",
           "attempts_count": stats.attempts_count + 1,
@@ -136,7 +135,7 @@
       if not correct: return False
       return student.strip().lower() == correct.strip().lower()
   ```,
-  caption: [Реализация автоматической проверки ответа],
+  caption: [Фрагмент реализации автоматической проверки ответа],
 ) <testing-service-example>
 
 == Слой безопасности
@@ -179,7 +178,14 @@
 
 == Клиентское представление
 
-Клиентская часть платформы реализована на React 18 с TypeScript @react-docs. Архитектура фронтенда построена по методологии Feature-Sliced Design (FSD) @fsd-docs, которая структурирует код в шесть слоёв по убыванию области ответственности:
+Клиентская часть платформы реализована на React 18 с TypeScript @react-docs. Архитектура фронтенда построена по методологии Feature-Sliced Design (FSD) @fsd-docs, которая структурирует код в шесть слоёв по убыванию области ответственности. Принципиальная схема данной методологии представлена на рисунке @fsd-architecture.
+
+#figure(
+  image("../../assets/fsd-architecture.png", width: 80%),
+  caption: [Схема слоёв методологии Feature-Sliced Design],
+) <fsd-architecture>
+
+В рамках проекта слои распределены следующим образом:
 
 ```
 src/
@@ -193,7 +199,7 @@ src/
 
 Взаимодействие с сервером ведётся через axios-клиент в `shared/api/axios.ts`. Серверный контракт описан в файле `openapi.json`, генерируемом бэкенд-командой `python -m app.scripts.export_openapi`. Управление серверным состоянием реализовано через TanStack Query v4, локальное состояние – через Zustand. Формы валидируются с помощью react-hook-form и zod. UI построен на примитивах Radix UI и стилизован через Tailwind CSS.
 
-На рисунках @ui-classrooms и @ui-lesson показан интерфейс основных страниц системы.
+На рисунках @ui-classrooms, @ui-lesson и @ui-testing показан интерфейс основных страниц системы.
 
 #figure(
   rect(width: 100%, height: 6cm, fill: luma(230))[
@@ -208,6 +214,13 @@ src/
   ],
   caption: [Страница урока с домашним заданием для студента],
 ) <ui-lesson>
+
+#figure(
+  rect(width: 100%, height: 6cm, fill: luma(230))[
+    #align(center + horizon)[_Скриншот: результаты тестирования_]
+  ],
+  caption: [Интерфейс отображения результатов автоматического тестирования],
+) <ui-testing>
 
 Связь фронтенда с бэкендом реализована через единый API-контракт OpenAPI: изменение серверного эндпоинта отражается в спецификации и может быть подхвачено кодогенерацией на стороне клиента, что обеспечивает согласованность интерфейсов без ручной синхронизации.
 
