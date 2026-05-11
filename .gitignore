@@ -1,0 +1,56 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+.opencode/
+coursework/
+
+# Python (Backend)
+apps/backend/__pycache__/
+apps/backend/**/__pycache__/
+apps/backend/.pytest_cache/
+apps/backend/.mypy_cache/
+apps/backend/.ruff_cache/
+apps/backend/venv/
+apps/backend/.venv/
+apps/backend/**/*.pyc
+apps/backend/**/*.pyo
+apps/backend/**/*.pyd
+apps/backend/.coverage
+apps/backend/htmlcov/
+apps/backend/**/*.egg-info/
+
+# Node (Frontend)
+apps/frontend/node_modules/
+apps/frontend/dist/
+apps/frontend/.vite/
+apps/frontend/.cache/
+apps/frontend/coverage/
+
+# Docker
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backups
+*.bak
+*.backup
+
+# Temporary files
+*.tmp
+*.temp
