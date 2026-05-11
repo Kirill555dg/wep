@@ -4,17 +4,17 @@
 
 == Реализация REST API на FastAPI
 
-Серверная часть реализована на Python 3.12+ с использованием FastAPI @fastapi-docs @eliseev2024. Все маршруты сгруппированы по функциональным областям и зарегистрированы единым корневым роутером в `app/api/v1/__init__.py`:
+Серверная часть реализована на Python (версия 3.12+) с использованием FastAPI @fastapi-docs @eliseev2024. Все маршруты сгруппированы по функциональным областям и зарегистрированы единым корневым роутером в `app/api/v1/__init__.py`:
 
 ```
-/api/v1/auth/       — аутентификация и управление ролями
-/api/v1/classrooms/ — классы, приглашения, чат, WebSocket
-/api/v1/lessons/    — уроки
-/api/v1/homework/   — домашние задания
-/api/v1/problems/   — база задач
-/api/v1/testing/    — приём ответов, автопроверка
-/api/v1/statistics/ — прогресс и статистика
-/api/v1/theory/     — теоретические материалы
+/api/v1/auth/       – аутентификация и управление ролями
+/api/v1/classrooms/ – классы, приглашения, чат, WebSocket
+/api/v1/lessons/    – уроки
+/api/v1/homework/   – домашние задания
+/api/v1/problems/   – база задач
+/api/v1/testing/    – приём ответов, автопроверка
+/api/v1/statistics/ – прогресс и статистика
+/api/v1/theory/     – теоретические материалы
 ```
 
 При проектировании API соблюдаются стандартные принципы REST @alpatov2024. Каждый обработчик выполняет единственную задачу: валидирует входные данные через Pydantic-схему, вызывает сервис и транслирует результат в HTTP-ответ. Пример эндпоинтов аутентификации приведён в листинге @auth-endpoint-example.
@@ -22,18 +22,6 @@
 #figure(
   ```python
   # app/api/v1/auth.py
-  @router.post("/register", response_model=UserResponse, status_code=201)
-  async def register(
-      user_data: UserCreate,
-      auth_service: AuthService = Depends(deps.get_auth_service),
-  ) -> UserResponse:
-      try:
-          return await auth_service.register_user(user_data)
-      except ServiceError as exc:
-          if exc.code == "email_taken":
-              raise http_errors.bad_request(exc.message, code=exc.code)
-          raise
-
   @router.post("/login", response_model=TokenResponse)
   async def login(
       credentials: LoginRequest,
@@ -49,10 +37,10 @@
           raise http_errors.unauthorized("Invalid username/email or password")
       return token
   ```,
-  caption: [Реализация эндпоинтов аутентификации],
+  caption: [Реализация эндпоинта аутентификации],
 ) <auth-endpoint-example>
 
-Листинг демонстрирует принцип явной обработки ошибок: обработчик знает семантику каждого кода и выбирает HTTP-статус сам, без скрытой машинерии. Если возникает незнакомое исключение — ответ 500, что сигнализирует об ошибке на стороне сервера.
+Листинг демонстрирует принцип явной обработки ошибок: обработчик знает семантику каждого кода и выбирает HTTP-статус самостоятельно. Незнакомое исключение не перехватывается – ответ 500 сигнализирует об ошибке на стороне сервера.
 
 == Реализация сервисного слоя
 
@@ -109,7 +97,7 @@
 
 #figure(
   ```python
-  # app/services/testing.py — метод submit_answer
+  # app/services/testing.py – метод submit_answer
   async def submit_answer(
       self, answer_data: AnswerSubmit, student_user_id: int,
   ) -> StatisticsResponse:
@@ -155,13 +143,15 @@
 
 Безопасность реализована на двух уровнях: хеширование паролей и аутентификация через JWT.
 
-Пароли хешируются алгоритмом Argon2id — устойчивым к атакам с использованием GPU и ASIC, рекомендованным для хранения учётных данных @hoffman2021. JWT-токены формируются с кратким сроком действия и содержат идентификатор пользователя и активную роль, что позволяет обнаруживать смену роли без обращения к базе данных.
+Пароли хешируются алгоритмом Argon2id – устойчивым к атакам с использованием GPU и ASIC, рекомендованным для хранения учётных данных @hoffman2021. JWT-токены формируются с кратким сроком действия и содержат идентификатор пользователя и активную роль, что позволяет обнаруживать смену роли без обращения к базе данных.
 
 #figure(
   ```python
   # app/core/security.py
+  _MEMORY_COST_KIB = 1024 * 64  # 64 MB
+
   ph = argon2.PasswordHasher(
-      time_cost=2, memory_cost=65536,  # 64 MB
+      time_cost=2, memory_cost=_MEMORY_COST_KIB,
       parallelism=1, hash_len=32, salt_len=16,
   )
 
@@ -181,7 +171,7 @@
 
 == Управление конфигурацией и запуск
 
-Конфигурация приложения хранится в переменных окружения, загружаемых через `pydantic-settings` @pydantic-docs. Точка входа (`app/main.py`) подключает middleware (CORS, `RequestIdMiddleware`), глобальные обработчики ошибок и API-роутер с префиксом `/api/v1`. При наличии `REDIS_URL` в момент старта инициализируется Redis Pub/Sub-брокер для многоэкземплярного WebSocket-чата; без него приложение стартует без realtime-компонента. Swagger UI доступен по адресу `/api/docs`, OpenAPI JSON — по `/api/openapi.json`. Листинги основных конфигурационных файлов и точки входа вынесены в приложение А.
+Конфигурация приложения хранится в переменных окружения, загружаемых через `pydantic-settings` @pydantic-docs. Точка входа (`app/main.py`) подключает middleware (CORS, `RequestIdMiddleware`), глобальные обработчики ошибок и API-роутер с префиксом `/api/v1`. При наличии `REDIS_URL` в момент старта инициализируется Redis Pub/Sub-брокер для многоэкземплярного WebSocket-чата; без него приложение стартует без realtime-компонента. Swagger UI доступен по адресу `/api/docs`, OpenAPI JSON – по `/api/openapi.json`. Листинги основных конфигурационных файлов и точки входа вынесены в приложение А.
 
 == Тестируемость
 
@@ -193,15 +183,15 @@
 
 ```
 src/
-├── app/       — инициализация, провайдеры, роутинг
-├── pages/     — страницы (Login, Classrooms, Lesson, …)
-├── widgets/   — составные блоки (Header, Sidebar, ChatPanel)
-├── features/  — сценарии пользователя (JoinClassroom, SubmitAnswer, …)
-├── entities/  — доменные данные (Classroom, Lesson, User, Message)
-└── shared/    — переиспользуемые утилиты, UI-kit, HTTP-клиент
+├── app/       – инициализация, провайдеры, роутинг
+├── pages/     – страницы (Login, Classrooms, Lesson, ...)
+├── widgets/   – составные блоки (Header, Sidebar, ChatPanel)
+├── features/  – сценарии пользователя (JoinClassroom, SubmitAnswer, ...)
+├── entities/  – доменные данные (Classroom, Lesson, User, Message)
+└── shared/    – переиспользуемые утилиты, UI-kit, HTTP-клиент
 ```
 
-Взаимодействие с сервером ведётся через axios-клиент в `shared/api/axios.ts`. Серверный контракт описан в файле `openapi.json`, генерируемом бэкенд-командой `python -m app.scripts.export_openapi`. Управление серверным состоянием реализовано через TanStack Query v4, локальное состояние — через Zustand. Формы валидируются с помощью react-hook-form и zod. UI построен на примитивах Radix UI и стилизован через Tailwind CSS.
+Взаимодействие с сервером ведётся через axios-клиент в `shared/api/axios.ts`. Серверный контракт описан в файле `openapi.json`, генерируемом бэкенд-командой `python -m app.scripts.export_openapi`. Управление серверным состоянием реализовано через TanStack Query v4, локальное состояние – через Zustand. Формы валидируются с помощью react-hook-form и zod. UI построен на примитивах Radix UI и стилизован через Tailwind CSS.
 
 На рисунках @ui-classrooms и @ui-lesson показан интерфейс основных страниц системы.
 
@@ -221,6 +211,6 @@ src/
 
 Связь фронтенда с бэкендом реализована через единый API-контракт OpenAPI: изменение серверного эндпоинта отражается в спецификации и может быть подхвачено кодогенерацией на стороне клиента, что обеспечивает согласованность интерфейсов без ручной синхронизации.
 
-== Выводы по главе
+== Итоги разработки
 
-Реализована серверная часть на Python 3.12+ с использованием FastAPI, PostgreSQL и SQLAlchemy. REST API включает девять групп эндпоинтов, покрывающих все функциональные требования системы. Обработка ошибок построена явно: сервисы возвращают `None` для lookup-операций и поднимают `ServiceError` для командных сценариев; HTTP-статус выбирает маршрутизатор. Обеспечена безопасность: Argon2id для хранения паролей и JWT для аутентификации. Тестируемость архитектуры подтверждена набором автоматизированных тестов, работающих на уровне сервисного слоя без HTTP. Реализована клиентская часть на React + TypeScript по методологии Feature-Sliced Design, потребляющая REST API через OpenAPI-контракт.
+Реализована серверная часть на Python с использованием FastAPI, PostgreSQL и SQLAlchemy. REST API включает девять групп эндпоинтов, покрывающих все функциональные требования системы. Обработка ошибок построена явно: сервисы возвращают `None` для lookup-операций и поднимают `ServiceError` для командных сценариев; HTTP-статус выбирает маршрутизатор. Обеспечена безопасность: Argon2id для хранения паролей и JWT для аутентификации. Тестируемость архитектуры подтверждена набором автоматизированных тестов, работающих на уровне сервисного слоя без HTTP. Реализована клиентская часть на React + TypeScript по методологии Feature-Sliced Design, потребляющая REST API через OpenAPI-контракт.

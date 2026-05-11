@@ -18,14 +18,16 @@ from app.core import datetime_extensions as dte
 # Note: logger name is stable for config filters/formatters.
 logger = logging.getLogger("app.security")
 
-# Initialize Argon2 password hasher with recommended parameters
-# Argon2id is the recommended variant (hybrid of Argon2i and Argon2d)
+# Argon2id password hasher with recommended parameters.
+# Argon2id is the hybrid variant recommended for password hashing.
+_MEMORY_COST_KIB = 1024 * 64  # 64 MB
+
 ph = argon2.PasswordHasher(
-    time_cost=2,  # Number of iterations
-    memory_cost=65536,  # Memory usage in KiB (64 MB)
-    parallelism=1,  # Number of parallel threads
-    hash_len=32,  # Length of the hash in bytes
-    salt_len=16,  # Length of random salt in bytes
+    time_cost=2,
+    memory_cost=_MEMORY_COST_KIB,
+    parallelism=1,
+    hash_len=32,
+    salt_len=16,
 )
 
 

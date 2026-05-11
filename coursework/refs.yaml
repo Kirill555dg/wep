@@ -9,7 +9,7 @@ rosario2022:
   serial-number: "DOI\x3a\x0010.4018/978-1-6684-4706-2.ch003"
   url:
     value: https://doi.org/10.4018/978-1-6684-4706-2.ch003
-    date: 2025-11-29
+    date: 2026-05-11
   parent:
     type: Book
     title: Digital Active Methodologies for Educative Learning Management
@@ -27,7 +27,7 @@ ac-moscow2025:
   date: 2025
   url:
     value: https://ac.mos.ru/special-projects/moscow-school-students/
-    date: 2025-12-21
+    date: 2026-05-11
   language: ru-RU
   publisher:
     location: Москва
@@ -52,7 +52,7 @@ tumanova2023:
     organization: электронно-библиотечная система
     url:
       value: https://e.lanbook.com/book/398273
-      date: 2025-11-29
+      date: 2026-05-11
 
 kiseleva2017:
   type: Book
@@ -72,7 +72,7 @@ kiseleva2017:
     organization: электронно-библиотечная система
     url:
       value: https://e.lanbook.com/book/155149
-      date: 2025-11-30
+      date: 2026-05-11
 
 minakova2024:
   type: Book
@@ -92,14 +92,14 @@ minakova2024:
     organization: электронно-библиотечная система
     url:
       value: https://e.lanbook.com/book/414989
-      date: 2025-12-06
+      date: 2026-05-11
 
 fsd-docs:
   type: Web
   title: "Feature-Sliced Design: официальная документация"
   url:
     value: https://feature-sliced.github.io/documentation/ru/
-    date: 2025-12-06
+    date: 2026-05-11
   language: ru-RU
 
 vodyakho2022:
@@ -125,7 +125,7 @@ vodyakho2022:
     organization: электронно-библиотечная система
     url:
       value: https://e.lanbook.com/book/254624
-      date: 2025-12-07
+      date: 2026-05-11
 
 martin2021:
   type: Book
@@ -172,7 +172,7 @@ alpatov2024:
     organization: электронно-библиотечная система
     url:
       value: https://e.lanbook.com/book/457043
-      date: 2025-12-07
+      date: 2026-05-11
 
 eliseev2024:
   type: Book
@@ -194,7 +194,7 @@ eliseev2024:
     organization: электронно-библиотечная система
     url:
       value: https://e.lanbook.com/book/472310
-      date: 2025-12-07
+      date: 2026-05-11
 
 volk2025:
   type: Book
@@ -217,7 +217,7 @@ volk2025:
     organization: электронно-библиотечная система
     url:
       value: https://e.lanbook.com/book/499772
-      date: 2025-12-07
+      date: 2026-05-11
 
 tuzovsky2021:
   type: Book
@@ -270,9 +270,9 @@ fastapi-docs:
 
 python-docs:
   type: Web
-  title: Python 3.12 Documentation
+  title: Python 3 Documentation
   url:
-    value: https://docs.python.org/3.12/
+    value: https://docs.python.org/3/
     date: 2026-05-11
 
 stackoverflow2025:
@@ -280,8 +280,8 @@ stackoverflow2025:
   title: Stack Overflow Developer Survey 2025
   date: 2025
   url:
-    value: https://survey.stackoverflow.co/2025/technology#1-web-frameworks-and-technologies
-    date: 2025-12-07
+    value: https://survey.stackoverflow.co/2025/
+    date: 2026-05-11
 
 alembic-docs:
   type: Web
@@ -368,4 +368,4 @@ balanov2025:
     organization: электронно-библиотечная система
     url:
       value: https://e.lanbook.com/book/478178
-      date: 2025-12-07
+      date: 2026-05-11
