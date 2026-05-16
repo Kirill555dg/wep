@@ -9,19 +9,41 @@
 #let border = rgb("#a5a5a5")
 #let light = rgb("#f7f7f7")
 
+
 #show: university-theme.with(
   aspect-ratio: "16-9",
   progress-bar: false,
   header: none,
+  header-right: self => {
+    if self.is-first-slide {
+      return none
+    }
+    [
+      #image(logo, height: 2cm)
+    ]
+  },
   footer-columns: (1fr, 1fr, auto),
   footer-a: none,
   footer-b: none,
-  footer-c: none,
+  footer-c: self => {
+    if self.is-first-slide {
+      return none
+    }
+    [
+      #text(14pt, fill: primary)[
+        #pad(right: 0.5cm, bottom: 2cm)[
+          #align(right)[
+            #context utils.slide-counter.display()
+          ]
+        ]
+      ]
+    ]
+  },
   config-common(slide-level: 2),
   config-colors(
     primary: primary,
     secondary: primary,
-    tertiary: primary,
+    tertiary: rgb("#ffffff"),
     neutral-lightest: rgb("#ffffff"),
     neutral-darkest: primary,
   ),
@@ -34,6 +56,7 @@
     logo: none,
   ),
 )
+
 
 #set text(font: "Times New Roman", size: 20pt, fill: primary)
 #set block(above: auto, below: const.leading-one)
@@ -103,82 +126,6 @@
 ]
 
 
-#show: university-theme.with(
-  aspect-ratio: "16-9",
-  progress-bar: false,
-  header: none,
-  header-right: self => [
-    #image(logo, height: 2cm)
-  ],
-  footer-columns: (1fr, 1fr, auto),
-  footer-a: none,
-  footer-b: none,
-  footer-c: self => [
-    #text(14pt, fill: primary)[
-      #pad(right: 0.5cm, bottom: 2cm)[
-        #align(right)[
-          #context utils.slide-counter.display()
-        ]
-      ]
-    ]
-  ],
-  config-common(slide-level: 2),
-  config-colors(
-    primary: primary,
-    secondary: primary,
-    tertiary: primary,
-    neutral-lightest: rgb("#ffffff"),
-    neutral-darkest: primary,
-  ),
-  config-info(
-    title: [Серверная часть веб-приложения для управления образовательными курсами],
-    subtitle: [Курсовая работа по дисциплине «Бэкенд-разработка»],
-    author: [Миркин Кирилл Леонидович],
-    date: [Москва 2026],
-    institution: [РТУ МИРЭА, ИИТ, ИиППО],
-    logo: none,
-  ),
-)
-
-
-#set text(font: "Times New Roman", size: 20pt, fill: primary)
-#set block(above: auto, below: const.leading-one)
-#set par(leading: const.leading-one, spacing: const.leading-one)
-#set heading(numbering: none)
-#show heading: set par(justify: false, leading: const.leading-one)
-#show heading: set block(above: auto, below: const.leading-one)
-#show list: it => {
-  for child in it.children {
-    let marker = "–"
-    par[#marker#h(const.leading-one)#child.body]
-  }
-}
-#show table: it => {
-  set block(breakable: false)
-  show table.cell: cell => {
-    set align(if cell.y == 0 { center + horizon } else { left + top })
-    cell
-  }
-  it
-}
-#set table(stroke: const.stroke)
-#show figure: it => {
-  show figure.caption: set text(size: 14pt)
-  set par(justify: false, leading: const.leading-one)
-  block(breakable: false, below: const.leading-one, { it })
-}
-#show figure.where(kind: raw): it => {
-  block(breakable: false, below: const.leading-one, {
-    align(left, it.caption)
-    set text(size: 14pt)
-    table(
-      columns: (1fr,),
-      stroke: const.stroke,
-      align: left,
-      it.body,
-    )
-  })
-}
 
 == Цель и задачи работы
 #slide[
@@ -278,16 +225,16 @@
 #slide[
   #slide-title[Архитектура серверной части]
 
-  Система организована по принципам Clean Architecture: HTTP-слой делегирует выполнение сервисам, сервисы обращаются к репозиториям, а доступ к данным инкапсулирован на уровне ORM-моделей и PostgreSQL.
-  #fig(assets + "components-diagram.png", width: 50%)
+  Система организована по принципам Clean Architecture.
+  #fig(assets + "components-diagram.png", width: 57%)
 ]
 
 == Структура базы данных
 #slide[
   #slide-title[Структура базы данных]
 
-  Ключевые сущности: users, login_data, classrooms, lessons, homework, problems, statistics, chat и message. Схема поддерживает разделение ролей, переиспользуемую базу задач и хранение истории взаимодействия.
-  #fig(assets + "er-diagram.png", width: 60%)
+  Схема поддерживает разделение ролей, переиспользуемую базу задач и хранение истории взаимодействия.
+  #fig(assets + "er-diagram.png", width: 63%)
 ]
 
 == REST API и OpenAPI-контракт
@@ -298,15 +245,13 @@
     gutter: 0.8cm,
     [
       #list(
-        [группы эндпоинтов: auth, classrooms, lessons, homework, problems, testing, statistics, theory],
-        [единый префикс `/api/v1`],
+        [эндпоинты делятся на группы по функционалу],
         [автоматическая генерация OpenAPI-спецификации],
-        [единый контракт для backend и frontend],
+        [единый контракт между backend и frontend],
       )
     ],
     [
-
-      #fig(assets + "openapi-scheme.png", width: 75%)
+      #fig(assets + "openapi-scheme.png", width: 80%)
       OpenAPI-документация используется как машинно-читаемое описание интерфейса серверной части.
     ],
   )
@@ -342,8 +287,7 @@
 #slide[
   #slide-title[Ключевой сценарий: автоматическая проверка ответа]
   #grid(
-    columns: (1fr, 1fr),
-    gutter: 0.8cm,
+    columns: (1fr, 1.2fr),
     [
       #list(
         [проверка прав доступа студента],
@@ -369,13 +313,12 @@
 #slide[
   #slide-title[Тестирование серверной части]
   #grid(
-    columns: (1fr, 1fr),
-    gutter: 0.8cm,
+    columns: (1fr, 1.7fr),
     [
       #list(
         [pytest используется для автоматизированной проверки бизнес-логики],
         [каждый тест выполняется в отдельной схеме PostgreSQL],
-        [проверяются AuthService, ChatService, ProblemService, ResultService, TheoryService и realtime-модули],
+        [тесты подразделяются для каждого сервиса],
         [изолированное тестирование подтверждает корректность Clean Architecture],
       )
     ],
