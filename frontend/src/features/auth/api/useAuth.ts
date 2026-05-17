@@ -1,4 +1,5 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {toast} from '@/shared/hooks/use-toast';
 import {useUserStore} from '@/entities/user/model/store';
 import {
   loginApiV1AuthLoginPost,
@@ -17,6 +18,10 @@ export function useLogin() {
         setToken(res.data.access_token);
         setUser(res.data.user);
       }
+      toast({title: 'Вход выполнен'});
+    },
+    onError: (e: any) => {
+      toast({title: e.response?.data?.message || 'Ошибка', variant: 'destructive'});
     },
   });
 }
@@ -24,6 +29,12 @@ export function useLogin() {
 export function useRegister() {
   return useMutation({
     mutationFn: (data: UserCreate) => registerApiV1AuthRegisterPost(data),
+    onSuccess: () => {
+      toast({title: 'Вход выполнен'});
+    },
+    onError: (e: any) => {
+      toast({title: e.response?.data?.message || 'Ошибка', variant: 'destructive'});
+    },
   });
 }
 
