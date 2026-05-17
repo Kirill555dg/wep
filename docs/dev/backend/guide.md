@@ -210,7 +210,7 @@ uv run alembic downgrade -1
 
 ## Тестирование
 
-Подробный гайд: [docs/dev/testing.md](../testing.md)
+Подробный гайд: [testing.md](testing.md)
 
 ### Запуск
 
