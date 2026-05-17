@@ -210,6 +210,8 @@ uv run alembic downgrade -1
 
 ## Тестирование
 
+Подробный гайд: [docs/dev/testing.md](../testing.md)
+
 ### Запуск
 
 ```bash
