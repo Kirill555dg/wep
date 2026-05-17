@@ -42,6 +42,32 @@ services:
     networks:
       - wep_network
 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: wep_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-wep_user}:${POSTGRES_PASSWORD:-wep_password}@postgres:5432/${POSTGRES_DB:-wep_education}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      DEBUG: "false"
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-wep-media}
+      MINIO_PUBLIC_URL: http://localhost:9000
+      MINIO_SECURE: "false"
+    ports:
+      - "8023:8023"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - wep_network
+
 volumes:
   postgres_data:
     driver: local
