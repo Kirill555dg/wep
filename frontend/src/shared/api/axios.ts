@@ -28,6 +28,11 @@ axiosInstance.interceptors.response.use(
 );
 
 export async function request<T>(config: Parameters<typeof axiosInstance.request>[0]) {
-  const { data } = await axiosInstance.request<T>(config);
+  const cfg = { ...config } as Record<string, unknown>;
+  if (cfg.body !== undefined && cfg.data === undefined) {
+    cfg.data = cfg.body;
+    delete cfg.body;
+  }
+  const { data } = await axiosInstance.request<T>(cfg as Parameters<typeof axiosInstance.request>[0]);
   return data;
 }
