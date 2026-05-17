@@ -88,7 +88,7 @@ def upgrade() -> None:
         sa.Column("tag_id", sa.Integer, sa.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True),
     )
 
-    question_type = sa.Enum("single_choice", "multiple_choice", "text", "essay", name="questiontype")
+    question_type = sa.Enum("SINGLE_CHOICE", "MULTIPLE_CHOICE", "TEXT", "ESSAY", name="questiontype")
     op.create_table(
         "questions",
         sa.Column("id", sa.Integer, primary_key=True),
@@ -114,7 +114,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_options_question_id", "options", ["question_id"])
 
-    attempt_status = sa.Enum("in_progress", "completed", "expired", "abandoned", name="attemptstatus")
+    attempt_status = sa.Enum("IN_PROGRESS", "COMPLETED", "EXPIRED", "ABANDONED", name="attemptstatus")
     op.create_table(
         "attempts",
         sa.Column("id", sa.Integer, primary_key=True),
@@ -124,7 +124,7 @@ def upgrade() -> None:
         sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("score", sa.Integer, nullable=True),
         sa.Column("max_score", sa.Integer, nullable=True),
-        sa.Column("status", attempt_status, nullable=False, server_default="in_progress"),
+        sa.Column("status", attempt_status, nullable=False, server_default="IN_PROGRESS"),
     )
     op.create_index("ix_attempts_test_id", "attempts", ["test_id"])
     op.create_index("ix_attempts_user_id", "attempts", ["user_id"])

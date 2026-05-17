@@ -1,7 +1,3 @@
-"""
-Test constructor Pydantic schemas (DTOs)
-"""
-
 import datetime as dt
 
 import pydantic
@@ -38,8 +34,6 @@ class OptionUpdate(pydantic.BaseModel):
 
 
 class OptionResponse(pydantic.BaseModel):
-    """Option without is_correct — for test takers"""
-
     id: int
     text: str
     order_number: int
@@ -48,8 +42,6 @@ class OptionResponse(pydantic.BaseModel):
 
 
 class OptionAuthorResponse(OptionResponse):
-    """Option with is_correct — for test authors"""
-
     is_correct: bool
 
 
@@ -61,6 +53,7 @@ class QuestionCreate(pydantic.BaseModel):
     order_number: int = pydantic.Field(default=0, ge=0)
     points: int = pydantic.Field(default=1, ge=1)
     explanation: str | None = None
+    correct_answer: str | None = None
     image_url: str | None = None
     options: list[OptionCreate] = pydantic.Field(default_factory=list)
 
@@ -71,13 +64,12 @@ class QuestionUpdate(pydantic.BaseModel):
     order_number: int | None = pydantic.Field(None, ge=0)
     points: int | None = pydantic.Field(None, ge=1)
     explanation: str | None = None
+    correct_answer: str | None = None
     image_url: str | None = None
     options: list[OptionCreate] | None = None
 
 
 class QuestionResponse(pydantic.BaseModel):
-    """Question without is_correct on options — for test takers"""
-
     id: int
     question_type: QuestionType
     text: str
@@ -90,14 +82,13 @@ class QuestionResponse(pydantic.BaseModel):
 
 
 class QuestionAuthorResponse(pydantic.BaseModel):
-    """Question with is_correct on options — for authors"""
-
     id: int
     question_type: QuestionType
     text: str
     order_number: int
     points: int
     explanation: str | None
+    correct_answer: str | None
     image_url: str | None
     options: list[OptionAuthorResponse] = []
 
@@ -138,14 +129,10 @@ class TestResponse(pydantic.BaseModel):
 
 
 class TestDetailResponse(TestResponse):
-    """Test with full question list (for taking the test — no correct answers)"""
-
     questions: list[QuestionResponse] = []
 
 
 class TestAuthorDetailResponse(TestResponse):
-    """Test with full question list for the author (with correct answers)"""
-
     questions: list[QuestionAuthorResponse] = []
 
 
