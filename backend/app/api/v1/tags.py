@@ -1,37 +1,33 @@
-"""
-Tags API.
-"""
-
 import fastapi
-from fastapi import status as http_status
-from sqlalchemy.ext import asyncio as sa_asyncio
+import starlette.status as http_status
+import sqlalchemy.ext.asyncio as sa_asyncio
 
 from app.api import dependencies as deps
 from app.db import session as db_session
 from app.models import users as user_models
-from app.schemas.test_constructor import TagCreate, TagResponse
-from app.repositories.test_constructor import TagRepository
+from app.repositories import test_constructor as tc_repos
+from app.schemas import test_constructor as tc_schemas
 
 router = fastapi.APIRouter()
 
 
-def _get_tag_repo(db: sa_asyncio.AsyncSession = fastapi.Depends(db_session.get_db)) -> TagRepository:
-    return TagRepository(db)
+def _get_tag_repo(db: sa_asyncio.AsyncSession = fastapi.Depends(db_session.get_db)) -> tc_repos.TagRepository:
+    return tc_repos.TagRepository(db)
 
 
-@router.get("/", response_model=list[TagResponse])
+@router.get("/", response_model=list[tc_schemas.TagResponse])
 async def list_tags(
-    repo: TagRepository = fastapi.Depends(_get_tag_repo),
-) -> list[TagResponse]:
+    repo: tc_repos.TagRepository = fastapi.Depends(_get_tag_repo),
+) -> list[tc_schemas.TagResponse]:
     tags = await repo.get_all()
-    return [TagResponse.model_validate(t) for t in tags]
+    return [tc_schemas.TagResponse.model_validate(t) for t in tags]
 
 
-@router.post("/", response_model=TagResponse, status_code=http_status.HTTP_201_CREATED)
+@router.post("/", response_model=tc_schemas.TagResponse, status_code=http_status.HTTP_201_CREATED)
 async def create_tag(
-    data: TagCreate,
+    data: tc_schemas.TagCreate,
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
-    repo: TagRepository = fastapi.Depends(_get_tag_repo),
-) -> TagResponse:
+    repo: tc_repos.TagRepository = fastapi.Depends(_get_tag_repo),
+) -> tc_schemas.TagResponse:
     tag = await repo.get_or_create(data.name)
-    return TagResponse.model_validate(tag)
+    return tc_schemas.TagResponse.model_validate(tag)
