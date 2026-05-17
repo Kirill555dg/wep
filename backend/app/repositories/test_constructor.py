@@ -58,6 +58,7 @@ class TestRepository(BaseRepository[Test]):
                 orm.selectinload(Test.questions).selectinload(Question.options),
                 orm.selectinload(Test.test_tags).selectinload(TestTag.tag),
             )
+            .execution_options(populate_existing=True)
         )
         return tp.cast(Test | None, await self._scalar_one_or_none(stmt))
 
