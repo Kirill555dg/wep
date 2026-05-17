@@ -1,3 +1,4 @@
+import {useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {useCatalogSearch} from '@/features/catalog/api/useCatalog'
 import {Button} from '@/shared/ui/button'
@@ -8,7 +9,9 @@ import SearchBar from '@/widgets/search-bar/ui/SearchBar'
 
 export default function CatalogPage() {
   const navigate = useNavigate()
-  const {data: tests, isLoading} = useCatalogSearch()
+  const [q, setQ] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const {data: tests, isLoading} = useCatalogSearch(q, tags)
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -16,7 +19,7 @@ export default function CatalogPage() {
         <h1 className="text-2xl font-bold">Каталог тестов</h1>
         <Button onClick={() => navigate('/editor')}>Создать тест</Button>
       </div>
-      <SearchBar />
+      <SearchBar onSearch={(newQ, newTags) => { setQ(newQ); setTags(newTags) }} />
       {isLoading && <Loader />}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {(tests as any)?.data?.map((t: any) => (
