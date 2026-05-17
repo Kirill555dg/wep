@@ -53,7 +53,9 @@ API docs: http://localhost:8023/api/docs
 |------|-----------|
 | `requirements.txt` | Runtime зависимости (попадают в Docker-образ) |
 | `requirements-dev.txt` | Тестирование, линтинг (только локально / CI) |
-| `pyproject.toml` | Настройки инструментов: ruff, mypy, pytest |
+| `.ruff.toml` | Настройки ruff |
+| `mypy.ini` | Настройки mypy |
+| `pytest.ini` | Настройки pytest |
 
 Добавить runtime-зависимость → `requirements.txt`. Dev-only → `requirements-dev.txt`.
 
@@ -106,7 +108,9 @@ backend/
 ├── tests/                        # Unit + сервисные + HTTP тесты
 ├── requirements.txt
 ├── requirements-dev.txt
-├── pyproject.toml                # Конфиг ruff / mypy / pytest
+├── .ruff.toml                   # Настройки ruff
+├── mypy.ini                     # Настройки mypy
+├── pytest.ini                   # Настройки pytest
 └── Dockerfile
 ```
 
@@ -254,23 +258,6 @@ tests/
 
 ---
 
-## Smoke test (production)
-
-Проверить инфраструктуру в продакшене без изменения данных:
-
-```bash
-# Из корня репозитория
-python tools/smoke_test.py
-
-# С нестандартным окружением
-DATABASE_URL=postgresql://... MINIO_ENDPOINT=... python tools/smoke_test.py
-```
-
-Проверяет: PostgreSQL (SELECT 1), MinIO (list_buckets), версию миграций, API health endpoint.
-Exit code: 0 = всё OK, 1 = есть проблемы.
-
----
-
 ## Деплой
 
 ### Локальный Docker Compose
@@ -313,4 +300,4 @@ uv run ruff check app/ --fix   # автоисправление
 uv run mypy app/               # проверка типов
 ```
 
-Настройки в `backend/pyproject.toml` (секции `[tool.ruff]`, `[tool.mypy]`).
+Настройки в `.ruff.toml` (линтер) и `mypy.ini` (типизация).

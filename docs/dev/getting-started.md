@@ -29,9 +29,7 @@ docker-compose up -d
 
 Доступ:
 - Backend: http://localhost:8023
-- Frontend: http://localhost:80
-- PostgreSQL: localhost:5432
-- Redis: localhost:6379
+- PostgreSQL: localhost:5433
 
 ## Вариант 2: Локальная разработка
 
@@ -40,23 +38,19 @@ docker-compose up -d
 ```bash
 cd backend
 
-# Создать виртуальное окружение
-python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate    # Windows
-
-# Установить зависимости
-pip install -r requirements.txt
+# Создать виртуальное окружение и установить зависимости
+uv venv
+uv pip install -r requirements.txt -r requirements-dev.txt
 
 # Настроить .env
 cp .env.example .env
 # Отредактировать DATABASE_URL и другие параметры
 
 # Применить миграции
-alembic upgrade head
+uv run alembic upgrade head
 
 # Запустить сервер
-uvicorn app.main:app --host 0.0.0.0 --port 8023 --reload
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8023 --reload
 ```
 
 Backend доступен на http://localhost:8023
@@ -126,9 +120,9 @@ open http://localhost:5173
 
 ## Следующие шаги
 
-- [Архитектура системы](../architecture/system-overview.md)
-- [Структура backend](../architecture/backend.md)
-- [Структура frontend](../architecture/frontend.md)
-- [Работа с API](../api/rest-api.md)
-- [Backend - руководство разработчика](backend-guide.md)
-- [Frontend - руководство разработчика](frontend-guide.md)
+- [Архитектура системы](system-overview.md)
+- [Backend архитектура](backend/arch.md)
+- [Frontend архитектура](frontend/arch.md)
+- [Rest API](api/rest-api.md)
+- [Backend — руководство разработчика](backend/guide.md)
+- [Frontend — руководство разработчика](frontend/guide.md)
