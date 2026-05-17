@@ -41,9 +41,11 @@ export function useRegister() {
 }
 
 export function useCurrentUser() {
+  const token = useUserStore((s) => s.token);
   return useQuery({
     queryKey: ['auth', 'me'],
     queryFn: () => getCurrentUserProfileApiV1AuthMeGet(),
     retry: false,
+    enabled: !!token,
   });
 }
