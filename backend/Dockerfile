@@ -1,6 +1,4 @@
-FROM python:3.12-slim
-
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+FROM ghcr.io/astral-sh/uv:debian-slim
 
 WORKDIR /app
 
@@ -8,11 +6,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libpq-dev gcc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY requirements.txt ./
 RUN uv pip install --system --no-cache -r requirements.txt
 
 COPY . .
 
 EXPOSE 8023
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8023"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8023"]

@@ -1,41 +1,21 @@
 # WEP Backend
 
-FastAPI backend для Web Education Platform.
+FastAPI backend (Clean Architecture: API → Service → Repository → ORM).
 
-## Технологии
+**Стек:** Python 3.12+, FastAPI, SQLAlchemy (async), Alembic, PostgreSQL, MinIO, uv.
 
-- Python 3.12+
-- FastAPI
-- PostgreSQL
-- SQLAlchemy (async)
-- Alembic (миграции)
-
-## Архитектура
-
-Clean Architecture:
-- API Layer (endpoints)
-- Service Layer (business logic)
-- Repository Layer (data access)
-- Models (ORM)
-
-## Установка
+## Быстрый старт
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate    # Windows
-
-pip install -r requirements.txt
-
+cd backend
 cp .env.example .env
-# Отредактировать .env
-
-alembic upgrade head
-
-uvicorn app.main:app --host 0.0.0.0 --port 8023 --reload
+uv venv && uv pip install -r requirements.txt -r requirements-dev.txt
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload --port 8023
 ```
 
-## API документация
+## Документация
 
-- Swagger UI: http://localhost:8023/api/docs
-- OpenAPI JSON: http://localhost:8023/api/openapi.json
+- [Backend — документация](../docs/dev/backend/)
+- [Быстрый старт окружения](../docs/dev/getting-started.md)
+- Swagger: http://localhost:8023/api/docs
