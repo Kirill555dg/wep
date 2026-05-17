@@ -11,12 +11,14 @@ import {LoginRequest, UserCreate} from '@/shared/api/client/testConstructorAPI.s
 export function useLogin() {
   const setToken = useUserStore((s) => s.setToken);
   const setUser = useUserStore((s) => s.setUser);
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: LoginRequest) => loginApiV1AuthLoginPost(data),
     onSuccess: (res) => {
       if ('data' in res && res.data.access_token) {
         setToken(res.data.access_token);
         setUser(res.data.user);
+        qc.invalidateQueries({queryKey: ['auth', 'me']});
       }
       toast({title: 'Вход выполнен'});
     },
@@ -30,7 +32,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: (data: UserCreate) => registerApiV1AuthRegisterPost(data),
     onSuccess: () => {
-      toast({title: 'Вход выполнен'});
+      toast({title: 'Регистрация выполнена'});
     },
     onError: (e: any) => {
       toast({title: e.response?.data?.message || 'Ошибка', variant: 'destructive'});
