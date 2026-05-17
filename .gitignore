@@ -1,4 +1,4 @@
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*.local
@@ -16,41 +16,43 @@ Thumbs.db
 .cursor/
 .opencode/
 
-# Python (Backend)
-apps/backend/__pycache__/
-apps/backend/**/__pycache__/
-apps/backend/.pytest_cache/
-apps/backend/.mypy_cache/
-apps/backend/.ruff_cache/
-apps/backend/venv/
-apps/backend/.venv/
-apps/backend/**/*.pyc
-apps/backend/**/*.pyo
-apps/backend/**/*.pyd
-apps/backend/.coverage
-apps/backend/htmlcov/
-apps/backend/**/*.egg-info/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
 
-# Node (Frontend)
-apps/frontend/node_modules/
-apps/frontend/dist/
-apps/frontend/.vite/
-apps/frontend/.cache/
-apps/frontend/coverage/
+# Hypothesis (stores example databases between runs)
+.hypothesis/
 
-# Docker
+# Node
+node_modules/
+dist/
+.vite/
+.cache/
+coverage/
+
+# Logs
 *.log
 
-# Database
+# Database files
 *.db
 *.sqlite
 *.sqlite3
 
-# Backups
+# Temp
 *.bak
 *.backup
-
-# Temporary files
 *.tmp
 *.temp
 AGENTS.md
