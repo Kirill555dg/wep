@@ -118,7 +118,42 @@ Services exposed:
 - `http://your-domain` — frontend (nginx static) + API proxy
 - `https://your-domain:9000` — MinIO (object storage, direct access)
 
-### Docker Compose Files
+## CI/CD
+
+GitHub Actions builds and pushes Docker images on every push to `prksp_coursework`.
+
+### Required Repository Secrets
+
+| Secret | How to get |
+|--------|------------|
+| `DOCKER_USERNAME` | Docker Hub username |
+| `DOCKER_PASSWORD` | Docker Hub access token (or password) |
+| `TELEGRAM_BOT_TOKEN` | Create bot via @BotFather, copy token |
+| `TELEGRAM_CHAT_ID` | Open chat with bot, call `https://api.telegram.org/bot<TOKEN>/getUpdates`, find `message.chat.id` |
+
+Add secrets in GitHub: *Settings → Secrets and variables → Actions → New repository secret*.
+
+### Docker Images
+
+| Image | Dockerfile | Tag |
+|-------|-----------|-----|
+| Backend | `backend/Dockerfile` | `<dockerhub-user>/test-constructor-backend:latest` |
+| Frontend | `frontend/Dockerfile.prod` | `<dockerhub-user>/test-constructor-frontend:latest` |
+
+### Manual push (without CI)
+
+```bash
+docker login
+cd backend && docker build -t <dockerhub-user>/test-constructor-backend:latest . && docker push <dockerhub-user>/test-constructor-backend:latest
+cd ../frontend && docker build -f Dockerfile.prod -t <dockerhub-user>/test-constructor-frontend:latest . && docker push <dockerhub-user>/test-constructor-frontend:latest
+```
+
+### Health Checks
+
+- Backend health: HTTP GET `/api/v1/health` — used by Docker Compose `healthcheck`
+- Frontend health: HTTP GET `/` — returns 200 when nginx serves static SPA
+
+## Docker Compose Files
 
 | File | Purpose |
 |------|---------|
