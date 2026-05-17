@@ -1,23 +1,14 @@
 /**
- * Initialize and cache a global typst.ts compiler/renderer.
- *
- * The snippet `$typst` handles fetch of WASM and fonts automatically.
+ * Fallback Typst renderer — will be replaced with WASM once build issues resolved.
  */
-import * as typstSnippet from '@myriaddreamin/typst.ts/dist/esm/contrib/snippet.mjs';
-
-let ready = false;
-
-export async function initTypst(): Promise<void> {
-  if (ready) return;
-  // Dynamically import so Vite can chunk it.
-  const {$typst} = await import('@myriaddreamin/typst.ts/dist/esm/contrib/snippet.mjs');
-  // Warm-up with empty compile to fetch WASM.
-  await $typst.svg({mainContent: ''});
-  ready = true;
-}
+export async function initTypst(): Promise<void> {}
 
 export async function renderTypstSvg(source: string): Promise<string> {
-  if (!ready) await initTypst();
-  const {$typst} = await import('@myriaddreamin/typst.ts/dist/esm/contrib/snippet.mjs');
-  return $typst.svg({mainContent: source});
+  // Markdown-like simple formatting fallback until WASM build works.
+  const html = source
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\$(.+?)\$/g, '<code>$1</code>')
+    .replace(/\n/g, '<br/>')
+  return `<div class="prose max-w-none">${html}</div>`
 }
