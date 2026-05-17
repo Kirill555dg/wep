@@ -9,11 +9,14 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const login = useLogin()
   const [form, setForm] = useState({username_or_email: '', password: ''})
+  const [error, setError] = useState('')
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     login.mutate(form, {
       onSuccess: () => navigate('/catalog'),
+      onError: (err: any) => setError(err.response?.data?.message || err.message),
     })
   }
 
@@ -24,6 +27,7 @@ export default function LoginPage() {
           <CardTitle>Вход</CardTitle>
         </CardHeader>
         <CardContent>
+          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
           <form onSubmit={submit} className="space-y-4">
             <Input placeholder="Email или логин" value={form.username_or_email} onChange={e => setForm(s => ({...s, username_or_email: e.target.value}))} />
             <Input placeholder="Пароль" type="password" value={form.password} onChange={e => setForm(s => ({...s, password: e.target.value}))} />
