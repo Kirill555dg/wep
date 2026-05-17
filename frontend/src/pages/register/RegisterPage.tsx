@@ -9,10 +9,15 @@ export default function RegisterPage() {
   const navigate = useNavigate()
   const register = useRegister()
   const [form, setForm] = useState({email: '', password: '', first_name: '', last_name: '', username: '', full_name: ''})
+  const [error, setError] = useState('')
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    register.mutate(form, {onSuccess: () => navigate('/login')})
+    setError('')
+    register.mutate(form, {
+      onSuccess: () => navigate('/login'),
+      onError: (err: any) => setError(err.response?.data?.message || err.message),
+    })
   }
 
   return (
@@ -20,6 +25,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader><CardTitle>Регистрация</CardTitle></CardHeader>
         <CardContent>
+          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
           <form onSubmit={submit} className="space-y-3">
             <Input placeholder="Email" type="email" value={form.email} onChange={e=>setForm(s=>({...s,email:e.target.value}))} />
             <Input placeholder="Пароль" type="password" value={form.password} onChange={e=>setForm(s=>({...s,password:e.target.value}))} />
