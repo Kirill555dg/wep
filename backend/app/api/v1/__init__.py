@@ -8,6 +8,7 @@ from app.api.v1 import attempts as attempts
 from app.api.v1 import auth as auth
 from app.api.v1 import catalog as catalog
 from app.api.v1 import health as health
+from app.api.v1 import media as media
 from app.api.v1 import stats as stats
 from app.api.v1 import tags as tags
 from app.api.v1 import tests as tests
@@ -21,3 +22,4 @@ api_router.include_router(catalog.router, prefix="/catalog", tags=["Catalog"])
 api_router.include_router(tags.router, prefix="/tags", tags=["Tags"])
 api_router.include_router(attempts.router, prefix="/attempts", tags=["Attempts"])
 api_router.include_router(stats.router, prefix="/stats", tags=["Stats"])
+api_router.include_router(media.router, prefix="/media", tags=["Media"])
