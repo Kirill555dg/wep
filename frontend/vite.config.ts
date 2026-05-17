@@ -1,25 +1,32 @@
-/// <reference types="vitest" />
-
-import { defineConfig } from "vite"
-import react from "@vitejs/plugin-react"
-import path from "path"
+/**
+ * Vite configuration for the Test Constructor frontend.
+ * Alias @/src is preserved; vite-plugin-wasm enables .wasm imports.
+ */
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import wasm from 'vite-plugin-wasm'
+import path from 'path'
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
+  plugins: [react(), wasm()],
   server: {
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8023',
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      '@': path.resolve(__dirname, 'src'),
     },
   },
   test: {
     globals: true,
-    environment: "jsdom",
-    setupFiles: "./vitest.setup.ts",
-    include: ["src/**/*.{test,spec}.{ts,tsx}"]
+    environment: 'jsdom',
+    setupFiles: './vitest.setup.ts',
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 })

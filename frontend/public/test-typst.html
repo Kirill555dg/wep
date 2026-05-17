@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Typst render test</title>
+</head>
+<body>
+  <h1>Typst Test</h1>
+  <p id="status">Loading...</p>
+  <div id="output"></div>
+  <script type="module">
+    import { renderTypstSvg } from '/src/shared/lib/typst.ts';
+    renderTypstSvg('Hello $x^2$ world!')
+      .then(svg => {
+        document.getElementById('status').textContent = 'OK';
+        document.getElementById('output').innerHTML = svg;
+        console.log('Typst rendered successfully');
+      })
+      .catch(err => {
+        document.getElementById('status').textContent = 'Error: ' + err.message;
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
