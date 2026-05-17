@@ -1,4 +1,10 @@
+import re
+
 from app.models import test_constructor as tc_models
+
+
+def _normalize_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip().lower())
 
 
 class GradingService:
@@ -58,6 +64,6 @@ class GradingService:
             return None, 0
         if not text_answer:
             return False, 0
-        if text_answer.strip().lower() == expected.strip().lower():
+        if _normalize_text(text_answer) == _normalize_text(expected):
             return True, question.points
         return False, 0

@@ -122,6 +122,7 @@ class Attempt(db_session.Base):
     user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     started_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, nullable=False)
     finished_at = sa.Column(sa.DateTime(timezone=True), nullable=True)
+    expires_at = sa.Column(sa.DateTime(timezone=True), nullable=True)
     score = sa.Column(sa.Integer, nullable=True)
     max_score = sa.Column(sa.Integer, nullable=True)
     status = sa.Column(sa.Enum(AttemptStatus), default=AttemptStatus.IN_PROGRESS, nullable=False)

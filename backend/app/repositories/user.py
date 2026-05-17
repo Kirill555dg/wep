@@ -34,14 +34,6 @@ class UserRepository(base_repo.BaseRepository[user_models.User]):
         )
         return tp.cast(user_models.User | None, await self._scalar_one_or_none(stmt))
 
-    async def get_with_profile(self, user_id: int) -> user_models.User | None:
-        stmt = (
-            sa.select(user_models.User)
-            .options(sqla_orm.joinedload(user_models.User.teacher), sqla_orm.joinedload(user_models.User.student))
-            .where(user_models.User.id == user_id)
-        )
-        return tp.cast(user_models.User | None, await self._scalar_one_or_none(stmt))
-
     async def get_active_users(self, skip: int = 0, limit: int = 100) -> list[user_models.User]:
         stmt = sa.select(user_models.User).where(user_models.User.is_active).offset(skip).limit(limit)
         return tp.cast(list[user_models.User], await self._scalars_all(stmt))
@@ -63,55 +55,3 @@ class LoginDataRepository(base_repo.BaseRepository[user_models.LoginData]):
         if not login_data:
             return None
         return await self.update(login_data.id, {"hashed_password": hashed_password})
-
-
-class TeacherRepository(base_repo.BaseRepository[user_models.Teacher]):
-    def __init__(self, db: sa_asyncio.AsyncSession):
-        super().__init__(user_models.Teacher, db)
-
-    async def get_by_user_id(self, user_id: int) -> user_models.Teacher | None:
-        stmt = sa.select(user_models.Teacher).where(user_models.Teacher.user_id == user_id)
-        return tp.cast(user_models.Teacher | None, await self._scalar_one_or_none(stmt))
-
-    async def get_with_user(self, teacher_id: int) -> user_models.Teacher | None:
-        stmt = (
-            sa.select(user_models.Teacher)
-            .options(sqla_orm.joinedload(user_models.Teacher.user))
-            .where(user_models.Teacher.id == teacher_id)
-        )
-        return tp.cast(user_models.Teacher | None, await self._scalar_one_or_none(stmt))
-
-    async def get_by_subject(self, subject: str, skip: int = 0, limit: int = 100) -> list[user_models.Teacher]:
-        stmt = (
-            sa.select(user_models.Teacher)
-            .where(user_models.Teacher.subject_specialization == subject)
-            .offset(skip)
-            .limit(limit)
-        )
-        return tp.cast(list[user_models.Teacher], await self._scalars_all(stmt))
-
-
-class StudentRepository(base_repo.BaseRepository[user_models.Student]):
-    def __init__(self, db: sa_asyncio.AsyncSession):
-        super().__init__(user_models.Student, db)
-
-    async def get_by_user_id(self, user_id: int) -> user_models.Student | None:
-        stmt = sa.select(user_models.Student).where(user_models.Student.user_id == user_id)
-        return tp.cast(user_models.Student | None, await self._scalar_one_or_none(stmt))
-
-    async def get_with_user(self, student_id: int) -> user_models.Student | None:
-        stmt = (
-            sa.select(user_models.Student)
-            .options(sqla_orm.joinedload(user_models.Student.user))
-            .where(user_models.Student.id == student_id)
-        )
-        return tp.cast(user_models.Student | None, await self._scalar_one_or_none(stmt))
-
-    async def get_by_grade_level(self, grade_level: int, skip: int = 0, limit: int = 100) -> list[user_models.Student]:
-        stmt = (
-            sa.select(user_models.Student)
-            .where(user_models.Student.grade_level == grade_level)
-            .offset(skip)
-            .limit(limit)
-        )
-        return tp.cast(list[user_models.Student], await self._scalars_all(stmt))

@@ -19,7 +19,7 @@ async def _register_and_login(client: httpx.AsyncClient, prefix: str = "u") -> s
     email = f"{prefix}_{_uid()}@test.com"
     await client.post("/api/v1/auth/register", json={
         "email": email, "password": "Pass1234!",
-        "first_name": "T", "last_name": "U", "role": "student",
+        "first_name": "T", "last_name": "U",
     })
     resp = await client.post("/api/v1/auth/login", json={"username_or_email": email, "password": "Pass1234!"})
     return resp.json()["access_token"]

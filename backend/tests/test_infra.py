@@ -13,7 +13,6 @@ import sqlalchemy.ext.asyncio as sa_asyncio
 
 from app.core import config as core_config
 from app.core import minio_client as minio_module
-from app.db import url as db_url
 
 pytestmark = pytest.mark.anyio
 
@@ -45,8 +44,8 @@ async def test_postgres_insert_and_read(db_session: sa_asyncio.AsyncSession) -> 
     username = f"u_{uuid.uuid4().hex[:8]}"
     await db_session.execute(
         sa.text(
-            "INSERT INTO users (username, email, first_name, last_name, full_name, role, is_active, created_at, updated_at) "
-            "VALUES (:u, :e, 'A', 'B', 'A B', 'student', true, now(), now())"
+            "INSERT INTO users (username, email, first_name, last_name, full_name, is_active, created_at, updated_at) "
+            "VALUES (:u, :e, 'A', 'B', 'A B', true, now(), now())"
         ),
         {"u": username, "e": f"{username}@test.com"},
     )
@@ -66,8 +65,8 @@ async def test_postgres_rollback_on_constraint_violation(db_session: sa_asyncio.
 
     await db_session.execute(
         sa.text(
-            "INSERT INTO users (username, email, first_name, last_name, full_name, role, is_active, created_at, updated_at) "
-            "VALUES (:u1, :e, 'A', 'B', 'A B', 'student', true, now(), now())"
+            "INSERT INTO users (username, email, first_name, last_name, full_name, is_active, created_at, updated_at) "
+            "VALUES (:u1, :e, 'A', 'B', 'A B', true, now(), now())"
         ),
         params,
     )
@@ -76,8 +75,8 @@ async def test_postgres_rollback_on_constraint_violation(db_session: sa_asyncio.
     with pytest.raises(sa_exc.IntegrityError):
         await db_session.execute(
             sa.text(
-                "INSERT INTO users (username, email, first_name, last_name, full_name, role, is_active, created_at, updated_at) "
-                "VALUES (:u2, :e, 'C', 'D', 'C D', 'teacher', true, now(), now())"
+                "INSERT INTO users (username, email, first_name, last_name, full_name, is_active, created_at, updated_at) "
+                "VALUES (:u2, :e, 'C', 'D', 'C D', true, now(), now())"
             ),
             params,
         )
@@ -145,4 +144,3 @@ async def test_minio_upload_image_and_url() -> None:
 
     assert url.startswith("http")
     assert ".png" in url
-    assert core_config.settings.MINIO_BUCKET in url

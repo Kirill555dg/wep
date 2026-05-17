@@ -14,10 +14,10 @@ from app.services.test_service import TestService
 pytestmark = pytest.mark.anyio
 
 
-async def _make_user(db, email: str = "u@test.com", role: str = "student") -> int:
+async def _make_user(db, email: str = "u@test.com") -> int:
     svc = AuthService(db)
     user = await svc.register_user(UserCreate(
-        email=email, password="Pass123!", first_name="T", last_name="U", role=role,
+        email=email, password="Pass123!", first_name="T", last_name="U",
     ))
     return user.id
 
@@ -151,7 +151,6 @@ async def test_add_question_not_author(db_session):
 
 
 async def test_delete_question(db_session):
-    from app.schemas.test_constructor import OptionCreate
     uid = await _make_user(db_session)
     svc = TestService(db_session)
     test = await svc.create_test(uid, TestCreate(title="T"))

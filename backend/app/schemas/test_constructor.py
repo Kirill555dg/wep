@@ -158,6 +158,7 @@ class AttemptResponse(pydantic.BaseModel):
     status: AttemptStatus
     started_at: dt.datetime
     finished_at: dt.datetime | None
+    expires_at: dt.datetime | None
     score: int | None
     max_score: int | None
 
@@ -203,6 +204,7 @@ class AttemptResultResponse(pydantic.BaseModel):
     max_score: int
     started_at: dt.datetime
     finished_at: dt.datetime | None
+    expires_at: dt.datetime | None
     answers: list[AttemptAnswerDetail] = []
 
 

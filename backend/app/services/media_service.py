@@ -33,4 +33,4 @@ async def upload_file(data: bytes, content_type: str) -> str:
         )
 
     await loop.run_in_executor(None, _upload)
-    return f"{core_config.settings.MINIO_PUBLIC_URL}/{bucket}/{key}"
+    return minio_module.presigned_get_url(key)

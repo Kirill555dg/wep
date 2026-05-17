@@ -54,7 +54,7 @@ async def _register_and_login(client: httpx.AsyncClient) -> str:
     email = f"fuzz_{uuid.uuid4().hex[:12]}@example.com"
     await client.post("/api/v1/auth/register", json={
         "email": email, "password": "FuzzPass1!",
-        "first_name": "F", "last_name": "Z", "role": "student",
+        "first_name": "F", "last_name": "Z",
     })
     resp = await client.post("/api/v1/auth/login", json={"username_or_email": email, "password": "FuzzPass1!"})
     return resp.json().get("access_token", "")
@@ -76,7 +76,7 @@ async def test_fuzz_register(
 ) -> None:
     resp = await http_client.post("/api/v1/auth/register", json={
         "email": email, "password": password,
-        "first_name": first_name, "last_name": last_name, "role": "student",
+        "first_name": first_name, "last_name": last_name,
     })
     assert resp.status_code in NEVER_500, f"500 on register: {resp.text}"
 

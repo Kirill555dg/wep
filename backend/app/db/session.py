@@ -1,7 +1,6 @@
 import os
 import typing as tp
 
-import sqlalchemy as sa
 import sqlalchemy.ext.asyncio as sa_asyncio
 import sqlalchemy.orm as sqla_orm
 import sqlalchemy.pool as sa_pool

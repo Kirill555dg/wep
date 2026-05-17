@@ -5,6 +5,7 @@ Tests for AttemptService (start, submit, finish, result)
 import pytest
 
 from app.models.test_constructor import AttemptStatus, QuestionType
+from app.repositories import test_constructor as tc_repos
 from app.schemas.test_constructor import AnswerSubmitRequest, OptionCreate, QuestionCreate, TestCreate
 from app.schemas.users import UserCreate
 from app.services.attempt_service import AttemptService
@@ -18,7 +19,7 @@ pytestmark = pytest.mark.anyio
 async def _make_user(db, email: str = "u@test.com") -> int:
     svc = AuthService(db)
     user = await svc.register_user(UserCreate(
-        email=email, password="Pass123!", first_name="T", last_name="U", role="student",
+        email=email, password="Pass123!", first_name="T", last_name="U",
     ))
     return user.id
 
@@ -133,3 +134,82 @@ async def test_get_result(db_session):
     result = await svc.get_result(attempt.id, user_id=uid)
     assert result.attempt_id == attempt.id
     assert result.test_title == "Quiz"
+
+
+async def test_start_attempt_sets_expires_at(db_session):
+    uid = await _make_user(db_session)
+    svc = TestService(db_session)
+    test = await svc.create_test(uid, TestCreate(title="Timed", time_limit_minutes=30))
+    attempt_svc = AttemptService(db_session)
+    attempt = await attempt_svc.start_attempt(test.id, user_id=uid)
+    assert attempt.expires_at is not None
+    assert attempt.expires_at > attempt.started_at
+
+
+async def test_start_attempt_no_time_limit(db_session):
+    uid = await _make_user(db_session)
+    test = await _make_test_with_questions(db_session, uid)
+    attempt_svc = AttemptService(db_session)
+    attempt = await attempt_svc.start_attempt(test.id, user_id=uid)
+    assert attempt.expires_at is None
+
+
+async def test_submit_answer_after_expiry_raises(db_session):
+    from app.core import datetime_extensions as dte
+    import datetime as dt
+    uid = await _make_user(db_session)
+    test = await _make_test_with_questions(db_session, uid)
+    # Create a past-expired attempt via the repo
+    attempt_repo = tc_repos.AttemptRepository(db_session)
+    attempt = await attempt_repo.create({
+        "test_id": test.id, "user_id": uid,
+        "started_at": dte.utc_now() - dt.timedelta(hours=1),
+        "expires_at": dte.utc_now() - dt.timedelta(minutes=1),
+        "status": AttemptStatus.IN_PROGRESS,
+    })
+    attempt_svc = AttemptService(db_session)
+    with pytest.raises(ServiceError) as exc:
+        await attempt_svc.submit_answer(attempt.id, uid, AnswerSubmitRequest(question_id=1))
+    assert exc.value.code == "attempt_expired"
+
+
+async def test_finish_attempt_sets_expired_status(db_session):
+    from app.core import datetime_extensions as dte
+    import datetime as dt
+    uid = await _make_user(db_session)
+    test = await _make_test_with_questions(db_session, uid)
+    attempt_repo = tc_repos.AttemptRepository(db_session)
+    attempt = await attempt_repo.create({
+        "test_id": test.id, "user_id": uid,
+        "started_at": dte.utc_now() - dt.timedelta(hours=1),
+        "expires_at": dte.utc_now() - dt.timedelta(minutes=1),
+        "status": AttemptStatus.IN_PROGRESS,
+    })
+    attempt_svc = AttemptService(db_session)
+    result = await attempt_svc.finish_attempt(attempt.id, uid)
+    assert result.status == AttemptStatus.EXPIRED
+
+
+async def test_text_grading_normalization(db_session):
+    from app.services.grading import _normalize_text
+    assert _normalize_text("  Hello   World  ") == "hello world"
+    assert _normalize_text("Hello\tWorld\n") == "hello world"
+    assert _normalize_text("  ") == ""
+    assert _normalize_text("") == ""
+
+
+async def test_expire_overdue_bulk(db_session):
+    from app.core import datetime_extensions as dte
+    import datetime as dt
+    uid = await _make_user(db_session)
+    test = await _make_test_with_questions(db_session, uid)
+    attempt_repo = tc_repos.AttemptRepository(db_session)
+    await attempt_repo.create({
+        "test_id": test.id, "user_id": uid,
+        "started_at": dte.utc_now() - dt.timedelta(hours=1),
+        "expires_at": dte.utc_now() - dt.timedelta(minutes=1),
+        "status": AttemptStatus.IN_PROGRESS,
+    })
+    attempt_svc = AttemptService(db_session)
+    count = await attempt_svc.expire_overdue(test.id)
+    assert count > 0

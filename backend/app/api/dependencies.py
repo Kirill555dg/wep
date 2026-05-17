@@ -1,7 +1,3 @@
-"""
-FastAPI dependencies for dependency injection
-"""
-
 import dataclasses as dc
 
 import fastapi
@@ -21,7 +17,6 @@ security = fastapi_security.HTTPBearer()
 @dc.dataclass(frozen=True, slots=True)
 class TokenContext:
     user_id: int
-    role: str
 
 
 def get_current_user_id(
@@ -45,16 +40,8 @@ def get_current_user_id(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    role = payload.get("role")
-    if role is None:
-        raise fastapi.HTTPException(
-            status_code=http_status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "token_missing_role", "message": "Token missing role"},
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
     try:
-        return TokenContext(user_id=int(user_id), role=str(role))
+        return TokenContext(user_id=int(user_id))
     except ValueError:
         raise fastapi.HTTPException(
             status_code=http_status.HTTP_401_UNAUTHORIZED,
@@ -80,13 +67,6 @@ async def get_current_user(
         raise fastapi.HTTPException(
             status_code=http_status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
-        )
-
-    if token.role != user.role:
-        raise fastapi.HTTPException(
-            status_code=http_status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "role_changed", "message": "Role changed, please re-authenticate"},
-            headers={"WWW-Authenticate": "Bearer"},
         )
 
     return user

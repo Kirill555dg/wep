@@ -1,7 +1,3 @@
-"""
-Authentication endpoints.
-"""
-
 import fastapi
 from fastapi import status as http_status
 
@@ -24,7 +20,6 @@ async def register(
     user_data: user_schemas.UserCreate,
     auth_service: auth_service_module.AuthService = fastapi.Depends(deps.get_auth_service),
 ) -> user_schemas.UserResponse:
-    """Register new user (student or teacher)."""
     try:
         return await auth_service.register_user(user_data)
     except service_exceptions.ServiceError as exc:
@@ -38,7 +33,6 @@ async def login(
     credentials: user_schemas.LoginRequest,
     auth_service: auth_service_module.AuthService = fastapi.Depends(deps.get_auth_service),
 ) -> user_schemas.TokenResponse:
-    """Authenticate user and return JWT token."""
     try:
         token = await auth_service.authenticate(credentials)
     except service_exceptions.ServiceError as exc:
@@ -54,41 +48,4 @@ async def login(
 async def get_current_user_profile(
     current_user: user_models.User = fastapi.Depends(deps.get_current_user),
 ) -> user_schemas.UserResponse:
-    """Return the authenticated user's profile."""
     return user_schemas.UserResponse.model_validate(current_user)
-
-
-@router.get("/me/role")
-async def get_current_user_role(
-    current_user: user_models.User = fastapi.Depends(deps.get_current_user),
-) -> dict[str, str | None]:
-    """Return current user's active role."""
-    return {"role": current_user.role}
-
-
-@router.get("/me/roles", response_model=user_schemas.UserRolesResponse)
-async def get_current_user_roles(
-    current_user: user_models.User = fastapi.Depends(deps.get_current_user),
-    auth_service: auth_service_module.AuthService = fastapi.Depends(deps.get_auth_service),
-) -> user_schemas.UserRolesResponse:
-    """Return active and enabled roles for the current user."""
-    result = await auth_service.get_roles(current_user.id)
-    if result is None:
-        raise http_errors.not_found("User not found")
-    return result
-
-
-@router.post("/me/role", response_model=user_schemas.UserRolesResponse)
-async def switch_my_role(
-    payload: user_schemas.RoleSwitchRequest,
-    current_user: user_models.User = fastapi.Depends(deps.get_current_user),
-    auth_service: auth_service_module.AuthService = fastapi.Depends(deps.get_auth_service),
-) -> user_schemas.UserRolesResponse:
-    """Switch the active role for the current user.
-
-    Creates the target role profile if it does not exist yet.
-    """
-    result = await auth_service.switch_role(current_user.id, payload.role)
-    if result is None:
-        raise http_errors.not_found("User not found")
-    return result

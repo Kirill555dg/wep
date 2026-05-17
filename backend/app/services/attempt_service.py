@@ -1,3 +1,6 @@
+import datetime as dt
+
+import sqlalchemy as sa
 import sqlalchemy.ext.asyncio as sa_asyncio
 
 from app.core import datetime_extensions as dte
@@ -17,6 +20,16 @@ class AttemptService:
         self.answer_repo = tc_repos.AnswerRepository(db)
         self.grading = grading_mod.GradingService()
 
+    async def _check_expired(self, attempt: tc_models.Attempt) -> bool:
+        if attempt.expires_at and dte.utc_now() > attempt.expires_at:
+            if attempt.status == tc_models.AttemptStatus.IN_PROGRESS:
+                await self.attempt_repo.update(attempt.id, {
+                    "status": tc_models.AttemptStatus.EXPIRED,
+                    "finished_at": dte.utc_now(),
+                })
+            return True
+        return False
+
     async def start_attempt(self, test_id: int, user_id: int) -> tc_schemas.AttemptResponse:
         test = await self.test_repo.get_by_id(test_id)
         if not test:
@@ -26,13 +39,34 @@ class AttemptService:
         if active:
             raise svc_exc.ServiceError("Already have an active attempt", code="attempt_already_active")
 
+        expires_at = None
+        if test.time_limit_minutes:
+            expires_at = dte.utc_now() + dt.timedelta(minutes=test.time_limit_minutes)
+
         attempt = await self.attempt_repo.create({
             "test_id": test_id,
             "user_id": user_id,
             "started_at": dte.utc_now(),
+            "expires_at": expires_at,
             "status": tc_models.AttemptStatus.IN_PROGRESS,
         })
         return tc_schemas.AttemptResponse.model_validate(attempt)
+
+    async def expire_overdue(self, test_id: int) -> int:
+        now = dte.utc_now()
+        stmt = (
+            sa.update(tc_models.Attempt)
+            .where(
+                tc_models.Attempt.test_id == test_id,
+                tc_models.Attempt.status == tc_models.AttemptStatus.IN_PROGRESS,
+                tc_models.Attempt.expires_at.isnot(None),
+                tc_models.Attempt.expires_at < now,
+            )
+            .values(status=tc_models.AttemptStatus.EXPIRED, finished_at=now)
+        )
+        result = await self.db.execute(stmt)
+        await self.db.commit()
+        return result.rowcount
 
     async def submit_answer(
         self, attempt_id: int, user_id: int, data: tc_schemas.AnswerSubmitRequest
@@ -42,6 +76,9 @@ class AttemptService:
             raise svc_exc.ServiceError("Attempt not found", code="attempt_not_found")
         if attempt.status != tc_models.AttemptStatus.IN_PROGRESS:
             raise svc_exc.ServiceError("Attempt already finished", code="attempt_finished")
+
+        if await self._check_expired(attempt):
+            raise svc_exc.ServiceError("Attempt has expired", code="attempt_expired")
 
         test = await self.test_repo.get_by_id_with_questions(attempt.test_id)
         question = next((q for q in test.questions if q.id == data.question_id), None)  # type: ignore[union-attr]
@@ -62,13 +99,16 @@ class AttemptService:
         if not attempt or attempt.user_id != user_id:
             raise svc_exc.ServiceError("Attempt not found", code="attempt_not_found")
 
+        is_expired = await self._check_expired(attempt)
+        status = tc_models.AttemptStatus.EXPIRED if is_expired else tc_models.AttemptStatus.COMPLETED
+
         test = await self.test_repo.get_by_id_with_questions(attempt.test_id)
         answers = await self.answer_repo.get_by_attempt(attempt_id)
 
         score, max_score = self.grading.grade_attempt(test.questions, answers)  # type: ignore[union-attr]
 
         await self.attempt_repo.update(attempt_id, {
-            "status": tc_models.AttemptStatus.COMPLETED,
+            "status": status,
             "finished_at": dte.utc_now(),
             "score": score,
             "max_score": max_score,
@@ -110,5 +150,6 @@ class AttemptService:
             max_score=attempt.max_score or 0,
             started_at=attempt.started_at,
             finished_at=attempt.finished_at,
+            expires_at=attempt.expires_at,
             answers=answer_details,
         )
