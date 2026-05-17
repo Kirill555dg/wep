@@ -369,3 +369,128 @@ balanov2025:
     url:
       value: https://e.lanbook.com/book/478178
       date: 2026-05-11
+
+twelve-factor-app:
+  type: Web
+  title: "The Twelve-Factor App"
+  author: "Wiggins, A."
+  date: 2011
+  url:
+    value: https://12factor.net/
+    date: 2026-05-16
+
+minio-docs:
+  type: Web
+  title: "MinIO Object Storage Documentation"
+  url:
+    value: https://min.io/docs/
+    date: 2026-05-16
+  publisher:
+    name: MinIO, Inc.
+
+redis-docs:
+  type: Web
+  title: "Redis Documentation"
+  url:
+    value: https://redis.io/docs/
+    date: 2026-05-16
+  publisher:
+    name: Redis Ltd.
+
+typsts-docs:
+  type: Web
+  title: "typst.ts — Run Typst in JavaScript"
+  url:
+    value: https://github.com/Myriad-Dreamin/typst.ts
+    date: 2026-05-16
+
+anna-vecher-2023:
+  type: Article
+  title: "Готовность педагога к созданию и использованию интерактивных учебных материалов в профессиональной деятельности"
+  author:
+    - "Анна, В. Г."
+    - "Екатерина, И. Г."
+  date: 2023
+  page-range: 159-169
+  language: ru-RU
+  serial-number: "ISSN\x001994-0637"
+  parent:
+    type: Periodical
+    title: "Вестник Череповецкого государственного университета"
+    issue: "2"
+  url:
+    value: https://e.lanbook.com/journal/issue/331739
+    date: 2026-05-16
+
+chang-icalt-2024:
+  type: Conference
+  title: "Enhancing Academic Performance with Generative AI-Based Quiz Platform"
+  author:
+    - "Chang, C.-K."
+    - "Chien, L.-C.-T."
+  date: 2024
+  page-range: 193-195
+  serial-number: "DOI\x3a\x0010.1109/ICALT61570.2024.00062"
+  parent:
+    type: Proceedings
+    title: "2024 IEEE International Conference on Advanced Learning Technologies (ICALT)"
+  url:
+    value: https://ieeexplore.ieee.org/document/10645812/
+    date: 2026-05-16
+
+quiz-market-vmr:
+  type: Web
+  title: "Online Quiz Platform Market Size, Share, Trends & Forecast"
+  date: 2024
+  url:
+    value: https://www.verifiedmarketresearch.com/product/online-quiz-platform-market/
+    date: 2026-05-16
+  publisher:
+    name: Verified Market Research
+
+minedu-distance-2025:
+  type: Web
+  title: "Платформы дистанционного обучения в России 2025: рейтинг, сравнение и как выбрать"
+  date: 2025
+  language: ru-RU
+  url:
+    value: https://www.diasoft.ru/about/publications/21856/
+    date: 2026-05-16
+  publisher:
+    name: Diasoft
+    location: Москва
+
+onlinetestpad:
+  type: Web
+  title: "Online Test Pad — онлайн-конструктор тестов, опросов, кроссвордов"
+  language: ru-RU
+  url:
+    value: https://onlinetestpad.com/
+    date: 2026-05-16
+
+quizizz-research:
+  type: Web
+  title: "Promoting Formative Assessment with Quizizz: A Classroom Action Research Study"
+  date: 2024
+  url:
+    value: https://www.researchgate.net/publication/379901904
+    date: 2026-05-16
+  publisher:
+    name: ResearchGate
+
+jimenez-moodle-2023:
+  type: Article
+  title: "Usability Problems of LMS Learning Management Systems, Based on the Moodle Platform"
+  author:
+    - "Jimenez-Pitre, I."
+    - "Fernández, J. L."
+    - "Jiménez Pitre, N."
+  date: 2023
+  parent:
+    type: Periodical
+    title: "Russian Law Journal"
+    volume: "11"
+    issue: "4"
+  url:
+    value: https://cyberleninka.ru/article/n/usability-problems-of-lms-learning-management-systems-based-on-the-moodle-platform
+    date: 2026-05-16

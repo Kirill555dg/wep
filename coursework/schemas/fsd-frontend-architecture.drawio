@@ -1,0 +1,241 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.1.2 Chrome/138.0.7204.243 Electron/37.4.0 Safari/537.36" version="28.1.2">
+  <diagram id="fsd-frontend" name="FSD Frontend">
+    <mxGraphModel dx="1234" dy="804" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0" adaptiveColors="auto">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="lane-app" value="App" style="swimlane;horizontal=0;startSize=30;fillColor=#f5f5f5;strokeColor=#333333;html=1;" parent="1" vertex="1">
+          <mxGeometry width="1550" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="app-routing" value="Routing" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-app" vertex="1">
+          <mxGeometry x="120" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="app-state" value="Global Application State" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-app" vertex="1">
+          <mxGeometry x="380" y="35" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="app-auth-init" value="Authentication Initialization" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-app" vertex="1">
+          <mxGeometry x="720" y="35" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="app-context" value="Context Providers" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-app" vertex="1">
+          <mxGeometry x="1060" y="35" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-pages" value="Pages" style="swimlane;horizontal=0;startSize=30;fillColor=#e8f4f8;strokeColor=#333333;html=1;" parent="1" vertex="1">
+          <mxGeometry y="110" width="1550" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="page-catalog" value="Catalog Page" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-pages" vertex="1">
+          <mxGeometry x="120" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="page-editor" value="Editor Page" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-pages" vertex="1">
+          <mxGeometry x="380" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="page-take" value="Take Page" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-pages" vertex="1">
+          <mxGeometry x="640" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="page-results" value="Results Page" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-pages" vertex="1">
+          <mxGeometry x="900" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="page-login" value="Login Page" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-pages" vertex="1">
+          <mxGeometry x="1160" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-widgets" value="Widgets" style="swimlane;horizontal=0;startSize=30;fillColor=#fff0e6;strokeColor=#333333;html=1;" parent="1" vertex="1">
+          <mxGeometry y="220" width="1550" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wid-testcard" value="Test Card" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-widgets" vertex="1">
+          <mxGeometry x="120" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wid-qeditor" value="Question Editor" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-widgets" vertex="1">
+          <mxGeometry x="380" y="35" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wid-qviewer" value="Question Viewer" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-widgets" vertex="1">
+          <mxGeometry x="660" y="35" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wid-results-panel" value="Results Panel" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-widgets" vertex="1">
+          <mxGeometry x="940" y="35" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wid-searchbar" value="Search Bar" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-widgets" vertex="1">
+          <mxGeometry x="1210" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-features" value="Features" style="swimlane;horizontal=0;startSize=30;fillColor=#e8f5e9;strokeColor=#333333;html=1;" parent="1" vertex="1">
+          <mxGeometry y="330" width="1550" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="feat-auth" value="Authentication" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-features" vertex="1">
+          <mxGeometry x="120" y="35" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="feat-test-mgmt" value="Test Management" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-features" vertex="1">
+          <mxGeometry x="370" y="35" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="feat-test-taking" value="Test Taking" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-features" vertex="1">
+          <mxGeometry x="640" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="feat-search" value="Search" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-features" vertex="1">
+          <mxGeometry x="900" y="35" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="feat-rich-content" value="Rich Content Rendering" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-features" vertex="1">
+          <mxGeometry x="1060" y="35" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="feat-file-upload" value="File Upload" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-features" vertex="1">
+          <mxGeometry x="1320" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-entities" value="Entities" style="swimlane;horizontal=0;startSize=30;fillColor=#fff9e6;strokeColor=#333333;html=1;" parent="1" vertex="1">
+          <mxGeometry y="440" width="1550" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-tests" value="Tests" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-entities" vertex="1">
+          <mxGeometry x="160" y="35" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-questions" value="Questions" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-entities" vertex="1">
+          <mxGeometry x="440" y="35" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-attempts" value="Attempts" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-entities" vertex="1">
+          <mxGeometry x="720" y="35" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ent-users" value="Users" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-entities" vertex="1">
+          <mxGeometry x="1000" y="35" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lane-shared" value="Shared" style="swimlane;horizontal=0;startSize=30;fillColor=#fce4ec;strokeColor=#333333;html=1;" parent="1" vertex="1">
+          <mxGeometry y="550" width="1550" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="shd-http" value="HTTP Client" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-shared" vertex="1">
+          <mxGeometry x="120" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="shd-ui" value="UI Primitives" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-shared" vertex="1">
+          <mxGeometry x="440" y="35" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="shd-content" value="Content Renderer" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-shared" vertex="1">
+          <mxGeometry x="740" y="35" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="shd-hooks" value="Hooks" style="shape=component;align=center;perimeter=componentPerimeter;html=1;" parent="lane-shared" vertex="1">
+          <mxGeometry x="1140" y="35" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-routing" target="page-catalog" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-routing" target="page-editor" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-routing" target="page-take" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-routing" target="page-results" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-routing" target="page-login" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-state" target="feat-auth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-state" target="feat-test-mgmt" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-state" target="feat-test-taking" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-auth-init" target="feat-auth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-context" target="feat-search" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="app-context" target="feat-rich-content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="page-catalog" target="wid-testcard" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="page-catalog" target="wid-searchbar" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="page-editor" target="wid-qeditor" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="page-take" target="wid-qviewer" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="page-results" target="wid-results-panel" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="page-login" target="feat-auth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-testcard" target="ent-tests" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-qeditor" target="feat-test-mgmt" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-qeditor" target="ent-questions" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-qeditor" target="feat-file-upload" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-qviewer" target="feat-test-taking" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-qviewer" target="ent-questions" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-qviewer" target="feat-rich-content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-results-panel" target="ent-attempts" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-results-panel" target="ent-tests" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="wid-searchbar" target="feat-search" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-auth" target="ent-users" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-auth" target="shd-http" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e30" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-test-mgmt" target="ent-tests" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e31" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-test-mgmt" target="ent-questions" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e32" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-test-mgmt" target="shd-http" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e33" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-test-taking" target="ent-attempts" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e34" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-test-taking" target="ent-questions" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e35" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-test-taking" target="shd-http" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e36" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-search" target="ent-tests" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e37" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-search" target="shd-http" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e38" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-rich-content" target="shd-content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e39" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="feat-file-upload" target="shd-http" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e40" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="ent-tests" target="shd-hooks" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e41" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="ent-questions" target="shd-hooks" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e42" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="ent-attempts" target="shd-hooks" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e43" style="edgeStyle=orthogonalEdgeStyle;dashed=1;endArrow=open;endFill=0;rounded=1;html=1;" parent="1" source="ent-users" target="shd-hooks" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
