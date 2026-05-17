@@ -1,15 +1,6 @@
 version: '3.8'
 
 services:
-  backend:
-    environment:
-      # Update to your real domain before deploying to VPS
-      BACKEND_CORS_ORIGINS: '["http://localhost"]'
-      DEBUG: "false"
-      MINIO_PUBLIC_URL: ""
-    ports:
-      - "8023:8023"
-
   frontend:
     build:
       context: ../frontend

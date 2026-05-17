@@ -68,10 +68,71 @@ To switch back to full WASM:
 | entities | User, Test, Question, Attempt stores (Zustand) |
 | shared | HTTP client, UI primitives, helpers, toast, format-score |
 
+## Typst Rendering
+
+Primary renderer is `@myriaddreamin/typst.ts` WASM, bundled by Vite via `vite-plugin-wasm`.
+Fonts are fetched automatically from CDN. No manual WASM copying required.
+
 ## Dev Server
+
+Local development uses the native Bun + Vite dev server. Backend runs in Docker (see below).
 
 ```bash
 cd frontend
 bun run dev
 # open http://localhost:5173
+# API requests are proxied to localhost:8023 (Vite proxy in vite.config.ts)
 ```
+
+## Deployment
+
+### Development (local)
+
+Backend and database run in Docker. Frontend runs natively with Bun for HMR.
+
+```bash
+# Terminal 1 — infrastructure + backend
+cd deploy
+cp .env.example .env
+docker compose up -d   # postgres, minio, backend
+
+# Terminal 2 — frontend (requires Bun installed locally)
+cd frontend
+cp .env.example .env
+bun install
+bun run dev
+```
+
+### Production (VPS)
+
+Everything runs in Docker via the production overlay.
+
+```bash
+cd deploy
+cp .env.prod.example .env
+# edit .env — set real secrets, domain, MinIO_PUBLIC_URL
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+Services exposed:
+- `http://your-domain` — frontend (nginx static) + API proxy
+- `https://your-domain:9000` — MinIO (object storage, direct access)
+
+### Docker Compose Files
+
+| File | Purpose |
+|------|---------|
+| `deploy/docker-compose.yml` | Base: postgres, minio, backend |
+| `deploy/docker-compose.prod.yml` | Overlay: adds frontend (nginx static) on port 80 |
+| `frontend/Dockerfile.dev` | Image with Bun for `bun run dev` (not used in compose) |
+| `frontend/Dockerfile.prod` | Multi-stage: Bun build → `nginx:alpine` |
+| `frontend/nginx-prod.conf` | SPA fallback + proxy `/api/` to backend |
+
+## Build
+
+```bash
+cd frontend
+bun run build
+```
+
+Produces `dist/` with static files + WASM chunks (28 MB compiler, 1 MB renderer).
