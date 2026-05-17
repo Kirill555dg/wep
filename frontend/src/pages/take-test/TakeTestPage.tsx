@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react'
+import {useState, useEffect, useRef} from 'react'
 import {useParams, useNavigate, useSearchParams} from 'react-router-dom'
 import {useTestDetail} from '@/features/test-management/api/useTests'
 import {useStartAttempt, useSubmitAnswer, useFinishAttempt} from '@/features/taking/api/useTaking'
@@ -27,11 +27,43 @@ export default function TakeTestPage() {
   const [activeIdx, setActiveIdx] = useState(0)
   const activeQuestion = questions[activeIdx]
 
+  const [remaining, setRemaining] = useState<number | null>(null)
+  const expiredRef = useRef(false)
+  const finishRef = useRef(finish)
+  finishRef.current = finish
+
+  const expiresAt = (attemptStore.currentAttempt as any)?.expires_at
+
   useEffect(() => {
     if (attemptIdParam) {
-      attemptStore.setCurrentAttempt({id: Number(attemptIdParam)} as any)
+      const id = Number(attemptIdParam)
+      const state = useAttemptStore.getState()
+      if (!state.currentAttempt || state.currentAttempt.id !== id) {
+        state.setCurrentAttempt({id} as any)
+      }
     }
   }, [attemptIdParam])
+
+  useEffect(() => {
+    if (!expiresAt) {
+      setRemaining(null)
+      return
+    }
+    const end = new Date(expiresAt).getTime()
+    const tick = () => {
+      const seconds = Math.max(0, Math.ceil((end - Date.now()) / 1000))
+      setRemaining(seconds)
+      if (seconds <= 0 && !expiredRef.current) {
+        expiredRef.current = true
+        finishRef.current.mutate(undefined, {
+          onSuccess: () => navigate(`/results/${attemptIdParam}`),
+        })
+      }
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [expiresAt, navigate, attemptIdParam])
 
   if (isLoading) return <Loader />
 
@@ -42,8 +74,9 @@ export default function TakeTestPage() {
         <p className="text-muted-foreground">{(test?.data as any)?.description}</p>
         <p className="text-sm text-muted-foreground">Вопросов: {questions.length}</p>
         <Button onClick={() => start.mutate(Number(testId), {onSuccess: (res: any) => {
-          const id = res.data?.id || res.id
-          navigate(`/take/${testId}?attemptId=${id}`)
+          const data = res.data || res
+          attemptStore.setCurrentAttempt(data)
+          navigate(`/take/${testId}?attemptId=${data.id}`)
         }})}>Начать тест</Button>
       </div>
     )
@@ -58,7 +91,15 @@ export default function TakeTestPage() {
     <div className="max-w-4xl mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">{(test?.data as any)?.title}</h1>
-        <span className="text-sm text-muted-foreground">{activeIdx + 1} / {questions.length}</span>
+        <div className="flex items-center gap-4">
+          {remaining !== null && (
+            <span className="text-sm font-mono text-red-600">
+              {String(Math.floor(remaining / 60)).padStart(2, '0')}:
+              {String(remaining % 60).padStart(2, '0')}
+            </span>
+          )}
+          <span className="text-sm text-muted-foreground">{activeIdx + 1} / {questions.length}</span>
+        </div>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-2">
         {questions.map((_: any, idx: number) => (
