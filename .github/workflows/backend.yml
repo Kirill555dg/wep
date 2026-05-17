@@ -1,13 +1,18 @@
-name: Test Constructor CI/CD
+name: Backend CI/CD
 
 on:
   push:
     branches:
       - prksp_coursework
+    paths:
+      - 'backend/**'
+      - 'deploy/docker-compose.yml'
+      - 'deploy/docker-compose.prod.yml'
+      - '.github/workflows/backend.yml'
 
 jobs:
   build-and-push:
-    name: Build and push Docker images
+    name: Build and push backend image
     runs-on: ubuntu-latest
 
     steps:
@@ -31,14 +36,6 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/test-constructor-backend:latest
 
-      - name: Build and push frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile.prod
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/test-constructor-frontend:latest
-
       - name: Telegram notify
         if: success()
         env:
@@ -51,4 +48,4 @@ jobs:
           fi
           curl -fsS -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
             -d chat_id="${TG_CHAT_ID}" \
-            --data-urlencode text="Test Constructor CI/CD: images pushed to Docker Hub. Backend (${{ secrets.DOCKER_USERNAME }}/test-constructor-backend) and Frontend (${{ secrets.DOCKER_USERNAME }}/test-constructor-frontend)."
+            --data-urlencode text="Backend CI/CD: image pushed to Docker Hub. Tag: ${{ secrets.DOCKER_USERNAME }}/test-constructor-backend:latest."
