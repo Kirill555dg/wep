@@ -89,7 +89,6 @@ class Teacher(db_session.Base):
 
     # Relationships
     user = orm.relationship("User", back_populates="teacher")
-    classrooms = orm.relationship("Classroom", back_populates="teacher", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Teacher(id={self.id}, user_id={self.user_id})>"
@@ -113,10 +112,6 @@ class Student(db_session.Base):
 
     # Relationships
     user = orm.relationship("User", back_populates="student")
-    classroom_memberships = orm.relationship(
-        "StudentClassroom", back_populates="student", cascade="all, delete-orphan"
-    )
-    statistics = orm.relationship("Statistics", back_populates="student", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Student(id={self.id}, user_id={self.user_id}, grade_level={self.grade_level})>"
