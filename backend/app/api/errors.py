@@ -11,13 +11,13 @@ Strategy:
   indicate a bug on the server side.
 """
 
-import typing as tp
-
 import logging
+import typing as tp
 
 import fastapi
 import fastapi.exceptions as fastapi_exceptions
 import fastapi.responses as fastapi_responses
+import sqlalchemy.exc as sa_exc
 import starlette.exceptions as starlette_exceptions
 import starlette.status as http_status
 
@@ -92,6 +92,39 @@ def _http_exception_content(exc: starlette_exceptions.HTTPException) -> dict[str
     )
 
 
+def _extract_sqlstate(exc: sa_exc.DBAPIError) -> str:
+    """
+    Extract PostgreSQL SQLSTATE code from an asyncpg-wrapped SQLAlchemy error.
+
+    asyncpg stores the original error as a chain:
+      sa_exc.DBAPIError
+        .orig  → asyncpg dialect adapter
+          .__cause__  → asyncpg.exceptions.*  (has .sqlstate)
+
+    Falls back to the adapter itself if the cause is missing.
+    """
+    orig = exc.orig
+    for err in filter(None, [getattr(orig, "__cause__", None), orig]):
+        code = getattr(err, "sqlstate", None)
+        if code:
+            return str(code)
+    return ""
+
+
+def _is_client_fault(sqlstate: str) -> bool:
+    """
+    Return True when the SQLSTATE indicates bad input data (client's fault).
+
+    PostgreSQL SQLSTATE families that mean "the data you sent is invalid":
+      22xxx  Data Exception (null bytes, encoding errors, overflow, etc.)
+      23xxx  Integrity Constraint Violation (duplicate key, FK violation, etc.)
+
+    Everything else (08xxx connection, 57xxx operator intervention, 42xxx
+    syntax error, …) is an infrastructure or server-side problem.
+    """
+    return sqlstate[:2] in ("22", "23")
+
+
 def register_exception_handlers(app: fastapi.FastAPI) -> None:
     """Install the three exception handlers used by the application."""
 
@@ -130,6 +163,27 @@ def register_exception_handlers(app: fastapi.FastAPI) -> None:
                 message="Validation error",
                 meta=meta,
             ),
+        )
+
+    @app.exception_handler(sa_exc.DBAPIError)
+    async def db_api_error_handler(
+        request: fastapi.Request,
+        exc: sa_exc.DBAPIError,
+    ) -> fastapi_responses.JSONResponse:
+        sqlstate = _extract_sqlstate(exc)
+        if _is_client_fault(sqlstate):
+            logger.warning("db_client_error", extra={"path": request.url.path, "sqlstate": sqlstate})
+            return fastapi_responses.JSONResponse(
+                status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=build_error_content(code="invalid_input", message="Input value rejected by the database"),
+            )
+        logger.exception("db_infra_error", extra={"path": request.url.path, "sqlstate": sqlstate})
+        meta: dict[str, tp.Any] | None = None
+        if core_config.settings.DEBUG:
+            meta = {"exception": type(exc).__name__, "sqlstate": sqlstate, "detail": str(exc.orig)}
+        return fastapi_responses.JSONResponse(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=build_error_content(code="internal_error", message="Internal server error", meta=meta),
         )
 
     @app.exception_handler(Exception)

@@ -2,7 +2,9 @@
 Authentication service.
 """
 
-from sqlalchemy.ext import asyncio as sa_asyncio
+import uuid
+
+import sqlalchemy.ext.asyncio as sa_asyncio
 
 from app.core import security as core_security
 from app.core import datetime_extensions as dte
@@ -39,14 +41,17 @@ class AuthService:
         Raises:
             ServiceError(code="email_taken"): If the email is already used.
         """
-        generated_username = user_data.username or user_data.email.split("@")[0]
-
         existing_email = await self.user_repo.get_by_email(user_data.email)
         if existing_email:
-            raise service_exceptions.ServiceError(
-                "Email already registered",
-                code="email_taken",
-            )
+            raise service_exceptions.ServiceError("Email already registered", code="email_taken")
+
+        if user_data.username:
+            if await self.user_repo.get_by_username(user_data.username):
+                raise service_exceptions.ServiceError("Username already taken", code="username_taken")
+            generated_username = user_data.username
+        else:
+            base = user_data.email.split("@")[0]
+            generated_username = f"{base}_{uuid.uuid4().hex[:8]}"
 
         user = await self.user_repo.create(
             {

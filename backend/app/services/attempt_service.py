@@ -1,58 +1,52 @@
-"""
-AttemptService: start, submit answers, finish, get result.
-"""
+import sqlalchemy.ext.asyncio as sa_asyncio
 
 from app.core import datetime_extensions as dte
-from app.models.test_constructor import AttemptStatus
-from app.repositories.test_constructor import (
-    AnswerRepository,
-    AttemptRepository,
-    QuestionRepository,
-    TestRepository,
-)
-from app.schemas.test_constructor import AnswerSubmitRequest, AttemptResponse, AttemptResultResponse, AttemptAnswerDetail
-from app.services.exceptions import ServiceError
-from app.services.grading import GradingService
-from sqlalchemy.ext import asyncio as sa_asyncio
+from app.models import test_constructor as tc_models
+from app.repositories import test_constructor as tc_repos
+from app.schemas import test_constructor as tc_schemas
+from app.services import exceptions as svc_exc
+from app.services import grading as grading_mod
 
 
 class AttemptService:
     def __init__(self, db: sa_asyncio.AsyncSession):
         self.db = db
-        self.test_repo = TestRepository(db)
-        self.question_repo = QuestionRepository(db)
-        self.attempt_repo = AttemptRepository(db)
-        self.answer_repo = AnswerRepository(db)
-        self.grading = GradingService()
+        self.test_repo = tc_repos.TestRepository(db)
+        self.question_repo = tc_repos.QuestionRepository(db)
+        self.attempt_repo = tc_repos.AttemptRepository(db)
+        self.answer_repo = tc_repos.AnswerRepository(db)
+        self.grading = grading_mod.GradingService()
 
-    async def start_attempt(self, test_id: int, user_id: int) -> AttemptResponse:
+    async def start_attempt(self, test_id: int, user_id: int) -> tc_schemas.AttemptResponse:
         test = await self.test_repo.get_by_id(test_id)
         if not test:
-            raise ServiceError("Test not found", code="test_not_found")
+            raise svc_exc.ServiceError("Test not found", code="test_not_found")
 
         active = await self.attempt_repo.get_active_for_user_test(user_id, test_id)
         if active:
-            raise ServiceError("Already have an active attempt", code="attempt_already_active")
+            raise svc_exc.ServiceError("Already have an active attempt", code="attempt_already_active")
 
         attempt = await self.attempt_repo.create({
             "test_id": test_id,
             "user_id": user_id,
             "started_at": dte.utc_now(),
-            "status": AttemptStatus.IN_PROGRESS,
+            "status": tc_models.AttemptStatus.IN_PROGRESS,
         })
-        return AttemptResponse.model_validate(attempt)
+        return tc_schemas.AttemptResponse.model_validate(attempt)
 
-    async def submit_answer(self, attempt_id: int, user_id: int, data: AnswerSubmitRequest) -> AttemptResponse:
+    async def submit_answer(
+        self, attempt_id: int, user_id: int, data: tc_schemas.AnswerSubmitRequest
+    ) -> tc_schemas.AnswerResponse:
         attempt = await self.attempt_repo.get_by_id(attempt_id)
         if not attempt or attempt.user_id != user_id:
-            raise ServiceError("Attempt not found", code="attempt_not_found")
-        if attempt.status != AttemptStatus.IN_PROGRESS:
-            raise ServiceError("Attempt already finished", code="attempt_finished")
+            raise svc_exc.ServiceError("Attempt not found", code="attempt_not_found")
+        if attempt.status != tc_models.AttemptStatus.IN_PROGRESS:
+            raise svc_exc.ServiceError("Attempt already finished", code="attempt_finished")
 
         test = await self.test_repo.get_by_id_with_questions(attempt.test_id)
         question = next((q for q in test.questions if q.id == data.question_id), None)  # type: ignore[union-attr]
         if not question:
-            raise ServiceError("Question not found in test", code="question_not_found")
+            raise svc_exc.ServiceError("Question not found in test", code="question_not_found")
 
         is_correct, points = self.grading.check_answer(question, data.selected_option_ids, data.text_answer)
         answer = await self.answer_repo.upsert(attempt_id, data.question_id, {
@@ -61,13 +55,12 @@ class AttemptService:
             "is_correct": is_correct,
             "points_earned": points,
         })
-        from app.schemas.test_constructor import AnswerResponse
-        return AnswerResponse.model_validate(answer)  # type: ignore[return-value]
+        return tc_schemas.AnswerResponse.model_validate(answer)
 
-    async def finish_attempt(self, attempt_id: int, user_id: int) -> AttemptResultResponse:
+    async def finish_attempt(self, attempt_id: int, user_id: int) -> tc_schemas.AttemptResultResponse:
         attempt = await self.attempt_repo.get_by_id(attempt_id)
         if not attempt or attempt.user_id != user_id:
-            raise ServiceError("Attempt not found", code="attempt_not_found")
+            raise svc_exc.ServiceError("Attempt not found", code="attempt_not_found")
 
         test = await self.test_repo.get_by_id_with_questions(attempt.test_id)
         answers = await self.answer_repo.get_by_attempt(attempt_id)
@@ -75,7 +68,7 @@ class AttemptService:
         score, max_score = self.grading.grade_attempt(test.questions, answers)  # type: ignore[union-attr]
 
         await self.attempt_repo.update(attempt_id, {
-            "status": AttemptStatus.COMPLETED,
+            "status": tc_models.AttemptStatus.COMPLETED,
             "finished_at": dte.utc_now(),
             "score": score,
             "max_score": max_score,
@@ -83,20 +76,19 @@ class AttemptService:
 
         return await self.get_result(attempt_id, user_id)
 
-    async def get_result(self, attempt_id: int, user_id: int) -> AttemptResultResponse:
+    async def get_result(self, attempt_id: int, user_id: int) -> tc_schemas.AttemptResultResponse:
         attempt = await self.attempt_repo.get_by_id_with_answers(attempt_id)
         if not attempt or attempt.user_id != user_id:
-            raise ServiceError("Attempt not found", code="attempt_not_found")
+            raise svc_exc.ServiceError("Attempt not found", code="attempt_not_found")
 
         test = await self.test_repo.get_by_id_with_questions(attempt.test_id)
-        questions_by_id = {q.id: q for q in test.questions}  # type: ignore[union-attr]
         answers_by_question = {a.question_id: a for a in attempt.answers}
 
         answer_details = []
         for q in test.questions:  # type: ignore[union-attr]
             ans = answers_by_question.get(q.id)
             correct_option_ids = [o.id for o in q.options if o.is_correct]
-            answer_details.append(AttemptAnswerDetail(
+            answer_details.append(tc_schemas.AttemptAnswerDetail(
                 question_id=q.id,
                 question_text=q.text,
                 question_type=q.question_type,
@@ -109,7 +101,7 @@ class AttemptService:
                 explanation=q.explanation,
             ))
 
-        return AttemptResultResponse(
+        return tc_schemas.AttemptResultResponse(
             attempt_id=attempt.id,
             test_id=attempt.test_id,
             test_title=test.title,  # type: ignore[union-attr]

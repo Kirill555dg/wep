@@ -1,6 +1,4 @@
-"""
-MinIO client singleton.
-"""
+import json
 
 import minio
 
@@ -26,8 +24,13 @@ def ensure_bucket() -> None:
     bucket = core_config.settings.MINIO_BUCKET
     if not client.bucket_exists(bucket):
         client.make_bucket(bucket)
-        policy = (
-            '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},'
-            f'"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::{bucket}/*"]}}]}}'
-        )
+        policy = json.dumps({
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": {"AWS": ["*"]},
+                "Action": ["s3:GetObject"],
+                "Resource": [f"arn:aws:s3:::{bucket}/*"],
+            }],
+        })
         client.set_bucket_policy(bucket, policy)
