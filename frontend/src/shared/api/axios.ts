@@ -1,17 +1,20 @@
 /**
- * Axios instance with JWT interceptor for generated API client
+ * Axios instance with JWT interceptor for generated API client.
+ *
+ * Orval calls request(url, config). We translate that to an AxiosRequestConfig
+ * so that method, body, headers and AbortSignal are forwarded correctly.
  */
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 
 export const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8023/api",
+  baseURL: import.meta.env.VITE_API_URL || "",
   withCredentials: false,
 });
 
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.set("Authorization", `Bearer ${token}`);
   }
   return config;
 });
@@ -27,12 +30,31 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export async function request<T>(config: Parameters<typeof axiosInstance.request>[0]) {
-  const cfg = { ...config } as Record<string, unknown>;
-  if (cfg.body !== undefined && cfg.data === undefined) {
-    cfg.data = cfg.body;
-    delete cfg.body;
+function normalizeHeaders(init?: HeadersInit): Record<string, string> | undefined {
+  if (!init) return undefined;
+  if (Array.isArray(init)) return Object.fromEntries(init);
+  if (typeof init === "object" && !(init instanceof Headers)) {
+    return init as Record<string, string>;
   }
-  const { data } = await axiosInstance.request<T>(cfg as Parameters<typeof axiosInstance.request>[0]);
+  const h = new Headers(init);
+  const result: Record<string, string> = {};
+  h.forEach((v, k) => {
+    result[k] = v;
+  });
+  return result;
+}
+
+export async function request<T>(
+  url: string,
+  config?: RequestInit,
+): Promise<T> {
+  const axiosConfig: AxiosRequestConfig = {
+    url,
+    method: (config?.method || "GET").toLowerCase() as AxiosRequestConfig["method"],
+    headers: normalizeHeaders(config?.headers),
+    data: config?.body,
+    signal: config?.signal as any,
+  };
+  const { data } = await axiosInstance.request<T>(axiosConfig);
   return data;
 }
