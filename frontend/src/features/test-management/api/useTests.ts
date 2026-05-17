@@ -1,12 +1,14 @@
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
 import {toast} from '@/shared/hooks/use-toast'
 import {
-  createTestApiV1TestsPost,
-  listMyTestsApiV1TestsGet,
-  getTestApiV1TestsTestIdGet,
-  updateTestApiV1TestsTestIdPatch,
-  deleteTestApiV1TestsTestIdDelete,
   addQuestionApiV1TestsTestIdQuestionsPost,
+  createTestApiV1TestsPost,
+  deleteQuestionApiV1TestsTestIdQuestionsQuestionIdDelete,
+  deleteTestApiV1TestsTestIdDelete,
+  getTestApiV1TestsTestIdGet,
+  listMyTestsApiV1TestsGet,
+  updateQuestionApiV1TestsTestIdQuestionsQuestionIdPatch,
+  updateTestApiV1TestsTestIdPatch,
 } from '@/shared/api/client/tests'
 
 export function useCreateTest() {
@@ -77,5 +79,21 @@ export function useAddQuestion(testId: number) {
     onError: (e: any) => {
       toast({title: e.response?.data?.message || 'Ошибка', variant: 'destructive'})
     },
+  })
+}
+
+export function useUpdateQuestion(testId: number, questionId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Parameters<typeof updateQuestionApiV1TestsTestIdQuestionsQuestionIdPatch>[0]) => updateQuestionApiV1TestsTestIdQuestionsQuestionIdPatch({testId, questionId, ...data}),
+    onSuccess: () => qc.invalidateQueries({queryKey: ['tests', testId]}),
+  })
+}
+
+export function useDeleteQuestion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ testId, questionId }: { testId: number; questionId: number }) => deleteQuestionApiV1TestsTestIdQuestionsQuestionIdDelete({testId, questionId}),
+    onSuccess: (_data, variables) => qc.invalidateQueries({queryKey: ['tests', variables.testId]}),
   })
 }

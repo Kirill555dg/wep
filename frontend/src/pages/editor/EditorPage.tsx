@@ -1,6 +1,6 @@
 import {useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
-import {useTestDetail, useCreateTest, useUpdateTest, useAddQuestion} from '@/features/test-management/api/useTests'
+import {useTestDetail, useCreateTest, useUpdateTest, useAddQuestion, useUpdateQuestion, useDeleteQuestion} from '@/features/test-management/api/useTests'
 import {useUserStore} from '@/entities/user/model/store'
 import {QuestionFormData} from '@/widgets/question-editor/ui/QuestionEditorWidget'
 import QuestionEditorWidget from '@/widgets/question-editor/ui/QuestionEditorWidget'
@@ -21,6 +21,8 @@ export default function EditorPage() {
   const create = useCreateTest()
   const update = useUpdateTest(id)
   const addQuestion = useAddQuestion(id)
+  const updateQuestion = useUpdateQuestion(id, (editingQuestion as any)?.id ?? 0)
+  const deleteQuestion = useDeleteQuestion()
 
   const [editingQuestion, setEditingQuestion] = useState<QuestionFormData | null>(null)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
@@ -54,7 +56,10 @@ export default function EditorPage() {
             </div>
             {questions.map((q: any, idx: number) => (
               <div key={q.id} className={`p-2 border rounded cursor-pointer ${activeIndex === idx ? 'bg-gray-100' : ''}`} onClick={() => {setActiveIndex(idx); setEditingQuestion(q)}}>
-                <p className="text-sm truncate">{idx + 1}. {q.text.slice(0, 40)}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm truncate">{idx + 1}. {q.text.slice(0, 40)}</p>
+                  <Button variant="ghost" size="sm" className="text-red-500" onClick={(e) => {e.stopPropagation(); deleteQuestion.mutate({testId: id, questionId: q.id})}}>Удалить</Button>
+                </div>
               </div>
             ))}
           </div>
@@ -64,12 +69,17 @@ export default function EditorPage() {
                 initialData={editingQuestion}
                 onSave={(data) => {
                   if ((editingQuestion as any)?.id) {
-                    setEditingQuestion(null)
+                    updateQuestion.mutate(data as any, {onSuccess: () => setEditingQuestion(null)})
                   } else {
                     addQuestion.mutate(data as any, {onSuccess: () => setEditingQuestion(null)})
                   }
                 }}
                 onCancel={() => setEditingQuestion(null)}
+                onDelete={(editingQuestion as any)?.id ? () => {
+                  deleteQuestion.mutate({testId: id, questionId: (editingQuestion as any).id}, {
+                    onSuccess: () => { setEditingQuestion(null); setActiveIndex(null) }
+                  })
+                } : undefined}
               />
             )}
           </div>

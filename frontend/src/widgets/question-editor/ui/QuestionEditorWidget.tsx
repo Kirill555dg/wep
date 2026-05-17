@@ -39,9 +39,10 @@ interface QuestionEditorWidgetProps {
   initialData?: QuestionFormData & {id?: number}
   onSave: (data: QuestionFormData) => void
   onCancel: () => void
+  onDelete?: () => void
 }
 
-export default function QuestionEditorWidget({initialData, onSave, onCancel}: QuestionEditorWidgetProps) {
+export default function QuestionEditorWidget({initialData, onSave, onCancel, onDelete}: QuestionEditorWidgetProps) {
   const [showPreview, setShowPreview] = useState(false)
 
   const {register, handleSubmit, watch, setValue, formState: {errors}} = useForm<QuestionFormData>({
@@ -140,6 +141,7 @@ export default function QuestionEditorWidget({initialData, onSave, onCancel}: Qu
         <div className="flex gap-2">
           <Button type="submit">Сохранить</Button>
           <Button type="button" variant="ghost" onClick={onCancel}>Отмена</Button>
+          {onDelete && <Button type="button" variant="destructive" size="sm" onClick={onDelete}>Удалить</Button>}
         </div>
       </form>
     </Card>
