@@ -7,6 +7,7 @@ from app.models import classes as classes_models
 from app.models import communication as communication_models
 from app.models import files as file_models
 from app.models import homework as homework_models
+from app.models import test_constructor as test_constructor_models
 from app.models import lessons as lesson_models
 from app.models import problems as problem_models
 from app.models import theory as theory_models
@@ -23,6 +24,16 @@ Chat = communication_models.Chat
 Message = communication_models.Message
 
 File = file_models.File
+
+Test = test_constructor_models.Test
+Question = test_constructor_models.Question
+Option = test_constructor_models.Option
+Tag = test_constructor_models.Tag
+TestTag = test_constructor_models.TestTag
+Attempt = test_constructor_models.Attempt
+Answer = test_constructor_models.Answer
+QuestionType = test_constructor_models.QuestionType
+AttemptStatus = test_constructor_models.AttemptStatus
 
 Homework = homework_models.Homework
 HomeworkProblem = homework_models.HomeworkProblem
@@ -81,4 +92,14 @@ __all__ = [
     "ProblemImage",
     # Files
     "File",
+    # Test constructor
+    "Test",
+    "Question",
+    "Option",
+    "Tag",
+    "TestTag",
+    "Attempt",
+    "Answer",
+    "QuestionType",
+    "AttemptStatus",
 ]
