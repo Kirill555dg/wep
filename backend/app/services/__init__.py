@@ -1,9 +1,1 @@
-"""
-Business logic services
-"""
-
-from app.services import auth as auth_service
-
-AuthService = auth_service.AuthService
-
-__all__ = ["AuthService"]
+from app.services.auth import *  # noqa: F401, F403
