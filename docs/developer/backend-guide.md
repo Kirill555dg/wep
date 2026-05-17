@@ -1,525 +1,316 @@
-# Backend - руководство разработчика
+# Backend — руководство разработчика
 
-Детальное руководство по разработке серверной части WEP.
+Серверная часть реализует REST API для интерактивного конструктора образовательных тестов.
+Стек: Python 3.12, FastAPI, PostgreSQL 16, MinIO, SQLAlchemy (async), Alembic, uv.
 
-## Требования
+---
+
+## Быстрый старт
+
+### Предварительные требования
 
 - Python 3.12+
-- PostgreSQL 16
-- Redis 7 (опционально, для realtime чата)
+- [uv](https://docs.astral.sh/uv/) — установка: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Docker + Compose (Colima на macOS: `brew install colima && colima start`)
 
-## Установка окружения
+### Инфраструктура (PostgreSQL + MinIO)
 
-### Python
-
-#### macOS (Homebrew):
 ```bash
-brew install python@3.12
+cd deploy
+docker-compose up -d postgres minio
 ```
 
-#### macOS/Linux (pyenv - рекомендуется):
-```bash
-# Установка pyenv
-curl https://pyenv.run | bash
+MinIO console: http://localhost:9001 (minioadmin / minioadmin)
 
-# Перезапуск терминала
-source ~/.zshrc  # для zsh
-source ~/.bashrc # для bash
-
-# Установка Python
-pyenv install 3.12
-pyenv local 3.12
-```
-
-#### Проверка:
-```bash
-python --version  # >= 3.12
-```
-
-### PostgreSQL
-
-#### macOS (Homebrew):
-```bash
-brew install postgresql@16
-brew services start postgresql@16
-```
-
-#### Создание БД:
-```bash
-createdb wep_education
-createuser wep_user
-psql -c "ALTER USER wep_user WITH PASSWORD 'wep_password';"
-psql -c "GRANT ALL PRIVILEGES ON DATABASE wep_education TO wep_user;"
-```
-
-### Redis (опционально)
-
-#### macOS (Homebrew):
-```bash
-brew install redis
-brew services start redis
-```
-
-## Установка проекта
+### Установка зависимостей
 
 ```bash
 cd backend
 
-# Создать виртуальное окружение
-python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate    # Windows
+# Рабочая среда: создать venv и установить runtime + dev зависимости
+uv venv
+uv pip install -r requirements.txt -r requirements-dev.txt
 
-# Установить зависимости
-pip install -r requirements.txt
-
-# Настроить окружение
-cp .env.example .env
-# Отредактировать DATABASE_URL и другие параметры
+# В Dockerfile и CI (только runtime):
+# uv pip install --system -r requirements.txt
 ```
 
-## Запуск
-
-### Миграции
+### Миграции и запуск
 
 ```bash
-# Применить миграции
-alembic upgrade head
-
-# Создать новую миграцию
-alembic revision --autogenerate -m "description"
-
-# Откатить миграцию
-alembic downgrade -1
+cd backend
+uv run alembic upgrade head
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8023 --reload
 ```
 
-### Development сервер
+API docs: http://localhost:8023/api/docs
 
-```bash
-# С hot-reload
-uvicorn app.main:app --host 0.0.0.0 --port 8023 --reload
+---
 
-# Или через Makefile
-make dev
-```
+## Зависимости
 
-### Через Docker
+| Файл | Назначение |
+|------|-----------|
+| `requirements.txt` | Runtime зависимости (попадают в Docker-образ) |
+| `requirements-dev.txt` | Тестирование, линтинг (только локально / CI) |
+| `pyproject.toml` | Настройки инструментов: ruff, mypy, pytest |
 
-```bash
-docker build -t wep-backend .
-docker run -p 8023:8023 wep-backend
-```
+Добавить runtime-зависимость → `requirements.txt`. Dev-only → `requirements-dev.txt`.
 
-## Тестирование
+---
 
-```bash
-# Запуск тестов
-pytest
-
-# С coverage
-pytest --cov=app --cov-report=html
-
-# Конкретный файл
-pytest tests/test_auth.py
-
-# С verbose
-pytest -v
-```
-
-## Структура проекта (Clean Architecture)
+## Структура проекта
 
 ```
 backend/
 ├── app/
-│   ├── main.py              # Entry point
-│   ├── api/                 # API Layer
-│   │   ├── v1/             # Endpoints
-│   │   ├── dependencies.py  # DI, AuthZ
-│   │   └── middleware/     # CORS, request_id
-│   ├── services/            # Service Layer (business logic)
-│   │   ├── auth.py
-│   │   ├── classroom.py
-│   │   ├── homework.py
-│   │   └── ...
-│   ├── repositories/        # Repository Layer (data access)
-│   │   ├── base.py
-│   │   ├── user.py
-│   │   └── ...
-│   ├── models/              # ORM Models
-│   │   ├── users.py
-│   │   ├── classes.py
-│   │   └── ...
-│   ├── schemas/             # Pydantic DTO
-│   │   ├── users.py
-│   │   ├── classrooms.py
-│   │   └── ...
-│   ├── core/                # Infrastructure
-│   │   ├── config.py       # Configuration
-│   │   ├── security.py     # JWT, Argon2
-│   │   └── pagination.py
-│   ├── db/                  # Database
-│   │   └── session.py      # AsyncSession
-│   └── realtime/            # WebSocket, Redis
-│       ├── connection_manager.py
-│       └── redis_pubsub.py
-├── alembic/                 # Migrations
-├── tests/                   # Tests
+│   ├── main.py                   # Lifespan, ASGI app, middleware
+│   ├── api/
+│   │   ├── v1/                   # HTTP-обработчики по ресурсам
+│   │   │   ├── auth.py           # /auth/
+│   │   │   ├── tests.py          # /tests/
+│   │   │   ├── catalog.py        # /catalog/
+│   │   │   ├── attempts.py       # /attempts/
+│   │   │   ├── stats.py          # /stats/
+│   │   │   ├── media.py          # /media/
+│   │   │   └── tags.py           # /tags/
+│   │   ├── dependencies.py       # get_current_user (JWT → User)
+│   │   ├── errors.py             # Обработчики ServiceError, DBAPIError
+│   │   └── middleware/
+│   ├── services/
+│   │   ├── auth.py               # Регистрация, аутентификация, роли
+│   │   ├── test_service.py       # CRUD тестов и вопросов
+│   │   ├── attempt_service.py    # Жизненный цикл попытки, проверка ответов
+│   │   ├── catalog_service.py    # Публичный каталог, статистика автора
+│   │   ├── grading.py            # Чистая логика оценивания (без БД)
+│   │   ├── media_service.py      # Загрузка файлов в MinIO
+│   │   └── exceptions.py         # ServiceError
+│   ├── repositories/
+│   │   ├── base.py               # BaseRepository[T] с CRUD
+│   │   ├── user.py               # UserRepository, LoginDataRepository
+│   │   └── test_constructor.py   # Test/Question/Tag/Attempt/Answer репозитории
+│   ├── models/
+│   │   ├── users.py              # User, LoginData, Teacher, Student
+│   │   └── test_constructor.py   # Test, Question, Option, Tag, Attempt, Answer
+│   ├── schemas/
+│   │   ├── users.py              # UserCreate, UserResponse, TokenResponse, …
+│   │   └── test_constructor.py   # TestCreate, QuestionCreate, AttemptResponse, …
+│   ├── core/
+│   │   ├── config.py             # Settings (pydantic-settings, читает .env)
+│   │   ├── security.py           # JWT, Argon2id
+│   │   └── minio_client.py       # MinIO singleton, ensure_bucket()
+│   └── db/
+│       ├── session.py            # AsyncEngine, AsyncSessionLocal, get_db()
+│       └── url.py                # to_psycopg_url / to_asyncpg_url
+├── alembic/versions/             # Миграции
+├── tests/                        # Unit + сервисные + HTTP тесты
 ├── requirements.txt
-├── Dockerfile
-└── Makefile
+├── requirements-dev.txt
+├── pyproject.toml                # Конфиг ruff / mypy / pytest
+└── Dockerfile
 ```
 
-## Слои Clean Architecture
+---
 
-1. **API Layer** (`app/api/`)
-   - HTTP/WebSocket endpoints
-   - Валидация входных данных
-   - Зависимости через DI
-   - Вызов сервисов
+## Архитектурные правила
 
-2. **Service Layer** (`app/services/`)
-   - Бизнес-логика use-cases
-   - Проверка прав доступа
-   - Оркестрация репозиториев
-   - Не содержит SQL
+### Поток запроса
 
-3. **Repository Layer** (`app/repositories/`)
-   - CRUD операции
-   - SQLAlchemy запросы
-   - Изоляция SQL от бизнес-логики
+```
+HTTP → api/v1/*.py (валидация)
+     → services/*.py (бизнес-логика)
+     → repositories/*.py (SQL)
+     → PostgreSQL / MinIO
+```
 
-4. **Models** (`app/models/`)
-   - SQLAlchemy ORM модели
-   - Таблицы и связи
+Обратные зависимости запрещены: репозиторий не знает об API.
 
-**Правило зависимостей**: внешние слои зависят от внутренних, но не наоборот.
-
-## Добавление нового endpoint
-
-### 1. Создать DTO схемы
+### Обработка ошибок
 
 ```python
-# app/schemas/homework.py
-from pydantic import BaseModel
-from uuid import UUID
+# Сервис → ServiceError
+raise ServiceError("Test not found", code="test_not_found")
 
-class HomeworkCreate(BaseModel):
-    lesson_id: UUID
-    title: str
-    description: str
-
-class HomeworkResponse(BaseModel):
-    id: UUID
-    lesson_id: UUID
-    title: str
-    description: str
+# Обработчик API → HTTPException
+if exc.code == "test_not_found":
+    raise http_errors.not_found("Test not found")
 ```
 
-### 2. Создать/обновить модель
+**DB-ошибки** (`api/errors.py::db_api_error_handler`):
+- SQLSTATE `22xxx` (Data Exception: null bytes, overflow) → **422**
+- SQLSTATE `23xxx` (Integrity Violation: дублирующий ключ) → **422**
+- Прочие DB-ошибки (соединение, синтаксис) → **500**
+
+Функции `_extract_sqlstate` и `_is_client_fault` содержат всю логику классификации.
+
+### Импорты
 
 ```python
-# app/models/homework.py
-from sqlalchemy import Column, String, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
-from app.db.base import Base
+# contrib/stdlib: import X.Y as alias
+import sqlalchemy as sa
+import sqlalchemy.orm as sqla_orm
+import sqlalchemy.ext.asyncio as sa_asyncio
+import starlette.status as http_status
 
-class Homework(Base):
-    __tablename__ = "homework"
-    
-    id = Column(UUID, primary_key=True)
-    lesson_id = Column(UUID, ForeignKey("lessons.id"))
-    title = Column(String, nullable=False)
-    description = Column(String)
+# internal: from app.X import module
+from app.schemas import test_constructor as tc_schemas
+from app.models import test_constructor as tc_models
+from app.repositories import test_constructor as tc_repos
+from app.services import exceptions as svc_exc
 ```
 
-### 3. Создать/обновить репозиторий
+Никогда не импортируем отдельные символы (`from app.schemas.test_constructor import TestCreate`).
 
-```python
-# app/repositories/homework.py
-from app.repositories.base import BaseRepository
-from app.models.homework import Homework
+---
 
-class HomeworkRepository(BaseRepository[Homework]):
-    def __init__(self, session):
-        super().__init__(session, Homework)
+## Домен: Test Constructor
+
+### Модель данных
+
+```
+User ──< Test ──< Question ──< Option
+              └──< Attempt ──< Answer
+Test ><── TestTag ><── Tag
 ```
 
-### 4. Создать/обновить сервис
+Ключевые детали:
+- `Question.correct_answer` — эталонный ответ для TEXT-вопросов
+- `Question.explanation` — показывается после завершения попытки; используется как fallback correct_answer если `correct_answer = null`
+- `Attempt`: частичный уникальный индекс `(user_id, test_id) WHERE status = 'IN_PROGRESS'` — предотвращает дублирующие активные попытки на уровне БД
 
-```python
-# app/services/homework.py
-from app.repositories.homework import HomeworkRepository
-from app.schemas.homework import HomeworkCreate, HomeworkResponse
+### Оценивание
 
-class HomeworkService:
-    def __init__(self, homework_repo: HomeworkRepository):
-        self.homework_repo = homework_repo
-    
-    async def create_homework(self, data: HomeworkCreate) -> HomeworkResponse:
-        # Бизнес-логика
-        homework = await self.homework_repo.create(data.dict())
-        return HomeworkResponse.from_orm(homework)
+`GradingService` (без IO):
+- `SINGLE_CHOICE` / `MULTIPLE_CHOICE`: проверяет точное совпадение множества ID
+- `TEXT`: нормализованное сравнение без учёта регистра и пробелов
+- `ESSAY`: всегда `(None, 0)` — ручная проверка
+
+---
+
+## Миграции
+
+```bash
+# Применить все
+uv run alembic upgrade head
+
+# Создать новую (autogenerate сравнивает модели с БД)
+uv run alembic revision --autogenerate -m "add_X_to_Y"
+
+# Откатить последнюю
+uv run alembic downgrade -1
 ```
 
-### 5. Создать endpoint
+При изменении модели → новая миграция. Не редактировать существующие миграции после деплоя.
 
-```python
-# app/api/v1/homework.py
-from fastapi import APIRouter, Depends
-from app.schemas.homework import HomeworkCreate, HomeworkResponse
-from app.services.homework import HomeworkService
-from app.api.dependencies import get_homework_service
+---
 
-router = APIRouter(prefix="/homework", tags=["homework"])
+## Тестирование
 
-@router.post("/", response_model=HomeworkResponse)
-async def create_homework(
-    data: HomeworkCreate,
-    service: HomeworkService = Depends(get_homework_service)
-):
-    return await service.create_homework(data)
+### Запуск
+
+```bash
+# Требует запущенных PostgreSQL + MinIO
+uv run pytest tests/ --ignore=tests/fuzz   # unit + сервисные + HTTP (~15s)
+uv run pytest tests/fuzz/                  # Hypothesis fuzzing (~30s)
+uv run pytest tests/ -k "login"            # один тест по имени
 ```
 
-### 6. Добавить в роутер
+### Модель изоляции
 
-```python
-# app/api/v1/__init__.py
-from fastapi import APIRouter
-from app.api.v1 import homework
+Каждая тест-функция получает **свою PostgreSQL-схему** (UUID-именованную), созданную через DDL из ORM-метаданных и удалённую после завершения. Тесты никогда не загрязняют общую БД.
 
-api_router = APIRouter()
-api_router.include_router(homework.router)
+Два fixture'а (`conftest.py`):
+
+| Fixture | Назначение | Используется в |
+|---------|-----------|---------------|
+| `db_session` | Одна `AsyncSession` в изолированной схеме | Сервисные тесты |
+| `http_client` | `httpx.AsyncClient` + override `get_db` (новая сессия на каждый запрос) | HTTP-тесты, фаззинг |
+
+### Структура тестов
+
+```
+tests/
+├── conftest.py             # db_session, http_client fixtures
+├── test_infra.py           # PostgreSQL + MinIO smoke tests
+├── test_auth_service.py    # AuthService: регистрация, аутентификация
+├── test_test_service.py    # TestService: CRUD тестов и вопросов
+├── test_attempt_service.py # AttemptService: попытки, ответы, оценки
+├── test_grading_service.py # GradingService (unit, без БД)
+├── test_role_access.py     # HTTP: контроль доступа и ownership
+├── test_token_role_mismatch.py
+└── fuzz/
+    ├── conftest.py
+    └── test_fuzz_api.py    # Hypothesis: инвариант "никогда не 500"
 ```
 
-## Работа с БД
+### Фаззинг
 
-### AsyncSession
+Тесты в `tests/fuzz/` проверяют: для любого входного значения API возвращает `{200,201,400,401,403,404,409,422}`, но никогда `500`. Включают:
+- Property-based тесты через Hypothesis (`@given`)
+- Параметризованные SQL-injection / XSS паттерны
+- Граничные значения (пустые строки, отрицательные лимиты)
 
-```python
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import get_session
+Каждая тест-функция изолирована через `http_client` fixture.
 
-async def some_function(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(User))
-    users = result.scalars().all()
+---
+
+## Smoke test (production)
+
+Проверить инфраструктуру в продакшене без изменения данных:
+
+```bash
+# Из корня репозитория
+python tools/smoke_test.py
+
+# С нестандартным окружением
+DATABASE_URL=postgresql://... MINIO_ENDPOINT=... python tools/smoke_test.py
 ```
 
-### Транзакции
+Проверяет: PostgreSQL (SELECT 1), MinIO (list_buckets), версию миграций, API health endpoint.
+Exit code: 0 = всё OK, 1 = есть проблемы.
 
-```python
-async with session.begin():
-    user = await user_repo.create(data)
-    profile = await profile_repo.create(user_id=user.id)
-    # Автоматический commit при выходе из блока
+---
+
+## Деплой
+
+### Локальный Docker Compose
+
+```bash
+cd deploy
+docker-compose up -d           # PostgreSQL, MinIO
+docker-compose up -d backend   # + backend (после сборки)
 ```
 
-## Аутентификация и авторизация
+### Сборка образа
 
-### JWT токены
-
-```python
-from app.core.security import create_access_token
-
-token = create_access_token(
-    data={"sub": str(user.id), "role": user.role}
-)
+```bash
+cd backend
+docker build -t wep-backend .
 ```
 
-### Защита endpoints
-
-```python
-from app.api.dependencies import get_current_user, get_current_teacher
-
-@router.get("/me")
-async def get_profile(current_user: User = Depends(get_current_user)):
-    return current_user
-
-@router.post("/classrooms")
-async def create_classroom(
-    data: ClassroomCreate,
-    teacher: Teacher = Depends(get_current_teacher)
-):
-    # Только для teacher
-    ...
-```
-
-## WebSocket (Realtime чат)
-
-### Connection Manager
-
-```python
-from app.realtime.connection_manager import ConnectionManager
-
-manager = ConnectionManager()
-
-@router.websocket("/ws/{classroom_id}")
-async def websocket_endpoint(
-    websocket: WebSocket,
-    classroom_id: UUID
-):
-    await manager.connect(classroom_id, websocket)
-    try:
-        while True:
-            message = await websocket.receive_text()
-            await manager.broadcast(classroom_id, message)
-    except WebSocketDisconnect:
-        manager.disconnect(classroom_id, websocket)
-```
-
-## Конфигурация
+Dockerfile использует `uv pip install --system` для установки зависимостей — тот же инструмент, что и при локальной разработке.
 
 ### Переменные окружения
 
-Все настройки в `app/core/config.py`:
+Все параметры через переменные окружения. Пример в `backend/.env.example`:
 
-```python
-from pydantic_settings import BaseSettings
-
-class Settings(BaseSettings):
-    DATABASE_URL: str
-    SECRET_KEY: str
-    DEBUG: bool = False
-    
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
+```
+DATABASE_URL=postgresql://wep_user:wep_password@localhost:5433/wep_education
+SECRET_KEY=your-secret-key
+MINIO_ENDPOINT=127.0.0.1:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=wep-media
 ```
 
-## Линтинг и форматирование
+---
 
-### Ruff
+## Линтинг и типизация
 
 ```bash
-# Проверка
-ruff check app tests
-
-# Форматирование
-ruff format app tests
+uv run ruff check app/         # линтинг
+uv run ruff check app/ --fix   # автоисправление
+uv run mypy app/               # проверка типов
 ```
 
-### Mypy
-
-```bash
-mypy app
-```
-
-## Частые команды (Makefile)
-
-```bash
-# Установка зависимостей
-make install
-
-# Линтинг
-make lint
-
-# Форматирование
-make format
-
-# Проверка типов
-make type
-
-# Тесты
-make test
-
-# Запуск dev-сервера
-make dev
-
-# Миграции
-make migrate
-
-# Очистка
-make clean
-```
-
-## API документация
-
-После запуска сервера:
-
-- **Swagger UI**: http://localhost:8023/api/docs
-- **ReDoc**: http://localhost:8023/api/redoc
-- **OpenAPI JSON**: http://localhost:8023/api/openapi.json
-
-## Экспорт OpenAPI для frontend
-
-```bash
-# Экспортировать контракт для frontend
-python -m app.scripts.export_openapi --out ../frontend/src/shared/api/openapi.json
-```
-
-## Соглашения
-
-### Именование
-
-- Models: `PascalCase` (User, Classroom)
-- Функции: `snake_case` (create_user, get_classrooms)
-- Переменные: `snake_case` (user_id, classroom_data)
-- Constants: `UPPER_SNAKE_CASE` (MAX_LIMIT, API_V1_PREFIX)
-
-### Imports
-
-```python
-# Stdlib
-from typing import List, Optional
-from uuid import UUID
-
-# Third-party
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
-
-# Local
-from app.models.users import User
-from app.schemas.users import UserResponse
-from app.services.auth import AuthService
-```
-
-### Async/Await
-
-Все DB операции асинхронные:
-
-```python
-async def get_user(user_id: UUID) -> User:
-    result = await session.execute(
-        select(User).where(User.id == user_id)
-    )
-    return result.scalar_one_or_none()
-```
-
-## Отладка
-
-### Logging
-
-```python
-import logging
-
-logger = logging.getLogger(__name__)
-
-logger.debug("Debug message")
-logger.info("Info message")
-logger.error("Error message")
-```
-
-### Breakpoints
-
-```python
-import pdb; pdb.set_trace()
-# или
-breakpoint()
-```
-
-### SQL logging
-
-В `.env`:
-```
-DEBUG=True
-```
-
-SQLAlchemy будет логировать все запросы.
-
-## Полезные ссылки
-
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [SQLAlchemy 2.0](https://docs.sqlalchemy.org/en/20/)
-- [Pydantic V2](https://docs.pydantic.dev/latest/)
-- [Alembic](https://alembic.sqlalchemy.org/)
-- [Pytest](https://docs.pytest.org/)
+Настройки в `backend/pyproject.toml` (секции `[tool.ruff]`, `[tool.mypy]`).

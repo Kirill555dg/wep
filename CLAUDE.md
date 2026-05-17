@@ -30,44 +30,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - External-facing IDs must be strings (even if numeric internally).
 - Database access only through SQLAlchemy.
 
-## Protocol Buffers
-- Follow official protobuf compatibility rules.
-- Document every new field:
-    ```
-    // Show whether input spec is inconsistent
-    bool spec_inconsistency = 11;
-    ```
-
 ## Imports
 - Import entire modules, not individual symbols.
 - Group imports:
-    1. Standard library/contrib: `import ...`
-    2. Internal modules: `from ... import ...`
+    1. Standard library/contrib: `import X.Y as alias`
+    2. Internal modules: `from app.X import module`
 - Sort alphabetically within groups.
-- Use consistent aliases: `import typing as tp`
 
 Example:
 ```py
-import logging
+import sqlalchemy as sa
+import sqlalchemy.orm as sqla_orm
 
-from echo.pylib import execution_info as ei
-from echo.pylib import storage
-from tasklet.sdk.v2 import python as sdk
+from app.models import test_constructor as tc_models
+from app.schemas import test_constructor as tc_schemas
 ```
 
 ## Logging
 - Create module-level logger.
 - Use f-strings with backticks for values.
 - Log at `info` level or higher.
-- Balance log volume between debugability and disk usage.
-
-Example:
-```py
-import logging
-
-LOGGER = logging.getLogger(__name__)
-LOGGER.info(f"Running MR binary: `{path}`")
-```
 
 ## Code Review
 - State bug, show fix, stop.
@@ -81,88 +63,64 @@ LOGGER.info(f"Running MR binary: `{path}`")
 ## Formatting
 - Plain text only: hyphens, straight quotes.
 - No decorative symbols.
-- Copy-paste safe code output.
 
 ---
 
-# Project: Web Education Platform (WEP)
+# Project: Интерактивный конструктор образовательных тестов
 
-LMS-система для управления учебным процессом: классы, уроки, домашние задания, тестирование, статистика.
+Курсовая | Миркин К.Л. | ИКБО-10-23 | Срок: 18.05.2026
 
-## Commands
+Полная документация: `docs/developer/backend-guide.md`
 
-### Infrastructure (PostgreSQL + Redis)
+## Quick reference
+
+### Infrastructure
 ```bash
 cd deploy && docker-compose up -d
 ```
 
-### Backend
+### Backend (all commands via uv)
 ```bash
 cd backend
-source .venv/bin/activate
-alembic upgrade head                                     # apply migrations
-uvicorn app.main:app --host 0.0.0.0 --port 8023 --reload
+uv pip install -r requirements.txt -r requirements-dev.txt
+uv run alembic upgrade head
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8023 --reload
 ```
-API docs: http://localhost:8023/api/docs
 
-### Frontend
+### Tests
 ```bash
-cd frontend
-pnpm install
-pnpm dev          # http://localhost:5173
-pnpm build
-pnpm test         # vitest unit tests (run once)
-pnpm test:watch   # vitest watch mode
-pnpm test:e2e     # cypress e2e (requires dev server)
+uv run pytest tests/ --ignore=tests/fuzz   # service + HTTP
+uv run pytest tests/fuzz/                  # fuzzing (Hypothesis)
+uv run pytest tests/ -k "name"             # single test
 ```
 
-### Linting / type-checking (backend)
+### Smoke test (works in production)
 ```bash
-cd backend
-ruff check app/
-mypy app/
+python tools/smoke_test.py
 ```
 
----
-
-## Architecture
-
-### Backend - Clean Architecture (`backend/app/`)
-
-```
-api/v1/        - HTTP endpoints (thin: validate input, call service, map errors)
-services/      - Business logic; raise ServiceError with a code string on domain errors
-repositories/  - SQLAlchemy async data access, one file per aggregate
-models/        - SQLAlchemy ORM models
-schemas/       - Pydantic request/response models
-realtime/      - WebSocket chat (ConnectionManager + Redis Pub/Sub broker)
-core/          - Config (pydantic-settings), security (JWT/argon2), logging
-db/            - Async session factory
+### Lint
+```bash
+uv run ruff check app/
 ```
 
-Error flow: `services/exceptions.py::ServiceError` -> `api/errors.py` handler -> HTTP response.
-
-Auth: JWT Bearer tokens. `api/dependencies.py::get_current_user` injects the authenticated user into endpoints.
-
-### Frontend - Feature-Sliced Design (`frontend/src/`)
+## Architecture summary
 
 ```
-app/           - Bootstrap, router (React Router v6), role/auth guards
-pages/         - Route-level components
-widgets/       - Composite blocks (Header, Footer, MainLayout)
-features/      - User scenarios (auth, join-class, notifications, profile)
-entities/      - Domain models + Zustand stores (user, class, notification, student, teacher)
-shared/        - axios instance, Radix/shadcn UI primitives, hooks, utils
+api/v1/     → validate, call service, map errors
+services/   → business logic, raise ServiceError
+repos/      → SQLAlchemy async queries
+models/     → ORM (test_constructor.py, users.py)
+schemas/    → Pydantic DTOs (Create / Update / Response)
+core/       → config, JWT/argon2, MinIO client
 ```
 
-API switching: each feature has `api/api.ts` (interface) + `api/api-real.ts` + `api/api-mock.ts`. The active impl is set at bootstrap; swap via `setAuthApi(impl)` / equivalent pattern.
+DB error classification (`api/errors.py`):
+- SQLSTATE 22xxx / 23xxx (bad input) → 422
+- Other DB errors → 500
 
-State: Zustand stores per entity. React Query (`@tanstack/react-query` v4) for server state in features.
+Test isolation: every test function gets a fresh PostgreSQL schema (UUID), dropped on teardown. `http_client` fixture overrides `get_db` with per-request sessions.
 
-Roles: users have `student` / `teacher` role; `RoleProtectedRoute` guards role-specific pages. `MainRedirect` routes to `/student` or `/teacher` based on active role.
+Fuzz tests in `tests/fuzz/` — invariant: API never returns 500.
 
-### Realtime
-WebSocket chat with multi-instance fanout via Redis Pub/Sub (`realtime/redis_pubsub.py`). Redis is optional - single-instance mode works without it. Presence and typing indicators tracked in Redis with TTL.
-
-### Infrastructure
-`deploy/docker-compose.yml` runs PostgreSQL 16 and Redis 7. Backend and frontend run locally (not containerised yet).
+Coursework report: `coursework/main.typ`.
