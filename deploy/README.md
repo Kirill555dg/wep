@@ -1,31 +1,27 @@
 # WEP Deploy
 
-Docker Compose конфигурация для инфраструктуры Web Education Platform.
+Docker Compose для инфраструктурных сервисов (PostgreSQL, MinIO).
 
-## Запуск
+Подробнее: [docs/dev/](../docs/dev/)
+
+## Быстрый старт
 
 ```bash
 cp .env.example .env
-# Отредактировать .env
-
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Сервисы
 
-- **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
+| Сервис | Порт (хост) | Назначение |
+|---|---|---|
+| PostgreSQL | 5433 | База данных |
+| MinIO S3 | 9000 | Объектное хранилище |
+| MinIO Console | 9001 | Web-интерфейс MinIO |
 
 ## Остановка
 
 ```bash
-docker-compose down
-
-# С удалением volumes
-docker-compose down -v
+docker compose down
+docker compose down -v   # с удалением volumes
 ```
-
-## Примечание
-
-Backend и Frontend запускаются локально для разработки.
-Схема production деплоя будет спроектирована отдельно.

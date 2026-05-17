@@ -43,9 +43,9 @@ docker-compose up -d
 # Backend и Frontend запускаются локально (см. соответствующие README)
 ```
 
-## Разработка
+## Документация
 
-См. README в соответствующих директориях:
+- [docs/](docs/) — полная документация (пользователи, разработка, архитектура)
 - [Backend](backend/README.md)
 - [Frontend](frontend/README.md)
 
