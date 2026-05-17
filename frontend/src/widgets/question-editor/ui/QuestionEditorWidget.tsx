@@ -1,7 +1,7 @@
 /**
  * Editor for a single question within a test.
  */
-import {useState, useEffect} from 'react'
+import {useState} from 'react'
 import {useForm} from 'react-hook-form'
 import {zodResolver} from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -11,9 +11,10 @@ import {Input} from '@/shared/ui/input'
 import {Label} from '@/shared/ui/label'
 import {Textarea} from '@/shared/ui/textarea'
 import {Checkbox} from '@/shared/ui/checkbox'
-import {Badge} from '@/shared/ui/badge'
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/shared/ui/select'
 import {Card} from '@/shared/ui/card'
+import {Select, SelectItem} from '@/shared/ui/select'
+import MediaUpload from '@/features/upload/ui/MediaUpload'
+import TypstPreview from '@/features/render/ui/TypstPreview'
 
 const optionSchema = z.object({
   text: z.string().min(1),
@@ -26,22 +27,22 @@ const questionSchema = z.object({
   text: z.string().min(1, 'Условие обязательно'),
   order_number: z.number().int().default(0),
   points: z.number().int().min(1).default(1),
-  explanation: z.string().nullable(),
-  correct_answer: z.string().nullable(),
-  image_url: z.string().nullable(),
+  explanation: z.string().optional(),
+  correct_answer: z.string().optional(),
+  image_url: z.string().optional(),
   options: z.array(optionSchema).default([]),
 })
 
 export type QuestionFormData = z.infer<typeof questionSchema>
 
 interface QuestionEditorWidgetProps {
-  initialData?: QuestionFormData
+  initialData?: QuestionFormData & {id?: number}
   onSave: (data: QuestionFormData) => void
   onCancel: () => void
 }
 
 export default function QuestionEditorWidget({initialData, onSave, onCancel}: QuestionEditorWidgetProps) {
-  const [preview, setPreview] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
 
   const {register, handleSubmit, watch, setValue, formState: {errors}} = useForm<QuestionFormData>({
     resolver: zodResolver(questionSchema),
@@ -49,15 +50,13 @@ export default function QuestionEditorWidget({initialData, onSave, onCancel}: Qu
       question_type: QuestionType.SINGLE_CHOICE,
       text: '',
       points: 1,
-      explanation: null,
-      correct_answer: null,
-      image_url: null,
       options: [],
     },
   })
 
   const type = watch('question_type')
   const options = watch('options') || []
+  const text = watch('text')
 
   const addOption = () => {
     setValue('options', [...options, {text: '', is_correct: false, order_number: options.length}])
@@ -75,20 +74,17 @@ export default function QuestionEditorWidget({initialData, onSave, onCancel}: Qu
   return (
     <Card className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">{initialData ? 'Редактировать вопрос' : 'Новый вопрос'}</h3>
+        <h3 className="font-semibold">{initialData?.id ? 'Редактировать вопрос' : 'Новый вопрос'}</h3>
         <Button variant="ghost" size="sm" onClick={onCancel}>Отмена</Button>
       </div>
 
       <form onSubmit={handleSubmit(onSave)} className="space-y-4">
         <div>
           <Label>Тип вопроса</Label>
-          <Select value={type} onValueChange={(v) => setValue('question_type', v as QuestionType)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={QuestionType.SINGLE_CHOICE}>Один вариант</SelectItem>
-              <SelectItem value={QuestionType.MULTIPLE_CHOICE}>Несколько вариантов</SelectItem>
-              <SelectItem value={QuestionType.TEXT_INPUT}>Свободный ответ</SelectItem>
-            </SelectContent>
+          <Select value={type} onChange={(e: any) => setValue('question_type', e.target.value as QuestionType)}>
+            <SelectItem value={QuestionType.SINGLE_CHOICE}>Один вариант</SelectItem>
+            <SelectItem value={QuestionType.MULTIPLE_CHOICE}>Несколько вариантов</SelectItem>
+            <SelectItem value={QuestionType.TEXT_INPUT}>Свободный ответ</SelectItem>
           </Select>
         </div>
 
@@ -96,11 +92,10 @@ export default function QuestionEditorWidget({initialData, onSave, onCancel}: Qu
           <Label>Условие (Typst)</Label>
           <Textarea rows={5} {...register('text')} />
           {errors.text && <p className="text-red-500 text-sm">{errors.text.message}</p>}
-          <Button type="button" variant="outline" size="sm" className="mt-1" onClick={() => setPreview(s => !s)}>{preview ? 'Скрыть' : 'Предпросмотр'}</Button>
-          {preview && (
+          <Button type="button" variant="outline" size="sm" className="mt-1" onClick={() => setShowPreview(s => !s)}>{showPreview ? 'Скрыть' : 'Предпросмотр'}</Button>
+          {showPreview && (
             <div className="mt-2 border rounded p-2 bg-white">
-              {/* TypstPreview lazy */}
-              <p className="text-muted-foreground text-sm">Предпросмотр Typst будет здесь</p>
+              <TypstPreview source={text || ''} />
             </div>
           )}
         </div>
@@ -137,8 +132,9 @@ export default function QuestionEditorWidget({initialData, onSave, onCancel}: Qu
         </div>
 
         <div>
-          <Label>URL изображения</Label>
-          <Input {...register('image_url')} placeholder="http://..." />
+          <Label>Изображение</Label>
+          <MediaUpload onUploaded={(url) => setValue('image_url', url)} />
+          {watch('image_url') && <img src={watch('image_url')} alt="preview" className="mt-2 max-w-xs rounded" />}
         </div>
 
         <div className="flex gap-2">
