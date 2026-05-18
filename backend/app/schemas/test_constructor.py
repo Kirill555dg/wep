@@ -11,6 +11,8 @@ class QuestionType(str, pydantic_enum.Enum):
     MULTIPLE_CHOICE = "MULTIPLE_CHOICE"
     TEXT = "TEXT"
     ESSAY = "ESSAY"
+    MATCHING = "MATCHING"
+    FILE_UPLOAD = "FILE_UPLOAD"
 
 
 class AttemptStatus(str, pydantic_enum.Enum):
@@ -70,7 +72,9 @@ class QuestionCreate(pydantic.BaseModel):
     explanation: str | None = None
     correct_answer: str | None = None
     image_url: str | None = None
+    media_files: list[str] = pydantic.Field(default_factory=list)
     options: list[OptionCreate] = pydantic.Field(default_factory=list)
+    question_data: dict[str, object] | None = None
 
 
 class QuestionUpdate(pydantic.BaseModel):
@@ -81,7 +85,9 @@ class QuestionUpdate(pydantic.BaseModel):
     explanation: str | None = None
     correct_answer: str | None = None
     image_url: str | None = None
+    media_files: list[str] = pydantic.Field(default_factory=list)
     options: list[OptionCreate] | None = None
+    question_data: dict[str, object] | None = None
 
 
 class QuestionResponse(pydantic.BaseModel):
@@ -91,7 +97,9 @@ class QuestionResponse(pydantic.BaseModel):
     order_number: int
     points: int
     image_url: str | None
+    media_files: list[str] = []
     options: list[OptionResponse] = []
+    question_data: dict[str, object] | None = None
 
     model_config = pydantic.ConfigDict(from_attributes=True)
 
@@ -105,7 +113,19 @@ class QuestionAuthorResponse(pydantic.BaseModel):
     explanation: str | None
     correct_answer: str | None
     image_url: str | None
+    media_files: list[str] = []
     options: list[OptionAuthorResponse] = []
+    question_data: dict[str, object] | None = None
+
+    model_config = pydantic.ConfigDict(from_attributes=True)
+
+
+class QuestionPoolResponse(pydantic.BaseModel):
+    id: int
+    question_type: QuestionType
+    text: str
+    points: int
+    created_at: dt.datetime
 
     model_config = pydantic.ConfigDict(from_attributes=True)
 
@@ -120,6 +140,8 @@ class TestCreate(pydantic.BaseModel):
     attempt_limit: int | None = pydantic.Field(None, ge=1)
     track_time: bool = True
     completion_message: str | None = None
+    image_url: str | None = None
+    media_files: list[str] = pydantic.Field(default_factory=list)
     tag_names: list[str] = pydantic.Field(default_factory=list)
 
 
@@ -131,17 +153,23 @@ class TestUpdate(pydantic.BaseModel):
     attempt_limit: int | None = pydantic.Field(None, ge=1)
     track_time: bool | None = None
     completion_message: str | None = None
+    image_url: str | None = None
+    media_files: list[str] = pydantic.Field(default_factory=list)
     tag_names: list[str] | None = None
 
 
 class TestResponse(pydantic.BaseModel):
     id: int
     author_id: int
+    author_name: str = ""
+    author_login: str = ""
     title: str
     description: str | None
     is_public: bool
     time_limit_minutes: int | None
     track_time: bool
+    image_url: str | None = None
+    media_files: list[str] = []
     questions_count: int = 0
     tags: list[TagResponse] = []
     created_at: dt.datetime
@@ -196,6 +224,7 @@ class CatalogSearchParams(pydantic.BaseModel):
     q: str | None = None
     tags: list[str] = pydantic.Field(default_factory=list)
     author_id: int | None = None
+    author_login: str | None = None
     skip: int = pydantic.Field(default=0, ge=0)
     limit: int = pydantic.Field(default=20, ge=1, le=100)
 
@@ -224,6 +253,8 @@ class AnswerSubmitRequest(pydantic.BaseModel):
     question_id: int
     selected_option_ids: list[int] | None = None
     text_answer: str | None = None
+    matching_answer: dict[str, int] | None = None
+    file_answer: str | None = None
 
 
 class AnswerResponse(pydantic.BaseModel):
@@ -231,6 +262,8 @@ class AnswerResponse(pydantic.BaseModel):
     question_id: int
     selected_option_ids: list[int] | None
     text_answer: str | None
+    matching_answer: dict[str, int] | None = None
+    file_answer: str | None = None
     is_correct: bool | None
     points_earned: int | None
 
@@ -244,6 +277,8 @@ class AttemptAnswerDetail(pydantic.BaseModel):
     points: int
     selected_option_ids: list[int] | None
     text_answer: str | None
+    matching_answer: dict[str, int] | None = None
+    file_answer: str | None = None
     is_correct: bool | None
     points_earned: int | None
     correct_option_ids: list[int]
@@ -279,3 +314,23 @@ class AuthorStatsResponse(pydantic.BaseModel):
     public_tests: int
     total_attempts_received: int
     completed_attempts_received: int
+
+
+class ScoreDistributionResponse(pydantic.BaseModel):
+    bucket_0_20: int = 0
+    bucket_20_40: int = 0
+    bucket_40_60: int = 0
+    bucket_60_80: int = 0
+    bucket_80_100: int = 0
+
+
+class PerQuestionStat(pydantic.BaseModel):
+    question_id: int
+    question_text: str
+    total_attempts: int
+    correct_attempts: int
+    correct_percent: float
+
+
+class PerQuestionStatsResponse(pydantic.BaseModel):
+    items: list[PerQuestionStat]

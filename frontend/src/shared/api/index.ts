@@ -22,6 +22,8 @@ export {
   addQuestionApiV1TestsTestIdQuestionsPost,
   updateQuestionApiV1TestsTestIdQuestionsQuestionIdPatch,
   deleteQuestionApiV1TestsTestIdQuestionsQuestionIdDelete,
+  addQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPost,
+  listQuestionPoolApiV1TestsQuestionsPoolGet,
 
   // Catalog
   searchCatalogApiV1CatalogGet,
@@ -45,9 +47,13 @@ export {
   getAuthorStatsApiV1StatsMeGet,
   getCalendarApiV1StatsCalendarGet,
   getTestStatsApiV1StatsTestsTestIdGet,
+  getScoreDistributionApiV1StatsTestsTestIdDistributionGet,
+  getPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGet,
+  listTestAttemptsApiV1TestsTestIdAttemptsGet,
 
   // Media
   uploadMediaApiV1MediaUploadPost,
+  uploadAnswerFileApiV1MediaUploadAnswerPost,
 
   // Types
   type Options,
@@ -84,6 +90,12 @@ export type {
   CalendarResponse,
   PageAttemptSummary,
   TestStatsResponse,
+  ScoreDistributionResponse,
+  PerQuestionStat,
+  PerQuestionStatsResponse,
+  AttemptAuthorSummary,
+  PageAttemptAuthorSummary,
+  QuestionPoolResponse,
   ErrorResponse,
 } from './generated/types.gen'
 

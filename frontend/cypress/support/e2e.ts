@@ -2,64 +2,79 @@ export {}
 declare global {
   namespace Cypress {
     interface Chainable {
-      loginAs(role: string): Chainable<void>
+      loginAs(role: "teacher" | "student"): Chainable<void>
       logout(): Chainable<void>
       step(name: string): Chainable<void>
+      api(method: "POST" | "GET" | "PATCH" | "DELETE", path: string, body?: object): Chainable<Response>
     }
   }
 }
 
-// Команда авторизации с существующим пользователем
-Cypress.Commands.add('loginAs', (role: string) => {
-  cy.clearLocalStorage()
-  cy.clearCookies()
-  cy.visit('/login')
+const USERS: Record<string, { email: string; password: string; name: string }> = {
+  teacher: {
+    email: "teacher@wep.dev",
+    password: "TeacherPass123!",
+    name: "Иван",
+  },
+  student: {
+    email: "student@wep.dev",
+    password: "StudentPass123!",
+    name: "Петр",
+  },
+}
 
-  const username = role === 'teacher' ? 'teacher' : 'student'
+// Log in via API call, then inject token + user into AUT Zustand store
+Cypress.Commands.add('loginAs', (role: 'teacher' | 'student') => {
+  cy.step(`Login as ${role}`)
+  const { email, password } = USERS[role]
 
-  cy.get('[placeholder*="Email"]').type(`${username}@example.edu`)
-  cy.get('[placeholder*="Пароль"]').type('password123')
-  cy.contains('Войти').click()
-
-  cy.url().should('not.include', '/login')
-})
-
-// Команда выхода из системы
-Cypress.Commands.add('logout', () => {
-  cy.visit('/')
-  cy.get('[role="button"]').filter(':contains("Выйти")').click()
-  cy.url().should('include', '/login')
-})
-
-// Команда для логирования шагов
-Cypress.Commands.add('step', (name: string) => {
-  cy.log(`📋 ${name}`)
-})
-
-// Настройка куки для тестового режима
-beforeEach(() => {
-  // Сброс состояния перед каждым тестом
-  cy.clearLocalStorage()
-  cy.clearCookies()
-  
-  // Установить тестовый режим
-  cy.window().then((win) => {
-    win.localStorage.setItem('__TEST_MODE__', 'true')
+  cy.request('POST', `${Cypress.env('API_URL')}/auth/login`, {
+    username_or_email: email,
+    password,
+  }).then((res) => {
+    expect(res.status).to.eq(200)
+    const token = res.body.access_token
+    const user = res.body.user
+    Cypress.env('TOKEN', token)
+    // Ensure AUT window exists, then write both token and user into Zustand
+    cy.visit('/', { log: false })
+    cy.window({ log: false }).then((win) => {
+      // @ts-expect-error - global helper injected in main.tsx
+      if (win.__setAuth) {
+        // @ts-expect-error
+        win.__setAuth(token, user)
+      }
+      cy.log(`Auth injected for ${user?.first_name ?? role} (${token.slice(0, 20)}...)`)
+    })
   })
 })
 
-// Глобальная конфигурация для медленного режима (при отладке)
-if (Cypress.env('SLOW_MODE')) {
-  const originalCommand = Cypress.log
-  Cypress.log = function (options) {
-    options.consoleProps = () => {
-      return {
-        'Test Duration (ms)': Date.now() - Cypress.config('defaultCommandTimeout')
-      }
-    }
-    return originalCommand(options)
-  }
-  
-  Cypress.config('defaultCommandTimeout', 10000)
-  Cypress.config('pageLoadTimeout', 20000)
-}
+Cypress.Commands.add("logout", () => {
+  cy.step("Logout")
+  Cypress.env('TOKEN', null)
+  cy.window({ log: false }).then((win) => {
+    win.localStorage.removeItem('access_token')
+  })
+  cy.reload()
+})
+
+Cypress.Commands.add("step", (name: string) => {
+  cy.log(`STEP: ${name}`)
+})
+
+Cypress.Commands.add("api", (method, path, body?) => {
+  const token = Cypress.env('TOKEN')
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
+  return cy.request({
+    method,
+    url: `${Cypress.env('API_URL')}${path}`,
+    headers,
+    body,
+    failOnStatusCode: false,
+  })
+})
+
+beforeEach(() => {
+  cy.clearLocalStorage()
+  cy.clearCookies()
+})

@@ -140,7 +140,7 @@ async def test_minio_upload_image_and_url() -> None:
         b"\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
     )
 
-    url = await media_service.upload_file(png_1x1, "image/png")
+    url = await media_service.upload_question_image(png_1x1, "image/png")
 
     assert url.startswith("http")
     assert ".png" in url

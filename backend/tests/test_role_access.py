@@ -91,7 +91,7 @@ async def test_cannot_add_question_to_others_test(http_client: httpx.AsyncClient
     test = await _create_test(http_client, owner)
     resp = await http_client.post(
         f"/api/v1/tests/{test['id']}/questions",
-        json={"question_type": "text", "text": "Q", "points": 1},
+        json={"question_type": "TEXT", "text": "Q", "points": 1},
         headers=_auth(other),
     )
     assert resp.status_code == 403

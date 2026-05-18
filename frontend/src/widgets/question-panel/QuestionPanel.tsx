@@ -18,6 +18,7 @@ interface QuestionPanelProps {
   results?: Record<string, { isCorrect: boolean; pointsEarned: number; maxPoints: number }>
   onAddQuestion?: () => void
   onDeleteQuestion?: (index: number) => void
+  onAddFromPool?: () => void
 }
 
 export default function QuestionPanel({
@@ -29,6 +30,7 @@ export default function QuestionPanel({
   results,
   onAddQuestion,
   onDeleteQuestion,
+  onAddFromPool,
 }: QuestionPanelProps) {
   const isEdit = mode === 'edit'
   const isReview = mode === 'review'
@@ -121,12 +123,20 @@ export default function QuestionPanel({
           </div>
         ))}
       </div>
-      {isEdit && onAddQuestion && (
-        <div className="p-2 border-t">
-          <Button variant="outline" size="sm" className="w-full" onClick={onAddQuestion}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add Question
-          </Button>
+      {isEdit && (onAddQuestion || onAddFromPool) && (
+        <div className="p-2 border-t space-y-2">
+          {onAddQuestion && (
+            <Button variant="outline" size="sm" className="w-full" onClick={onAddQuestion}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Question
+            </Button>
+          )}
+          {onAddFromPool && (
+            <Button variant="secondary" size="sm" className="w-full" onClick={onAddFromPool}>
+              <Plus className="h-4 w-4 mr-1" />
+              From Pool
+            </Button>
+          )}
         </div>
       )}
     </div>

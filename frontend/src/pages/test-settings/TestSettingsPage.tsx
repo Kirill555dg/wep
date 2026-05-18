@@ -43,6 +43,7 @@ const schema = z.object({
   attempt_limit: z.number().min(1).nullable().optional(),
   tag_names: z.array(z.string()),
   completion_message: z.string().nullable().optional(),
+  image_url: z.string().url('Некорректный URL').nullable().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -110,6 +111,7 @@ export default function TestSettingsPage() {
       attempt_limit: null,
       tag_names: [],
       completion_message: null,
+      image_url: null,
     },
   })
 
@@ -134,6 +136,8 @@ export default function TestSettingsPage() {
           ) ?? [],
         completion_message: (testData as Record<string, unknown>)
           .completion_message as string | null | undefined,
+        image_url: (testData as Record<string, unknown>)
+          .image_url as string | null | undefined,
       })
     }
   }, [testData, reset])
@@ -197,6 +201,7 @@ export default function TestSettingsPage() {
       attempt_limit: data.attempt_limit ?? null,
       tag_names: data.tag_names,
       completion_message: data.completion_message || null,
+      image_url: data.image_url || null,
     }
     saveMutation.mutate(body)
   }
@@ -290,6 +295,18 @@ export default function TestSettingsPage() {
                 {...register('description')}
                 placeholder="Описание теста"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image_url">URL обложки</Label>
+              <Input
+                id="image_url"
+                {...register('image_url')}
+                placeholder="https://example.com/image.jpg"
+              />
+              {errors.image_url && (
+                <p className="text-sm text-red-600">{errors.image_url.message}</p>
+              )}
             </div>
 
             <hr className="border-t" />

@@ -1,3 +1,4 @@
+import json
 import typing as tp
 from datetime import timedelta
 
@@ -25,6 +26,22 @@ def ensure_bucket() -> None:
     bucket = core_config.settings.MINIO_BUCKET
     if not client.bucket_exists(bucket):
         client.make_bucket(bucket)
+        public_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": ["s3:GetObject"],
+                    "Resource": [f"arn:aws:s3:::{bucket}/*"],
+                }
+            ],
+        }
+        client.set_bucket_policy(bucket, json.dumps(public_policy))
+
+
+def public_url(object_name: str) -> str:
+    return f"{core_config.settings.MINIO_PUBLIC_URL}/{core_config.settings.MINIO_BUCKET}/{object_name}"
 
 
 def presigned_get_url(object_name: str, expires_seconds: int = 3600) -> str:

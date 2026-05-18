@@ -1,33 +1,76 @@
-/**
- * AnswerBlocks — renders interactive or read-only answer widgets.
- *
- * Handles SINGLE_CHOICE, MULTIPLE_CHOICE, TEXT, ESSAY.
- * Edit mode exposes inline inputs for type, points, options, explanation.
- */
-import { Check, Plus, X } from 'lucide-react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { Check, Plus, X, Upload, FileText, Download, ChevronDown, ChevronUp } from 'lucide-react'
+import { useDropzone } from 'react-dropzone'
+
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Textarea } from '@/shared/ui/textarea'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Select, SelectItem } from '@/shared/ui/select'
-import type { QuestionType, QuestionResponse, QuestionAuthorResponse, OptionAuthorResponse } from '@/shared/api'
-
-type AnyQuestion = QuestionResponse | QuestionAuthorResponse
+import TypstRender from '@/shared/components/TypstRender'
+import { uploadAnswerFileApiV1MediaUploadAnswerPost } from '@/shared/api'
+import type {
+  QuestionType as QType,
+  QuestionResponse,
+  QuestionAuthorResponse,
+  OptionAuthorResponse,
+} from '@/shared/api'
 
 function isAuthorQuestion(q: AnyQuestion): q is QuestionAuthorResponse {
   return 'explanation' in q
 }
 
-const QUESTION_TYPES: QuestionType[] = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TEXT', 'ESSAY']
+function ExplanationBlock({ explanation }: { explanation: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const hasTypst = explanation.includes('$') || explanation.includes('#') || explanation.includes('```')
 
-function typeLabel(t: QuestionType) {
+  return (
+    <div className="rounded-lg border p-3 bg-blue-50 text-blue-800">
+      <button
+        className="flex items-center gap-2 text-sm font-medium w-full text-left hover:opacity-80"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <span>Объяснение</span>
+      </button>
+      {expanded && (
+        <div className="mt-2 text-sm">
+          {hasTypst ? (
+            <TypstRender source={explanation} mode="review" />
+          ) : (
+            <p className="whitespace-pre-wrap">{explanation}</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const QUESTION_TYPES: QType[] = [
+  'SINGLE_CHOICE',
+  'MULTIPLE_CHOICE',
+  'TEXT',
+  'ESSAY',
+  'MATCHING',
+  'FILE_UPLOAD',
+]
+
+type AnyQuestion = QuestionResponse | QuestionAuthorResponse
+
+function typeLabel(t: QType) {
   switch (t) {
     case 'SINGLE_CHOICE': return 'Single Choice'
     case 'MULTIPLE_CHOICE': return 'Multiple Choice'
     case 'TEXT': return 'Text'
     case 'ESSAY': return 'Essay'
+    case 'MATCHING': return 'Matching'
+    case 'FILE_UPLOAD': return 'File Upload'
   }
 }
+
+type MatchingPair = { id: number; term: string; definition: string }
+
+type MatchingAnswer = Record<number, number>
 
 interface AnswerBlocksProps {
   question: AnyQuestion
@@ -51,11 +94,31 @@ export default function AnswerBlocks({
   const isEdit = mode === 'edit'
   const isReview = mode === 'review'
   const options = question.options || []
-  const qType = question.question_type
+  const qType = question.question_type as QType
 
   const selectedSingle = typeof value === 'number' ? value : null
   const selectedMultiple = Array.isArray(value) ? (value as number[]) : []
   const textValue = typeof value === 'string' ? value : ''
+
+  const questionData = (question.question_data ?? {}) as Record<string, unknown>
+  const matchingPairs = (questionData.matching_pairs as MatchingPair[] | undefined)
+  const matchingAnswer = useMemo(() => {
+    if (qType !== 'MATCHING') return {} as Record<number, number>
+    const v = value as MatchingAnswer | undefined
+    return v ?? {}
+  }, [qType, value])
+
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const fileAnswerUrl = typeof value === 'string' && value.startsWith('http') ? value : null
+
+  useEffect(() => {
+    if (fileAnswerUrl && !uploadedUrl && !uploadedFile) {
+      setUploadedUrl(fileAnswerUrl)
+    }
+  }, [fileAnswerUrl, uploadedUrl, uploadedFile])
 
   const handleSingleClick = (id: number) => {
     if (isReview) return
@@ -74,6 +137,54 @@ export default function AnswerBlocks({
     if (isReview) return
     onChange?.(v)
   }
+
+  const handleMatchingChange = (termId: number, defId: number) => {
+    if (isReview) return
+    onChange?.({ ...matchingAnswer, [termId]: defId })
+  }
+
+  const onDrop = useCallback(
+    async (accepted: File[]) => {
+      if (isReview || !accepted.length || !onChange) return
+      const file = accepted[0]
+      setUploadedFile(file)
+      setUploading(true)
+      try {
+        const res = await uploadAnswerFileApiV1MediaUploadAnswerPost({ body: { file: file as Blob } })
+        const data = (res.data || res) as Record<string, unknown>
+        const url = (data.url as string) || ''
+        if (url) {
+          setUploadedUrl(url)
+          onChange(url)
+          setUploading(false)
+          return
+        }
+      } catch {
+        // fallback to blob URL
+      }
+      const url = URL.createObjectURL(file)
+      setUploadedUrl(url)
+      onChange(url)
+      setUploading(false)
+    },
+    [isReview, onChange],
+  )
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    disabled: isReview,
+    maxFiles: 1,
+    maxSize: 10 * 1024 * 1024,
+    accept: {
+      'image/*': [],
+      'application/pdf': [],
+      'application/msword': [],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [],
+      'text/plain': [],
+      'video/*': [],
+      'audio/*': [],
+    },
+  })
 
   const addOption = () => {
     if (!isEdit || !isAuthorQuestion(question)) return
@@ -127,7 +238,35 @@ export default function AnswerBlocks({
 
   const setType = (type: string) => {
     if (!isEdit || !isAuthorQuestion(question)) return
-    onQuestionChange?.({ question_type: type as QuestionType })
+    onQuestionChange?.({ question_type: type as QType })
+  }
+
+  const setQuestionData = (patch: Record<string, unknown>) => {
+    onQuestionChange?.({ question_data: { ...questionData, ...patch } })
+  }
+
+  const addMatchingPair = () => {
+    if (!isEdit || !isAuthorQuestion(question)) return
+    const pairs = matchingPairs || []
+    if (pairs.length >= 6) return
+    const next = [
+      ...pairs,
+      { id: -Date.now(), term: '', definition: '' },
+    ]
+    setQuestionData({ matching_pairs: next })
+  }
+
+  const updateMatchingPair = (idx: number, field: 'term' | 'definition', value: string) => {
+    if (!isEdit || !isAuthorQuestion(question)) return
+    const pairs = [...(matchingPairs || [])]
+    pairs[idx] = { ...pairs[idx], [field]: value }
+    setQuestionData({ matching_pairs: pairs })
+  }
+
+  const removeMatchingPair = (idx: number) => {
+    if (!isEdit || !isAuthorQuestion(question)) return
+    const pairs = (matchingPairs || []).filter((_, i) => i !== idx)
+    setQuestionData({ matching_pairs: pairs })
   }
 
   const blockClass = (optId: number, isSelected: boolean) => {
@@ -144,6 +283,11 @@ export default function AnswerBlocks({
     }
     return base
   }
+
+  const shuffledDefinitions = useMemo(() => {
+    if (qType !== 'MATCHING' || !matchingPairs) return []
+    return [...matchingPairs].sort(() => Math.random() - 0.5)
+  }, [qType, matchingPairs])
 
   return (
     <div className="w-full my-4 space-y-4">
@@ -219,7 +363,7 @@ export default function AnswerBlocks({
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <span className="text-sm font-medium">{opt.text}</span>
+                      <TypstRender source={opt.text} mode="take" />
                     )}
                   </div>
                 </div>
@@ -269,19 +413,205 @@ export default function AnswerBlocks({
         />
       )}
 
+      {qType === 'MATCHING' && (
+        <div className="space-y-4">
+          {isEdit ? (
+            <div className="space-y-3">
+              {(!matchingPairs || matchingPairs.length === 0) && (
+                <p className="text-sm text-muted-foreground">
+                  Add matching pairs (term → definition).
+                </p>
+              )}
+              {matchingPairs?.map((pair, idx) => (
+                <div key={pair.id} className="flex items-start gap-2">
+                  <div className="flex-1 space-y-1">
+                    <span className="text-xs text-muted-foreground">Term</span>
+                    <Input
+                      value={pair.term}
+                      onChange={(e) => updateMatchingPair(idx, 'term', e.target.value)}
+                      placeholder="Enter term..."
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <span className="text-xs text-muted-foreground">Definition</span>
+                    <Input
+                      value={pair.definition}
+                      onChange={(e) => updateMatchingPair(idx, 'definition', e.target.value)}
+                      placeholder="Enter definition..."
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 mt-5"
+                    onClick={() => removeMatchingPair(idx)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {(!matchingPairs || matchingPairs.length < 6) && (
+                <Button variant="outline" size="sm" onClick={addMatchingPair}>
+                  <Plus className="h-4 w-4 mr-1" /> Add pair
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">Terms</p>
+                {matchingPairs?.map((pair) => (
+                  <div
+                    key={pair.id}
+                    className="rounded-lg border bg-background p-3 text-sm font-medium"
+                  >
+                    {pair.term}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">Matches</p>
+                {shuffledDefinitions.map((def) => {
+                  const selectedTerm = Object.entries(matchingAnswer).find(
+                    ([_, v]) => v === def.id,
+                  )
+                  return (
+                    <div
+                      key={def.id}
+                      className={`rounded-lg border p-3 text-sm ${
+                        isReview
+                          ? selectedTerm
+                            ? Number(selectedTerm[0]) ===
+                              matchingPairs?.find((p) => p.definition === def.definition)?.id
+                              ? 'bg-green-50 border-green-500'
+                              : 'bg-red-50 border-red-500'
+                            : 'bg-background'
+                          : 'bg-background'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="flex-1">{def.definition}</span>
+                        {!isReview && (
+                          <select
+                            className="text-xs border rounded px-2 py-1 bg-background"
+                            value={selectedTerm?.[0] ?? ''}
+                            onChange={(e) =>
+                              handleMatchingChange(
+                                Number(e.target.value),
+                                def.id,
+                              )
+                            }
+                          >
+                            <option value="">—</option>
+                            {matchingPairs?.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.term}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {isReview && selectedTerm && (
+                          <span className="text-xs text-muted-foreground">
+                            → {matchingPairs?.find((p) => p.id === Number(selectedTerm[0]))?.term}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {qType === 'FILE_UPLOAD' && (
+        <div className="space-y-3">
+          {isEdit ? (
+            <div className="rounded-lg border-2 border-dashed p-6 text-center text-sm text-muted-foreground">
+              <FileText className="h-8 w-8 mx-auto mb-2" />
+              <p>File upload is enabled for this question</p>
+              <p className="text-xs mt-1">Students will be able to upload images, PDFs, audio, video, text</p>
+            </div>
+          ) : uploading ? (
+            <div className="rounded-lg border p-4 flex items-center gap-3 text-muted-foreground">
+              <FileText className="h-8 w-8" />
+              <span className="text-sm">Uploading...</span>
+            </div>
+          ) : uploadedUrl || fileAnswerUrl ? (
+            <div className="rounded-lg border p-4 flex items-center gap-3">
+              <FileText className="h-8 w-8 text-primary" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {uploadedFile?.name || 'Uploaded file'}
+                </p>
+                {uploadedFile && (
+                  <p className="text-xs text-muted-foreground">
+                    {(uploadedFile.size / 1024).toFixed(1)} KB
+                  </p>
+                )}
+              </div>
+              {!isReview && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setUploadedFile(null)
+                    setUploadedUrl(null)
+                    onChange?.(null)
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+              <Button variant="outline" size="sm" asChild>
+                <a href={uploadedUrl || fileAnswerUrl || '#'} download={uploadedFile?.name} target="_blank" rel="noreferrer">
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
+                </a>
+              </Button>
+            </div>
+          ) : (
+            <div
+              {...getRootProps()}
+              className={`rounded-lg border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
+                isDragActive
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+              } ${isReview ? 'pointer-events-none opacity-60' : ''}`}
+            >
+              <input {...getInputProps()} />
+              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              {isDragActive ? (
+                <p className="text-sm font-medium">Drop file here...</p>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">
+                    {isReview ? 'No file uploaded' : 'Drop file here or click to browse'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Max 10 MB — images, PDF, documents, audio, video
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {qType !== 'SINGLE_CHOICE' &&
         qType !== 'MULTIPLE_CHOICE' &&
         qType !== 'TEXT' &&
-        qType !== 'ESSAY' && (
+        qType !== 'ESSAY' &&
+        qType !== 'MATCHING' &&
+        qType !== 'FILE_UPLOAD' && (
           <div className="p-4 border rounded bg-muted text-muted-foreground text-sm">
             This question type is not yet implemented.
           </div>
         )}
 
       {isReview && explanation && (
-        <div className="rounded-lg border p-3 bg-blue-50 text-blue-800 text-sm">
-          <strong>Explanation:</strong> {explanation}
-        </div>
+        <ExplanationBlock explanation={explanation} />
       )}
 
       {isEdit && isAuthorQuestion(question) && (

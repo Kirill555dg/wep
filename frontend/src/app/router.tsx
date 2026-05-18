@@ -4,6 +4,7 @@ import TestViewPage from '@/pages/test-view/TestViewPage'
 import TakeTestPage from '@/pages/test-content/TakeTestPage'
 import CreateTestPage from '@/pages/test-content/CreateTestPage'
 import TypstEditorPage from '@/pages/test-content/TypstEditorPage'
+import TestSettingsPage from '@/pages/test-settings/TestSettingsPage'
 import HistoryPage from '@/pages/history/HistoryPage'
 import MyTestsPage from '@/pages/my-tests/MyTestsPage'
 import ResultsPage from '@/pages/results/ResultsPage'
@@ -20,6 +21,7 @@ export default function AppRouter() {
       <Route path="/tests/new/edit" element={<CreateTestPage />} />
       <Route path="/tests/:testId/take" element={<TakeTestPage />} />
       <Route path="/tests/:testId/edit" element={<TakeTestPage editMode />} />
+      <Route path="/tests/:testId/settings" element={<TestSettingsPage />} />
       <Route path="/tests/:testId/questions/:questionId/typst" element={<TypstEditorPage />} />
       <Route path="/history" element={<HistoryPage />} />
       <Route path="/my-tests" element={<MyTestsPage />} />

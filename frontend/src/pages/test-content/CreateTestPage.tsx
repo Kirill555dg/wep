@@ -101,7 +101,7 @@ export default function CreateTestPage() {
     const body: TestCreate = {
       title: data.title,
       description: data.description || null,
-      is_public: data.is_public,
+      is_public: false,
       track_time: data.track_time,
       time_limit_minutes: data.track_time ? data.time_limit_minutes ?? null : null,
       attempt_limit: data.attempt_limit ?? null,
@@ -352,7 +352,7 @@ export default function CreateTestPage() {
               className="w-full"
               disabled={isSubmitting || createMutation.isPending}
             >
-              {createMutation.isPending ? 'Создание...' : 'Создать тест'}
+              {createMutation.isPending ? 'Создание...' : 'Создать черновик'}
             </Button>
           </form>
         </CardContent>

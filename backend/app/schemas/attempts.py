@@ -38,3 +38,26 @@ class BulkAnswersRequest(pydantic.BaseModel):
 class BulkAnswersResponse(pydantic.BaseModel):
     saved: int
     errors: list[str] | None = None
+
+
+class AttemptAuthorSummary(pydantic.BaseModel):
+    id: int
+    user_id: int
+    user_name: str
+    status: str
+    score: int | None
+    max_score: int | None
+    started_at: dt.datetime
+    finished_at: dt.datetime | None
+    time_spent_minutes: int | None
+
+    model_config = pydantic.ConfigDict(from_attributes=True)
+
+
+class PageAttemptAuthorSummary(pydantic.BaseModel):
+    items: list[AttemptAuthorSummary]
+    total: int
+    skip: int
+    limit: int
+
+    model_config = pydantic.ConfigDict(from_attributes=True)

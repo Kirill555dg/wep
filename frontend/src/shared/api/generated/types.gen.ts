@@ -47,6 +47,16 @@ export type AnswerResponse = {
      */
     text_answer: string | null;
     /**
+     * Matching Answer
+     */
+    matching_answer?: {
+        [key: string]: number;
+    } | null;
+    /**
+     * File Answer
+     */
+    file_answer?: string | null;
+    /**
      * Is Correct
      */
     is_correct: boolean | null;
@@ -72,6 +82,16 @@ export type AnswerSubmitRequest = {
      * Text Answer
      */
     text_answer?: string | null;
+    /**
+     * Matching Answer
+     */
+    matching_answer?: {
+        [key: string]: number;
+    } | null;
+    /**
+     * File Answer
+     */
+    file_answer?: string | null;
 };
 
 /**
@@ -100,6 +120,16 @@ export type AttemptAnswerDetail = {
      */
     text_answer: string | null;
     /**
+     * Matching Answer
+     */
+    matching_answer?: {
+        [key: string]: number;
+    } | null;
+    /**
+     * File Answer
+     */
+    file_answer?: string | null;
+    /**
      * Is Correct
      */
     is_correct: boolean | null;
@@ -115,6 +145,48 @@ export type AttemptAnswerDetail = {
      * Explanation
      */
     explanation: string | null;
+};
+
+/**
+ * AttemptAuthorSummary
+ */
+export type AttemptAuthorSummary = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * User Id
+     */
+    user_id: number;
+    /**
+     * User Name
+     */
+    user_name: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Score
+     */
+    score: number | null;
+    /**
+     * Max Score
+     */
+    max_score: number | null;
+    /**
+     * Started At
+     */
+    started_at: string;
+    /**
+     * Finished At
+     */
+    finished_at: string | null;
+    /**
+     * Time Spent Minutes
+     */
+    time_spent_minutes: number | null;
 };
 
 /**
@@ -279,6 +351,16 @@ export type AuthorStatsResponse = {
 };
 
 /**
+ * Body_upload_answer_file_api_v1_media_upload_answer_post
+ */
+export type BodyUploadAnswerFileApiV1MediaUploadAnswerPost = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
  * Body_upload_media_api_v1_media_upload_post
  */
 export type BodyUploadMediaApiV1MediaUploadPost = {
@@ -415,6 +497,28 @@ export type OptionResponse = {
 };
 
 /**
+ * PageAttemptAuthorSummary
+ */
+export type PageAttemptAuthorSummary = {
+    /**
+     * Items
+     */
+    items: Array<AttemptAuthorSummary>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Skip
+     */
+    skip: number;
+    /**
+     * Limit
+     */
+    limit: number;
+};
+
+/**
  * Page[AttemptSummary]
  */
 export type PageAttemptSummary = {
@@ -434,6 +538,42 @@ export type PageAttemptSummary = {
      * Limit
      */
     limit: number;
+};
+
+/**
+ * PerQuestionStat
+ */
+export type PerQuestionStat = {
+    /**
+     * Question Id
+     */
+    question_id: number;
+    /**
+     * Question Text
+     */
+    question_text: string;
+    /**
+     * Total Attempts
+     */
+    total_attempts: number;
+    /**
+     * Correct Attempts
+     */
+    correct_attempts: number;
+    /**
+     * Correct Percent
+     */
+    correct_percent: number;
+};
+
+/**
+ * PerQuestionStatsResponse
+ */
+export type PerQuestionStatsResponse = {
+    /**
+     * Items
+     */
+    items: Array<PerQuestionStat>;
 };
 
 /**
@@ -470,9 +610,19 @@ export type QuestionAuthorResponse = {
      */
     image_url: string | null;
     /**
+     * Media Files
+     */
+    media_files?: Array<string>;
+    /**
      * Options
      */
     options?: Array<OptionAuthorResponse>;
+    /**
+     * Question Data
+     */
+    question_data?: {
+        [key: string]: unknown;
+    } | null;
 };
 
 /**
@@ -505,9 +655,42 @@ export type QuestionCreate = {
      */
     image_url?: string | null;
     /**
+     * Media Files
+     */
+    media_files?: Array<string>;
+    /**
      * Options
      */
     options?: Array<OptionCreate>;
+    /**
+     * Question Data
+     */
+    question_data?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * QuestionPoolResponse
+ */
+export type QuestionPoolResponse = {
+    /**
+     * Id
+     */
+    id: number;
+    question_type: QuestionType;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Points
+     */
+    points: number;
+    /**
+     * Created At
+     */
+    created_at: string;
 };
 
 /**
@@ -536,15 +719,25 @@ export type QuestionResponse = {
      */
     image_url: string | null;
     /**
+     * Media Files
+     */
+    media_files?: Array<string>;
+    /**
      * Options
      */
     options?: Array<OptionResponse>;
+    /**
+     * Question Data
+     */
+    question_data?: {
+        [key: string]: unknown;
+    } | null;
 };
 
 /**
  * QuestionType
  */
-export type QuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TEXT' | 'ESSAY';
+export type QuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TEXT' | 'ESSAY' | 'MATCHING' | 'FILE_UPLOAD';
 
 /**
  * QuestionUpdate
@@ -576,9 +769,45 @@ export type QuestionUpdate = {
      */
     image_url?: string | null;
     /**
+     * Media Files
+     */
+    media_files?: Array<string>;
+    /**
      * Options
      */
     options?: Array<OptionCreate> | null;
+    /**
+     * Question Data
+     */
+    question_data?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * ScoreDistributionResponse
+ */
+export type ScoreDistributionResponse = {
+    /**
+     * Bucket 0 20
+     */
+    bucket_0_20?: number;
+    /**
+     * Bucket 20 40
+     */
+    bucket_20_40?: number;
+    /**
+     * Bucket 40 60
+     */
+    bucket_40_60?: number;
+    /**
+     * Bucket 60 80
+     */
+    bucket_60_80?: number;
+    /**
+     * Bucket 80 100
+     */
+    bucket_80_100?: number;
 };
 
 /**
@@ -622,6 +851,14 @@ export type TestAuthorDetailResponse = {
      */
     author_id: number;
     /**
+     * Author Name
+     */
+    author_name?: string;
+    /**
+     * Author Login
+     */
+    author_login?: string;
+    /**
      * Title
      */
     title: string;
@@ -641,6 +878,14 @@ export type TestAuthorDetailResponse = {
      * Track Time
      */
     track_time: boolean;
+    /**
+     * Image Url
+     */
+    image_url?: string | null;
+    /**
+     * Media Files
+     */
+    media_files?: Array<string>;
     /**
      * Questions Count
      */
@@ -704,6 +949,14 @@ export type TestCreate = {
      */
     completion_message?: string | null;
     /**
+     * Image Url
+     */
+    image_url?: string | null;
+    /**
+     * Media Files
+     */
+    media_files?: Array<string>;
+    /**
      * Tag Names
      */
     tag_names?: Array<string>;
@@ -721,6 +974,14 @@ export type TestDetailResponse = {
      * Author Id
      */
     author_id: number;
+    /**
+     * Author Name
+     */
+    author_name?: string;
+    /**
+     * Author Login
+     */
+    author_login?: string;
     /**
      * Title
      */
@@ -741,6 +1002,14 @@ export type TestDetailResponse = {
      * Track Time
      */
     track_time: boolean;
+    /**
+     * Image Url
+     */
+    image_url?: string | null;
+    /**
+     * Media Files
+     */
+    media_files?: Array<string>;
     /**
      * Questions Count
      */
@@ -776,6 +1045,14 @@ export type TestResponse = {
      */
     author_id: number;
     /**
+     * Author Name
+     */
+    author_name?: string;
+    /**
+     * Author Login
+     */
+    author_login?: string;
+    /**
      * Title
      */
     title: string;
@@ -795,6 +1072,14 @@ export type TestResponse = {
      * Track Time
      */
     track_time: boolean;
+    /**
+     * Image Url
+     */
+    image_url?: string | null;
+    /**
+     * Media Files
+     */
+    media_files?: Array<string>;
     /**
      * Questions Count
      */
@@ -875,6 +1160,14 @@ export type TestUpdate = {
      * Completion Message
      */
     completion_message?: string | null;
+    /**
+     * Image Url
+     */
+    image_url?: string | null;
+    /**
+     * Media Files
+     */
+    media_files?: Array<string>;
     /**
      * Tag Names
      */
@@ -1812,6 +2105,191 @@ export type UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchResponses = {
 
 export type UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchResponse = UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchResponses[keyof UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchResponses];
 
+export type ListTestAttemptsApiV1TestsTestIdAttemptsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: number;
+    };
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/tests/{test_id}/attempts';
+};
+
+export type ListTestAttemptsApiV1TestsTestIdAttemptsGetErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListTestAttemptsApiV1TestsTestIdAttemptsGetError = ListTestAttemptsApiV1TestsTestIdAttemptsGetErrors[keyof ListTestAttemptsApiV1TestsTestIdAttemptsGetErrors];
+
+export type ListTestAttemptsApiV1TestsTestIdAttemptsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: PageAttemptAuthorSummary;
+};
+
+export type ListTestAttemptsApiV1TestsTestIdAttemptsGetResponse = ListTestAttemptsApiV1TestsTestIdAttemptsGetResponses[keyof ListTestAttemptsApiV1TestsTestIdAttemptsGetResponses];
+
+export type ListQuestionPoolApiV1TestsQuestionsPoolGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Query
+         */
+        query?: string | null;
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/tests/questions/pool';
+};
+
+export type ListQuestionPoolApiV1TestsQuestionsPoolGetErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListQuestionPoolApiV1TestsQuestionsPoolGetError = ListQuestionPoolApiV1TestsQuestionsPoolGetErrors[keyof ListQuestionPoolApiV1TestsQuestionsPoolGetErrors];
+
+export type ListQuestionPoolApiV1TestsQuestionsPoolGetResponses = {
+    /**
+     * Response List Question Pool Api V1 Tests Questions Pool Get
+     *
+     * Successful Response
+     */
+    200: Array<QuestionPoolResponse>;
+};
+
+export type ListQuestionPoolApiV1TestsQuestionsPoolGetResponse = ListQuestionPoolApiV1TestsQuestionsPoolGetResponses[keyof ListQuestionPoolApiV1TestsQuestionsPoolGetResponses];
+
+export type AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostData = {
+    body?: never;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: number;
+        /**
+         * Question Id
+         */
+        question_id: number;
+    };
+    query?: never;
+    url: '/api/v1/tests/{test_id}/questions/{question_id}/from-pool';
+};
+
+export type AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostError = AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostErrors[keyof AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostErrors];
+
+export type AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: QuestionAuthorResponse;
+};
+
+export type AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostResponse = AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostResponses[keyof AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostResponses];
+
 export type SearchCatalogApiV1CatalogGetData = {
     body?: never;
     path?: never;
@@ -1828,6 +2306,10 @@ export type SearchCatalogApiV1CatalogGetData = {
          * Author Id
          */
         author_id?: number | null;
+        /**
+         * Author Login
+         */
+        author_login?: string | null;
         /**
          * Skip
          */
@@ -2646,6 +3128,114 @@ export type GetCalendarApiV1StatsCalendarGetResponses = {
 
 export type GetCalendarApiV1StatsCalendarGetResponse = GetCalendarApiV1StatsCalendarGetResponses[keyof GetCalendarApiV1StatsCalendarGetResponses];
 
+export type GetScoreDistributionApiV1StatsTestsTestIdDistributionGetData = {
+    body?: never;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: number;
+    };
+    query?: never;
+    url: '/api/v1/stats/tests/{test_id}/distribution';
+};
+
+export type GetScoreDistributionApiV1StatsTestsTestIdDistributionGetErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetScoreDistributionApiV1StatsTestsTestIdDistributionGetError = GetScoreDistributionApiV1StatsTestsTestIdDistributionGetErrors[keyof GetScoreDistributionApiV1StatsTestsTestIdDistributionGetErrors];
+
+export type GetScoreDistributionApiV1StatsTestsTestIdDistributionGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ScoreDistributionResponse;
+};
+
+export type GetScoreDistributionApiV1StatsTestsTestIdDistributionGetResponse = GetScoreDistributionApiV1StatsTestsTestIdDistributionGetResponses[keyof GetScoreDistributionApiV1StatsTestsTestIdDistributionGetResponses];
+
+export type GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetData = {
+    body?: never;
+    path: {
+        /**
+         * Test Id
+         */
+        test_id: number;
+    };
+    query?: never;
+    url: '/api/v1/stats/tests/{test_id}/per-question';
+};
+
+export type GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetError = GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetErrors[keyof GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetErrors];
+
+export type GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: PerQuestionStatsResponse;
+};
+
+export type GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetResponse = GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetResponses[keyof GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetResponses];
+
 export type UploadMediaApiV1MediaUploadPostData = {
     body: BodyUploadMediaApiV1MediaUploadPost;
     path?: never;
@@ -2698,6 +3288,59 @@ export type UploadMediaApiV1MediaUploadPostResponses = {
 };
 
 export type UploadMediaApiV1MediaUploadPostResponse = UploadMediaApiV1MediaUploadPostResponses[keyof UploadMediaApiV1MediaUploadPostResponses];
+
+export type UploadAnswerFileApiV1MediaUploadAnswerPostData = {
+    body: BodyUploadAnswerFileApiV1MediaUploadAnswerPost;
+    path?: never;
+    query?: never;
+    url: '/api/v1/media/upload-answer';
+};
+
+export type UploadAnswerFileApiV1MediaUploadAnswerPostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type UploadAnswerFileApiV1MediaUploadAnswerPostError = UploadAnswerFileApiV1MediaUploadAnswerPostErrors[keyof UploadAnswerFileApiV1MediaUploadAnswerPostErrors];
+
+export type UploadAnswerFileApiV1MediaUploadAnswerPostResponses = {
+    /**
+     * Response Upload Answer File Api V1 Media Upload Answer Post
+     *
+     * Successful Response
+     */
+    201: {
+        [key: string]: string;
+    };
+};
+
+export type UploadAnswerFileApiV1MediaUploadAnswerPostResponse = UploadAnswerFileApiV1MediaUploadAnswerPostResponses[keyof UploadAnswerFileApiV1MediaUploadAnswerPostResponses];
 
 export type RootGetData = {
     body?: never;

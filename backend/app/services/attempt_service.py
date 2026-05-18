@@ -85,10 +85,16 @@ class AttemptService:
         if not question:
             raise svc_exc.ServiceError("Question not found in test", code="question_not_found")
 
-        is_correct, points = self.grading.check_answer(question, data.selected_option_ids, data.text_answer)
+        is_correct, points = self.grading.check_answer(
+            question, data.selected_option_ids, data.text_answer,
+            matching_answer=data.matching_answer,
+            file_answer=data.file_answer,
+        )
         answer = await self.answer_repo.upsert(attempt_id, data.question_id, {
             "selected_option_ids": data.selected_option_ids,
             "text_answer": data.text_answer,
+            "matching_answer": data.matching_answer,
+            "file_answer": data.file_answer,
             "is_correct": is_correct,
             "points_earned": points,
         })
@@ -135,6 +141,8 @@ class AttemptService:
                 points=q.points,
                 selected_option_ids=ans.selected_option_ids if ans else None,
                 text_answer=ans.text_answer if ans else None,
+                matching_answer=ans.matching_answer if ans else None,
+                file_answer=ans.file_answer if ans else None,
                 is_correct=ans.is_correct if ans else None,
                 points_earned=ans.points_earned if ans else None,
                 correct_option_ids=correct_option_ids,

@@ -19,9 +19,13 @@ class CatalogService:
             query=params.q,
             tag_slugs=params.tags or None,
             author_id=params.author_id,
+            author_login=params.author_login,
         )
         total = await self.test_repo.count_public(
-            query=params.q, tag_slugs=params.tags or None, author_id=params.author_id
+            query=params.q,
+            tag_slugs=params.tags or None,
+            author_id=params.author_id,
+            author_login=params.author_login,
         )
         return tests, total
 

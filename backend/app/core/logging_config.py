@@ -2,13 +2,17 @@
 Application logging configuration.
 
 - Adds request_id into log records (via ContextVar).
-- Local dev: colored key=value logs (human-friendly).
-- Server: JSON logs without ANSI sequences.
+- Local dev: colored key=value logs (human-friendly) to stderr.
+- Server: JSON logs without ANSI sequences to stderr.
+- Also writes to app.log in project root (rotating, 10MB x 5 files).
 """
 
 import datetime
 import json
 import logging
+import logging.handlers
+import os
+import pathlib
 import sys
 import typing as tp
 
@@ -43,6 +47,10 @@ _BUILTIN_RECORD_ATTRS: frozenset[str] = frozenset(
         "taskName",
     }
 )
+
+
+_LOGS_DIR = pathlib.Path(__file__).parent.parent.parent / "logs"
+_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _utc_now_iso() -> str:
@@ -151,8 +159,18 @@ def setup_logging() -> None:
     handler.addFilter(RequestIdFilter())
     handler.setFormatter(JsonFormatter() if use_json else KeyValueFormatter(color=use_color))
 
+    # Rotating file handler (always JSON, no colors, for debugging)
+    file_handler = logging.handlers.RotatingFileHandler(
+        _LOGS_DIR / "app.log",
+        maxBytes=10 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf-8",
+    )
+    file_handler.addFilter(RequestIdFilter())
+    file_handler.setFormatter(JsonFormatter())
+
     root = logging.getLogger()
-    root.handlers = [handler]
+    root.handlers = [handler, file_handler]
     root.setLevel(level)
 
     # Use our handler/format for uvicorn, suppress access logs (we log in middleware).

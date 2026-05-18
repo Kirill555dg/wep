@@ -21,14 +21,7 @@ import QuestionPanel from '@/widgets/question-panel/QuestionPanel'
 import TypstRender from '@/shared/components/TypstRender'
 import MediaCarousel from '@/shared/components/MediaCarousel'
 import AnswerBlocks from '@/shared/components/AnswerBlocks'
-
-function formatDuration(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60)
-  const s = totalSeconds % 60
-  if (m === 0) return `${s}с`
-  if (s === 0) return `${m}м`
-  return `${m}м ${s}с`
-}
+import { formatDuration } from '@/shared/lib/format'
 
 export default function ResultsPage() {
   const { attemptId } = useParams<{ attemptId: string }>()
@@ -135,7 +128,7 @@ export default function ResultsPage() {
   const currentAnswer = answers[currentIdxSafe]
   const currentQuestion = questions[currentIdxSafe]
 
-  const completionMessage = (result as any).completion_message ?? null
+  const completionMessage = test?.completion_message ?? null
 
   const mediaFiles = currentQuestion?.image_url
     ? [

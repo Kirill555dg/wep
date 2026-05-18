@@ -22,6 +22,7 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
             sa.select(tc_models.Test)
             .where(tc_models.Test.author_id == author_id)
             .options(
+                sqla_orm.selectinload(tc_models.Test.author),
                 sqla_orm.selectinload(tc_models.Test.questions),
                 sqla_orm.selectinload(tc_models.Test.test_tags).selectinload(tc_models.TestTag.tag),
             )
@@ -43,17 +44,28 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
         query: str | None = None,
         tag_slugs: list[str] | None = None,
         author_id: int | None = None,
+        author_login: str | None = None,
     ) -> list[tc_models.Test]:
+        from app.models import users as user_models
+
         stmt = (
             sa.select(tc_models.Test)
             .where(tc_models.Test.is_public.is_(True))
             .options(
+                sqla_orm.selectinload(tc_models.Test.author),
                 sqla_orm.selectinload(tc_models.Test.questions),
                 sqla_orm.selectinload(tc_models.Test.test_tags).selectinload(tc_models.TestTag.tag),
             )
         )
         if author_id is not None:
             stmt = stmt.where(tc_models.Test.author_id == author_id)
+        if author_login is not None:
+            stmt = stmt.join(user_models.User, tc_models.Test.author_id == user_models.User.id).where(
+                sa.or_(
+                    user_models.User.username == author_login,
+                    user_models.User.email == author_login,
+                )
+            )
         if query:
             stmt = stmt.where(
                 sa.or_(tc_models.Test.title.ilike(f"%{query}%"), tc_models.Test.description.ilike(f"%{query}%"))
@@ -66,7 +78,7 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
             )
         stmt = stmt.offset(skip).limit(limit).order_by(tc_models.Test.created_at.desc())
 
-        LOGGER.info(f"Executing get_public query: skip={skip}, limit={limit}, query={query}, tag_slugs={tag_slugs}")
+        LOGGER.info(f"Executing get_public query: skip={skip}, limit={limit}, query={query}, tag_slugs={tag_slugs}, author_login={author_login}")
 
         result = await self._scalars_all(stmt)
 
@@ -75,11 +87,24 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
         return tp.cast(list[tc_models.Test], result)
 
     async def count_public(
-        self, query: str | None = None, tag_slugs: list[str] | None = None, author_id: int | None = None
+        self,
+        query: str | None = None,
+        tag_slugs: list[str] | None = None,
+        author_id: int | None = None,
+        author_login: str | None = None,
     ) -> int:
+        from app.models import users as user_models
+
         stmt = sa.select(sa.func.count()).select_from(tc_models.Test).where(tc_models.Test.is_public.is_(True))
         if author_id is not None:
             stmt = stmt.where(tc_models.Test.author_id == author_id)
+        if author_login is not None:
+            stmt = stmt.join(user_models.User, tc_models.Test.author_id == user_models.User.id).where(
+                sa.or_(
+                    user_models.User.username == author_login,
+                    user_models.User.email == author_login,
+                )
+            )
         if query:
             stmt = stmt.where(
                 sa.or_(tc_models.Test.title.ilike(f"%{query}%"), tc_models.Test.description.ilike(f"%{query}%"))
@@ -98,6 +123,7 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
             sa.select(tc_models.Test)
             .where(tc_models.Test.id == test_id)
             .options(
+                sqla_orm.selectinload(tc_models.Test.author),
                 sqla_orm.selectinload(tc_models.Test.questions).selectinload(tc_models.Question.options),
                 sqla_orm.selectinload(tc_models.Test.test_tags).selectinload(tc_models.TestTag.tag),
             )
@@ -135,6 +161,20 @@ class QuestionRepository(base_repo.BaseRepository[tc_models.Question]):
         )
         result = await self.db.execute(stmt)
         return tp.cast(int, result.scalar_one())
+
+    async def list_by_author_pool(self, author_id: int, query: str | None = None, skip: int = 0, limit: int = 50) -> list[tc_models.Question]:
+        stmt = (
+            sa.select(tc_models.Question)
+            .join(tc_models.Test, tc_models.Question.test_id == tc_models.Test.id)
+            .where(tc_models.Test.author_id == author_id)
+            .options(sqla_orm.selectinload(tc_models.Question.options))
+            .order_by(tc_models.Question.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        if query:
+            stmt = stmt.where(tc_models.Question.text.ilike(f"%{query}%"))
+        return tp.cast(list[tc_models.Question], await self._scalars_all(stmt))
 
 
 class OptionRepository(base_repo.BaseRepository[tc_models.Option]):
@@ -280,6 +320,21 @@ class AttemptRepository(base_repo.BaseRepository[tc_models.Attempt]):
         )
         result = await self.db.execute(stmt)
         return {row.test_id: {"total": row.total, "completed": row.completed} for row in result}
+
+    async def list_by_test_with_users(self, test_id: int, skip: int = 0, limit: int = 20) -> tuple[list[tc_models.Attempt], int]:
+        stmt = (
+            sa.select(tc_models.Attempt)
+            .where(tc_models.Attempt.test_id == test_id)
+            .options(sqla_orm.selectinload(tc_models.Attempt.user))
+            .order_by(tc_models.Attempt.started_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        rows = tp.cast(list[tc_models.Attempt], await self._scalars_all(stmt))
+        count_stmt = sa.select(sa.func.count()).select_from(tc_models.Attempt).where(tc_models.Attempt.test_id == test_id)
+        result = await self.db.execute(count_stmt)
+        total = tp.cast(int, result.scalar_one())
+        return rows, total
 
     async def list_by_user(
         self, user_id: int, skip: int = 0, limit: int = 20,

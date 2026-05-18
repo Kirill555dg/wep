@@ -8,6 +8,14 @@ import './shared/styles/globals.css'
 import { client } from '@/shared/api'
 import { useUserStore } from '@/entities/user/model/store'
 
+// Helper for Cypress e2e: programmatically inject token
+if (typeof window !== 'undefined') {
+  (window as unknown as Record<string, unknown>).__setAuth = (token: string, user: object) => {
+    useUserStore.getState().setToken(token)
+    useUserStore.getState().setUser(user as any)
+  }
+}
+
 // Every request with Bearer security reads the CURRENT token from Zustand.
 // No manual re-config needed on login/logout.
 client.setConfig({

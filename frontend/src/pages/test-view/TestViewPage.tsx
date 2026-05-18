@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
@@ -13,10 +14,25 @@ import {
   RotateCcw,
   LogIn,
   Loader2,
+  BarChart3,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 
 import { useAuth } from '@/shared/hooks/useAuth'
-import { getApiError } from '@/shared/lib/api-error'
+import {
+  getApiError } from '@/shared/lib/api-error'
+import { formatDateTime } from '@/shared/lib/format'
+import TypstRender from '@/shared/components/TypstRender'
 import {
   client,
   getPublicTestApiV1CatalogTestIdGet,
@@ -24,19 +40,210 @@ import {
   getActiveAttemptApiV1AttemptsActiveGet,
   startAttemptApiV1AttemptsPost,
   getTestStatsApiV1StatsTestsTestIdGet,
+  getScoreDistributionApiV1StatsTestsTestIdDistributionGet,
+  getPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGet,
+  listTestAttemptsApiV1TestsTestIdAttemptsGet,
 } from '@/shared/api'
 import type {
   TestDetailResponse,
   TestAuthorDetailResponse,
   ActiveAttemptResponse,
   TestStatsResponse,
+  ScoreDistributionResponse,
+  PerQuestionStatsResponse,
+  PerQuestionStat,
+  AttemptAuthorSummary,
+  PageAttemptAuthorSummary,
 } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { formatDate } from '@/shared/lib/format'
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ru-RU')
+function ScoreDistributionChart({ testId }: { testId: number }) {
+  const { data: distResponse } = useQuery({
+    queryKey: ['score-distribution', testId],
+    queryFn: () =>
+      getScoreDistributionApiV1StatsTestsTestIdDistributionGet({ client, path: { test_id: testId } }),
+    enabled: testId > 0,
+  })
+  const dist = distResponse?.data as ScoreDistributionResponse | undefined
+
+  const distributionData = useMemo(() => {
+    if (!dist) return []
+    return [
+      { label: '0-20%', count: dist.bucket_0_20 },
+      { label: '20-40%', count: dist.bucket_20_40 },
+      { label: '40-60%', count: dist.bucket_40_60 },
+      { label: '60-80%', count: dist.bucket_60_80 },
+      { label: '80-100%', count: dist.bucket_80_100 },
+    ]
+  }, [dist])
+
+  if (!distributionData.length) {
+    return <p className="text-sm text-muted-foreground py-8 text-center">No data yet</p>
+  }
+
+  return (
+    <div className="h-64">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={distributionData} margin={{ top: 8, right: 8, bottom: 8, left: -16 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+          <Tooltip
+            contentStyle={{ fontSize: 13, borderRadius: 8, border: '1px solid #e2e8f0' }}
+            formatter={(value: number) => [value, 'attempts']}
+          />
+          <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function RecentAttemptsTable({ testId }: { testId: number }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['test-attempts', testId],
+    queryFn: () =>
+      listTestAttemptsApiV1TestsTestIdAttemptsGet({
+        client,
+        path: { test_id: testId },
+        query: { skip: 0, limit: 20 },
+      }),
+    enabled: testId > 0,
+  })
+
+  const attempts = (data?.data as PageAttemptAuthorSummary | undefined)?.items ?? []
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl border p-6 shadow-sm">
+        <h3 className="text-sm font-semibold mb-4">Недавние попытки</h3>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-12 bg-gray-100 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (attempts.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border p-6 shadow-sm">
+        <h3 className="text-sm font-semibold mb-4">Недавние попытки</h3>
+        <p className="text-sm text-muted-foreground py-4 text-center">Нет попыток</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-xl border p-6 shadow-sm overflow-hidden">
+      <h3 className="text-sm font-semibold mb-4">Недавние попытки</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-2 font-medium text-muted-foreground">Пользователь</th>
+              <th className="text-left py-2 font-medium text-muted-foreground">Статус</th>
+              <th className="text-left py-2 font-medium text-muted-foreground">Результат</th>
+              <th className="text-left py-2 font-medium text-muted-foreground">Время</th>
+              <th className="text-left py-2 font-medium text-muted-foreground">Дата</th>
+            </tr>
+          </thead>
+          <tbody>
+            {attempts.map((attempt) => (
+              <tr key={attempt.id} className="border-b last:border-0 hover:bg-gray-50">
+                <td className="py-3">{attempt.user_name}</td>
+                <td className="py-3">
+                  {attempt.status === 'completed' ? (
+                    <span className="inline-flex items-center gap-1 text-green-600">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Завершен
+                    </span>
+                  ) : attempt.status === 'in_progress' ? (
+                    <span className="inline-flex items-center gap-1 text-blue-600">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      В процессе
+                    </span>
+                  ) : attempt.status === 'expired' ? (
+                    <span className="inline-flex items-center gap-1 text-orange-600">
+                      <XCircle className="w-4 h-4" />
+                      Истекло время
+                    </span>
+                  ) : (
+                    <span className="text-gray-600">{attempt.status}</span>
+                  )}
+                </td>
+                <td className="py-3">
+                  {attempt.score !== null && attempt.max_score !== null ? (
+                    <span className="font-medium">
+                      {attempt.score} / {attempt.max_score}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="py-3">
+                  {attempt.time_spent_minutes !== null ? (
+                    <span>{attempt.time_spent_minutes} мин</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="py-3 text-muted-foreground">
+                  {formatDateTime(attempt.started_at)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+
+function QuestionsByCorrectness({ testId }: { testId: number }) {
+  const { data: perQuestionResponse } = useQuery({
+    queryKey: ['per-question-stats', testId],
+    queryFn: () =>
+      getPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGet({ client, path: { test_id: testId } }),
+    enabled: testId > 0,
+  })
+  const questions = (perQuestionResponse?.data as PerQuestionStatsResponse | undefined)?.items ?? []
+
+  return (
+    <div className="bg-white rounded-xl border p-6 shadow-sm">
+      <h3 className="text-sm font-semibold mb-4">Вопросы по правильности</h3>
+      {questions.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4 text-center">No data yet</p>
+      ) : (
+        <div className="space-y-3">
+          {questions.map((q, idx) => (
+            <div key={q.question_id} className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground w-6 shrink-0">Q{idx + 1}</span>
+              <span className="text-sm truncate flex-1">{q.question_text}</span>
+              <span className="text-xs font-medium w-10 text-right">{q.correct_percent}%</span>
+              <div className="w-32 h-3 bg-gray-100 rounded-full overflow-hidden shrink-0">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    q.correct_percent >= 80
+                      ? 'bg-green-500'
+                      : q.correct_percent >= 50
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.min(q.correct_percent, 100)}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function TestViewPage() {
@@ -231,7 +438,7 @@ export default function TestViewPage() {
             onClick={handleAuthorClick}
             className="hover:underline text-foreground font-medium"
           >
-            #{test.author_id}
+            {test.author_name || `#${test.author_id}`}
           </button>
           {' • '}
           Создан {formatDate(test.created_at)}
@@ -271,17 +478,7 @@ export default function TestViewPage() {
       {test.description && (
         <div className="bg-white rounded-xl border p-6 shadow-sm">
           <h2 className="text-lg font-semibold mb-2">Описание</h2>
-          {test.description.includes('$') ? (
-            <div className="prose max-w-none">
-              <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                {test.description}
-              </pre>
-            </div>
-          ) : (
-            <p className="text-base leading-relaxed text-gray-700 whitespace-pre-wrap">
-              {test.description}
-            </p>
-          )}
+          <TypstRender source={test.description} mode="preview" />
         </div>
       )}
 
@@ -347,20 +544,20 @@ export default function TestViewPage() {
             )}
           </div>
 
-          {stats.avg_score_percent != null && (
-            <div className="bg-white rounded-xl border p-6 shadow-sm">
-              <h3 className="text-sm font-semibold mb-3">Распределение среднего результата</h3>
-              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                <div
-                  className="bg-indigo-500 h-full rounded-full transition-all"
-                  style={{ width: `${Math.min(stats.avg_score_percent, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {Math.round(stats.avg_score_percent)}%
-              </p>
+          {/* Score Distribution Chart */}
+          <div className="bg-white rounded-xl border p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="h-5 w-5 text-indigo-500" />
+              <h3 className="text-sm font-semibold">Распределение баллов</h3>
             </div>
-          )}
+            <ScoreDistributionChart testId={id} />
+          </div>
+
+          {/* Questions by Correctness */}
+          <QuestionsByCorrectness testId={id} />
+
+          {/* Recent Attempts */}
+          <RecentAttemptsTable testId={id} />
         </div>
       )}
     </div>

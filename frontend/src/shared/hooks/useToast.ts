@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import toast, {ToastOptions, ToastPosition} from 'react-hot-toast'
 
 const defaultOptions: ToastOptions = {
@@ -13,42 +14,44 @@ const defaultOptions: ToastOptions = {
 }
 
 export function useToast() {
-  const success = (message: string, options?: ToastOptions) => {
-    toast.success(message, {...defaultOptions, ...options})
-  }
+  return useMemo(() => {
+    const success = (message: string, options?: ToastOptions) => {
+      toast.success(message, {...defaultOptions, ...options})
+    }
 
-  const error = (message: string, options?: ToastOptions) => {
-    toast.error(message, {
-      ...defaultOptions,
-      style: {
-        ...defaultOptions.style,
-        background: '#ef4444',
-      },
-      ...options,
-    })
-  }
+    const error = (message: string, options?: ToastOptions) => {
+      toast.error(message, {
+        ...defaultOptions,
+        style: {
+          ...defaultOptions.style,
+          background: '#ef4444',
+        },
+        ...options,
+      })
+    }
 
-  const info = (message: string, options?: ToastOptions) => {
-    toast(message, {...defaultOptions, ...options})
-  }
+    const info = (message: string, options?: ToastOptions) => {
+      toast(message, {...defaultOptions, ...options})
+    }
 
-  const loading = (message: string, options?: ToastOptions) => {
-    return toast.loading(message, {
-      ...defaultOptions,
-      duration: Infinity,
-      ...options,
-    })
-  }
+    const loading = (message: string, options?: ToastOptions) => {
+      return toast.loading(message, {
+        ...defaultOptions,
+        duration: Infinity,
+        ...options,
+      })
+    }
 
-  const dismiss = (id: string) => {
-    toast.dismiss(id)
-  }
+    const dismiss = (id: string) => {
+      toast.dismiss(id)
+    }
 
-  return {
-    success,
-    error,
-    info,
-    loading,
-    dismiss,
-  }
+    return {
+      success,
+      error,
+      info,
+      loading,
+      dismiss,
+    }
+  }, [])
 }

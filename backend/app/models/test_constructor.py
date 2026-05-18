@@ -1,9 +1,25 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as sqla_orm
-from sqlalchemy.types import Enum as SAEnum
 
 from app.core import datetime_extensions as dte
 from app.db import session as db_session
+
+
+class AttemptStatus:
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    EXPIRED = "expired"
+    ABANDONED = "abandoned"
+
+
+class QuestionType:
+    SINGLE_CHOICE = "SINGLE_CHOICE"
+    MULTIPLE_CHOICE = "MULTIPLE_CHOICE"
+    TEXT = "TEXT"
+    ESSAY = "ESSAY"
+    MATCHING = "MATCHING"
+    FILE_UPLOAD = "FILE_UPLOAD"
+
 
 
 class Test(db_session.Base):
@@ -18,6 +34,8 @@ class Test(db_session.Base):
     attempt_limit = sa.Column(sa.Integer, nullable=True)  # None = unlimited
     track_time = sa.Column(sa.Boolean, default=True, nullable=False, server_default=sa.text('true'))
     completion_message = sa.Column(sa.Text, nullable=True)
+    image_url = sa.Column(sa.String(512), nullable=True)
+    media_files = sa.Column(sa.JSON, nullable=True)
     questions_count = sa.Column(sa.Integer, default=0, server_default='0', nullable=False)
     created_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, nullable=False)
     updated_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, onupdate=dte.utc_now, nullable=False)
@@ -45,6 +63,8 @@ class Question(db_session.Base):
     explanation = sa.Column(sa.Text, nullable=True)
     correct_answer = sa.Column(sa.Text, nullable=True)
     image_url = sa.Column(sa.String(512), nullable=True)
+    media_files = sa.Column(sa.JSON, nullable=True)
+    question_data = sa.Column(sa.JSON, nullable=True)
     created_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, nullable=False)
     updated_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, onupdate=dte.utc_now, nullable=False)
 
@@ -102,7 +122,7 @@ class TestTag(db_session.Base):
 class Attempt(db_session.Base):
     __tablename__ = "attempts"
     __table_args__ = (
-        sa.UniqueConstraint("user_id", "test_id", name="uq_user_test_active_attempt"),
+        sa.Index("uq_user_test_active_attempt", "user_id", "test_id", unique=True, postgresql_where=sa.text("status = 'in_progress'")),
     )
 
     id = sa.Column(sa.Integer, primary_key=True, index=True)
@@ -131,6 +151,8 @@ class Answer(db_session.Base):
     question_id = sa.Column(sa.Integer, sa.ForeignKey("questions.id", ondelete="CASCADE"), nullable=False, index=True)
     selected_option_ids = sa.Column(sa.JSON, nullable=True)
     text_answer = sa.Column(sa.Text, nullable=True)
+    matching_answer = sa.Column(sa.JSON, nullable=True)
+    file_answer = sa.Column(sa.Text, nullable=True)
     is_correct = sa.Column(sa.Boolean, nullable=True)
     points_earned = sa.Column(sa.Integer, nullable=True)
     created_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, nullable=False)

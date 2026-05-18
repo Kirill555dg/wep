@@ -145,11 +145,17 @@ def register_exception_handlers(app: fastapi.FastAPI) -> None:
         exc: fastapi_exceptions.RequestValidationError,
     ) -> fastapi_responses.JSONResponse:
         errors = exc.errors()
-        body = exc.body if hasattr(exc, "body") else None
+        body = exc.body if hasattr(exc, 'body') else None
 
         meta: dict[str, tp.Any] = {"errors": errors}
-        if core_config.settings.DEBUG:
-            meta["body"] = body
+        if core_config.settings.DEBUG and body is not None:
+            if isinstance(body, bytes):
+                try:
+                    meta["body"] = body.decode('utf-8')
+                except UnicodeDecodeError:
+                    meta["body"] = body.hex()
+            else:
+                meta["body"] = body
 
         logger.warning(
             "request_validation_error",

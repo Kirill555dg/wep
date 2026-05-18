@@ -1503,6 +1503,393 @@
         }
       }
     },
+    "/api/v1/tests/{test_id}/attempts": {
+      "get": {
+        "tags": [
+          "Tests"
+        ],
+        "summary": "List Test Attempts",
+        "operationId": "list_test_attempts_api_v1_tests__test_id__attempts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "test_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Test Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageAttemptAuthorSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tests/questions/pool": {
+      "get": {
+        "tags": [
+          "Tests"
+        ],
+        "summary": "List Question Pool",
+        "operationId": "list_question_pool_api_v1_tests_questions_pool_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QuestionPoolResponse"
+                  },
+                  "title": "Response List Question Pool Api V1 Tests Questions Pool Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tests/{test_id}/questions/{question_id}/from-pool": {
+      "post": {
+        "tags": [
+          "Tests"
+        ],
+        "summary": "Add Question From Pool",
+        "operationId": "add_question_from_pool_api_v1_tests__test_id__questions__question_id__from_pool_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "test_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Test Id"
+            }
+          },
+          {
+            "name": "question_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Question Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionAuthorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/catalog/": {
       "get": {
         "tags": [
@@ -1553,6 +1940,22 @@
                 }
               ],
               "title": "Author Id"
+            }
+          },
+          {
+            "name": "author_login",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Author Login"
             }
           },
           {
@@ -3237,6 +3640,220 @@
         }
       }
     },
+    "/api/v1/stats/tests/{test_id}/distribution": {
+      "get": {
+        "tags": [
+          "Stats"
+        ],
+        "summary": "Get Score Distribution",
+        "operationId": "get_score_distribution_api_v1_stats_tests__test_id__distribution_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "test_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Test Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreDistributionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats/tests/{test_id}/per-question": {
+      "get": {
+        "tags": [
+          "Stats"
+        ],
+        "summary": "Get Per Question Stats",
+        "operationId": "get_per_question_stats_api_v1_stats_tests__test_id__per_question_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "test_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Test Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerQuestionStatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/media/upload": {
       "post": {
         "tags": [
@@ -3265,6 +3882,116 @@
                   },
                   "type": "object",
                   "title": "Response Upload Media Api V1 Media Upload Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/media/upload-answer": {
+      "post": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "Upload Answer File",
+        "operationId": "upload_answer_file_api_v1_media_upload_answer_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_answer_file_api_v1_media_upload_answer_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Upload Answer File Api V1 Media Upload Answer Post"
                 }
               }
             }
@@ -3517,6 +4244,31 @@
             ],
             "title": "Text Answer"
           },
+          "matching_answer": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matching Answer"
+          },
+          "file_answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Answer"
+          },
           "is_correct": {
             "anyOf": [
               {
@@ -3581,6 +4333,31 @@
               }
             ],
             "title": "Text Answer"
+          },
+          "matching_answer": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matching Answer"
+          },
+          "file_answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Answer"
           }
         },
         "type": "object",
@@ -3630,6 +4407,31 @@
               }
             ],
             "title": "Text Answer"
+          },
+          "matching_answer": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matching Answer"
+          },
+          "file_answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Answer"
           },
           "is_correct": {
             "anyOf": [
@@ -3686,6 +4488,89 @@
           "explanation"
         ],
         "title": "AttemptAnswerDetail"
+      },
+      "AttemptAuthorSummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "user_name": {
+            "type": "string",
+            "title": "User Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Score"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "time_spent_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Spent Minutes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "user_name",
+          "status",
+          "score",
+          "max_score",
+          "started_at",
+          "finished_at",
+          "time_spent_minutes"
+        ],
+        "title": "AttemptAuthorSummary"
       },
       "AttemptResponse": {
         "properties": {
@@ -3981,6 +4866,20 @@
         ],
         "title": "AuthorStatsResponse"
       },
+      "Body_upload_answer_file_api_v1_media_upload_answer_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_answer_file_api_v1_media_upload_answer_post"
+      },
       "Body_upload_media_api_v1_media_upload_post": {
         "properties": {
           "file": {
@@ -4171,6 +5070,37 @@
         ],
         "title": "OptionResponse"
       },
+      "PageAttemptAuthorSummary": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AttemptAuthorSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PageAttemptAuthorSummary"
+      },
       "Page_AttemptSummary_": {
         "properties": {
           "items": {
@@ -4201,6 +5131,55 @@
           "limit"
         ],
         "title": "Page[AttemptSummary]"
+      },
+      "PerQuestionStat": {
+        "properties": {
+          "question_id": {
+            "type": "integer",
+            "title": "Question Id"
+          },
+          "question_text": {
+            "type": "string",
+            "title": "Question Text"
+          },
+          "total_attempts": {
+            "type": "integer",
+            "title": "Total Attempts"
+          },
+          "correct_attempts": {
+            "type": "integer",
+            "title": "Correct Attempts"
+          },
+          "correct_percent": {
+            "type": "number",
+            "title": "Correct Percent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question_id",
+          "question_text",
+          "total_attempts",
+          "correct_attempts",
+          "correct_percent"
+        ],
+        "title": "PerQuestionStat"
+      },
+      "PerQuestionStatsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PerQuestionStat"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "PerQuestionStatsResponse"
       },
       "QuestionAuthorResponse": {
         "properties": {
@@ -4256,6 +5235,14 @@
             ],
             "title": "Image Url"
           },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files",
+            "default": []
+          },
           "options": {
             "items": {
               "$ref": "#/components/schemas/OptionAuthorResponse"
@@ -4263,6 +5250,18 @@
             "type": "array",
             "title": "Options",
             "default": []
+          },
+          "question_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Data"
           }
         },
         "type": "object",
@@ -4333,12 +5332,31 @@
             ],
             "title": "Image Url"
           },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files"
+          },
           "options": {
             "items": {
               "$ref": "#/components/schemas/OptionCreate"
             },
             "type": "array",
             "title": "Options"
+          },
+          "question_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Data"
           }
         },
         "type": "object",
@@ -4347,6 +5365,39 @@
           "text"
         ],
         "title": "QuestionCreate"
+      },
+      "QuestionPoolResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "question_type": {
+            "$ref": "#/components/schemas/QuestionType"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "points": {
+            "type": "integer",
+            "title": "Points"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question_type",
+          "text",
+          "points",
+          "created_at"
+        ],
+        "title": "QuestionPoolResponse"
       },
       "QuestionResponse": {
         "properties": {
@@ -4380,6 +5431,14 @@
             ],
             "title": "Image Url"
           },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files",
+            "default": []
+          },
           "options": {
             "items": {
               "$ref": "#/components/schemas/OptionResponse"
@@ -4387,6 +5446,18 @@
             "type": "array",
             "title": "Options",
             "default": []
+          },
+          "question_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Data"
           }
         },
         "type": "object",
@@ -4406,7 +5477,9 @@
           "SINGLE_CHOICE",
           "MULTIPLE_CHOICE",
           "TEXT",
-          "ESSAY"
+          "ESSAY",
+          "MATCHING",
+          "FILE_UPLOAD"
         ],
         "title": "QuestionType"
       },
@@ -4491,6 +5564,13 @@
             ],
             "title": "Image Url"
           },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files"
+          },
           "options": {
             "anyOf": [
               {
@@ -4504,10 +5584,53 @@
               }
             ],
             "title": "Options"
+          },
+          "question_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question Data"
           }
         },
         "type": "object",
         "title": "QuestionUpdate"
+      },
+      "ScoreDistributionResponse": {
+        "properties": {
+          "bucket_0_20": {
+            "type": "integer",
+            "title": "Bucket 0 20",
+            "default": 0
+          },
+          "bucket_20_40": {
+            "type": "integer",
+            "title": "Bucket 20 40",
+            "default": 0
+          },
+          "bucket_40_60": {
+            "type": "integer",
+            "title": "Bucket 40 60",
+            "default": 0
+          },
+          "bucket_60_80": {
+            "type": "integer",
+            "title": "Bucket 60 80",
+            "default": 0
+          },
+          "bucket_80_100": {
+            "type": "integer",
+            "title": "Bucket 80 100",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ScoreDistributionResponse"
       },
       "TagCreate": {
         "properties": {
@@ -4557,6 +5680,16 @@
             "type": "integer",
             "title": "Author Id"
           },
+          "author_name": {
+            "type": "string",
+            "title": "Author Name",
+            "default": ""
+          },
+          "author_login": {
+            "type": "string",
+            "title": "Author Login",
+            "default": ""
+          },
           "title": {
             "type": "string",
             "title": "Title"
@@ -4590,6 +5723,25 @@
           "track_time": {
             "type": "boolean",
             "title": "Track Time"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files",
+            "default": []
           },
           "questions_count": {
             "type": "integer",
@@ -4725,6 +5877,24 @@
             ],
             "title": "Completion Message"
           },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files"
+          },
           "tag_names": {
             "items": {
               "type": "string"
@@ -4748,6 +5918,16 @@
           "author_id": {
             "type": "integer",
             "title": "Author Id"
+          },
+          "author_name": {
+            "type": "string",
+            "title": "Author Name",
+            "default": ""
+          },
+          "author_login": {
+            "type": "string",
+            "title": "Author Login",
+            "default": ""
           },
           "title": {
             "type": "string",
@@ -4782,6 +5962,25 @@
           "track_time": {
             "type": "boolean",
             "title": "Track Time"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files",
+            "default": []
           },
           "questions_count": {
             "type": "integer",
@@ -4839,6 +6038,16 @@
             "type": "integer",
             "title": "Author Id"
           },
+          "author_name": {
+            "type": "string",
+            "title": "Author Name",
+            "default": ""
+          },
+          "author_login": {
+            "type": "string",
+            "title": "Author Login",
+            "default": ""
+          },
           "title": {
             "type": "string",
             "title": "Title"
@@ -4872,6 +6081,25 @@
           "track_time": {
             "type": "boolean",
             "title": "Track Time"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files",
+            "default": []
           },
           "questions_count": {
             "type": "integer",
@@ -5045,6 +6273,24 @@
               }
             ],
             "title": "Completion Message"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "media_files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Media Files"
           },
           "tag_names": {
             "anyOf": [

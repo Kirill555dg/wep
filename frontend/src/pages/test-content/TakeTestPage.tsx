@@ -5,31 +5,48 @@
  */
 import { useState, useEffect } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Clock } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, XCircle, BarChart3 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Loader } from '@/shared/ui/loader'
+import { Card, CardContent } from '@/shared/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/shared/ui/dialog'
 import { useToast } from '@/shared/hooks/useToast'
 import { useAuth } from '@/shared/hooks/useAuth'
 import { formatTime } from '@/shared/lib/utils'
+import { formatDuration } from '@/shared/lib/format'
 import {
   getTestApiV1TestsTestIdGet,
   startAttemptApiV1AttemptsPost,
   getAttemptApiV1AttemptsAttemptIdGet,
+  getActiveAttemptApiV1AttemptsActiveGet,
   submitAnswerApiV1AttemptsAttemptIdAnswersPost,
   finishAttemptApiV1AttemptsAttemptIdFinishPost,
   getResultApiV1AttemptsAttemptIdResultGet,
   addQuestionApiV1TestsTestIdQuestionsPost,
   updateQuestionApiV1TestsTestIdQuestionsQuestionIdPatch,
   deleteQuestionApiV1TestsTestIdQuestionsQuestionIdDelete,
+  updateTestApiV1TestsTestIdPatch,
+  deleteTestApiV1TestsTestIdDelete,
 } from '@/shared/api'
 import type {
   QuestionResponse,
   QuestionAuthorResponse,
   AttemptResultResponse,
+  AttemptResponse,
+  TestAuthorDetailResponse,
+  TestDetailResponse,
   OptionAuthorResponse,
 } from '@/shared/api'
 
 import QuestionPanel from '@/widgets/question-panel/QuestionPanel'
+import QuestionPoolModal from '@/widgets/question-pool-modal/QuestionPoolModal'
 import TypstRender from '@/shared/components/TypstRender'
 import MediaCarousel from '@/shared/components/MediaCarousel'
 import AnswerBlocks from '@/shared/components/AnswerBlocks'
@@ -62,7 +79,13 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
 
   const [reviewAttempt, setReviewAttempt] = useState<AttemptResultResponse | null>(null)
 
+  const [summaryResult, setSummaryResult] = useState<AttemptResultResponse | null>(null)
+  const [showSummary, setShowSummary] = useState(false)
+  const [poolModalOpen, setPoolModalOpen] = useState(false)
+
   const [pendingPatch, setPendingPatch] = useState<Partial<QuestionAuthorResponse> | null>(null)
+  const [isDraft, setIsDraft] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   // load test (take / edit)
   useEffect(() => {
@@ -71,12 +94,15 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
     async function load() {
       try {
         const res = await getTestApiV1TestsTestIdGet({ path: { test_id: numTestId } })
-        const data = res.data as any
+        const data = res.data as TestAuthorDetailResponse | TestDetailResponse | undefined
         if (!cancelled && data) {
           setTitle(data.title || '')
           if (data.questions) setQuestions(data.questions)
+          if (mode === 'edit') {
+            setIsDraft((data as TestAuthorDetailResponse).is_public === false)
+          }
         }
-      } catch (e) {
+      } catch {
         // ignore
       } finally {
         if (!cancelled) setIsLoading(false)
@@ -100,7 +126,7 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
           // fetch real questions for option texts
           try {
             const tRes = await getTestApiV1TestsTestIdGet({ path: { test_id: data.test_id } })
-            const tData = tRes.data as any
+            const tData = tRes.data as TestAuthorDetailResponse | TestDetailResponse | undefined
             if (!cancelled && tData?.questions) {
               setQuestions(tData.questions)
             } else {
@@ -154,7 +180,7 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
       if (cache?.attemptId) {
         try {
           const res = await getAttemptApiV1AttemptsAttemptIdGet({ path: { attempt_id: cache.attemptId } })
-          const data = res.data as any
+          const data = res.data as AttemptResponse | undefined
           if (data && data.status === 'in_progress') {
             if (!cancelled) {
               setActiveAttemptId(data.id)
@@ -162,7 +188,7 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
               if (cache?.answers) {
                 const mapped: Record<number, unknown> = {}
                 Object.entries(cache.answers).forEach(([k, v]) => {
-                  mapped[Number(k)] = (v as any)?.value ?? v
+                  mapped[Number(k)] = (v as { value?: unknown })?.value ?? v
                 })
                 setAnswers(mapped)
               }
@@ -173,8 +199,31 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
         } catch {}
       }
       try {
+        const activeRes = await getActiveAttemptApiV1AttemptsActiveGet({ query: { test_id: numTestId } })
+        const activeData = activeRes.data as { has_active?: boolean; attempt_id?: number } | undefined
+        if (activeData?.has_active && activeData.attempt_id) {
+          const res = await getAttemptApiV1AttemptsAttemptIdGet({ path: { attempt_id: activeData.attempt_id } })
+          const data = res.data as AttemptResponse | undefined
+          if (!cancelled && data && data.status === 'in_progress') {
+            setActiveAttemptId(data.id)
+            setTimerSeconds(Math.floor((Date.now() - new Date(data.started_at).getTime()) / 1000))
+            localStorage.setItem(
+              cacheKey,
+              JSON.stringify({
+                attemptId: data.id,
+                testId: numTestId,
+                currentIndex: 0,
+                answers: {},
+                startedAt: data.started_at,
+              })
+            )
+            return
+          }
+        }
+      } catch {}
+      try {
         const res = await startAttemptApiV1AttemptsPost({ body: { test_id: numTestId } })
-        const data = res.data as any
+        const data = res.data as AttemptResponse | undefined
         if (!cancelled && data) {
           setActiveAttemptId(data.id)
           setTimerSeconds(0)
@@ -237,15 +286,26 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
     if (!q || !activeAttemptId) return
     setAnswers((prev) => ({ ...prev, [q.id]: value }))
 
-    const payload: { question_id: number; selected_option_ids?: number[] | null; text_answer?: string | null } = {
+    const payload: {
+      question_id: number
+      selected_option_ids?: number[] | null
+      text_answer?: string | null
+      matching_answer?: Record<string, number> | null
+      file_answer?: string | null
+    } = {
       question_id: q.id,
     }
-    if (q.question_type === 'SINGLE_CHOICE') {
+    const qt = q.question_type as string
+    if (qt === 'SINGLE_CHOICE') {
       payload.selected_option_ids = value != null ? [value as number] : null
-    } else if (q.question_type === 'MULTIPLE_CHOICE') {
+    } else if (qt === 'MULTIPLE_CHOICE') {
       payload.selected_option_ids = (value as number[]) || null
-    } else if (q.question_type === 'TEXT' || q.question_type === 'ESSAY') {
+    } else if (qt === 'TEXT' || qt === 'ESSAY') {
       payload.text_answer = (value as string) || null
+    } else if (qt === 'MATCHING') {
+      payload.matching_answer = (value as Record<string, number>) || null
+    } else if (qt === 'FILE_UPLOAD') {
+      payload.file_answer = (value as string) || null
     }
 
     const cacheKey = `wep_attempt_${numTestId}`
@@ -278,7 +338,14 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
     try {
       await finishAttemptApiV1AttemptsAttemptIdFinishPost({ path: { attempt_id: activeAttemptId } })
       localStorage.removeItem(`wep_attempt_${numTestId}`)
-      navigate(`/attempts/${activeAttemptId}`)
+      const res = await getResultApiV1AttemptsAttemptIdResultGet({ path: { attempt_id: activeAttemptId } })
+      const data = res.data as AttemptResultResponse | undefined
+      if (data) {
+        setSummaryResult(data)
+        setShowSummary(true)
+      } else {
+        navigate(`/attempts/${activeAttemptId}`)
+      }
     } catch {
       toast.error('Failed to finish attempt')
     }
@@ -325,11 +392,46 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
     }
   }
 
+  const handlePublish = async () => {
+    if (mode !== 'edit' || !numTestId) return
+    try {
+      await updateTestApiV1TestsTestIdPatch({
+        path: { test_id: numTestId },
+        body: { is_public: true },
+      })
+      setIsDraft(false)
+      toast.success('Тест опубликован')
+    } catch {
+      toast.error('Не удалось опубликовать тест')
+    }
+  }
+
+  const handleDeleteTest = async () => {
+    if (mode !== 'edit' || !numTestId) return
+    try {
+      await deleteTestApiV1TestsTestIdDelete({
+        path: { test_id: numTestId },
+      })
+      toast.success('Тест удалён')
+      navigate('/my-tests')
+    } catch {
+      toast.error('Не удалось удалить тест')
+    }
+  }
+
+  const handleAddFromPool = (data?: QuestionAuthorResponse) => {
+    if (data) {
+      setQuestions((prev) => [...prev, data])
+      setCurrentIndex(questions.length)
+      setPoolModalOpen(false)
+    }
+  }
+
   const handleQuestionChange = (patch: Partial<QuestionAuthorResponse>) => {
     if (mode !== 'edit') return
     setQuestions((prev) => {
       const next = [...prev]
-      next[currentIndex] = { ...next[currentIndex], ...patch } as any
+      next[currentIndex] = { ...next[currentIndex], ...patch } as QuestionAuthorResponse
       return next
     })
     setPendingPatch((prev) => ({ ...prev, ...patch }))
@@ -337,16 +439,12 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
 
   const currentQuestion = questions[currentIndex]
 
-  const mediaFiles = currentQuestion?.image_url
-    ? [
-        {
-          id: 'image-1',
-          url: currentQuestion.image_url,
-          type: 'image' as const,
-          filename: 'image',
-        },
-      ]
-    : []
+  const mediaFiles = (currentQuestion?.media_files ?? []).map((url, i) => ({
+    id: `media-${i}`,
+    url,
+    type: 'image' as const,
+    filename: `media-${i}`,
+  }))
 
   const reviewResults = (() => {
     if (mode !== 'review' || !reviewAttempt?.answers) return undefined
@@ -367,6 +465,8 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
     if (!ans) return undefined
     if (ans.question_type === 'SINGLE_CHOICE') return ans.selected_option_ids?.[0] ?? null
     if (ans.question_type === 'MULTIPLE_CHOICE') return ans.selected_option_ids ?? []
+    if (ans.question_type === 'MATCHING') return ans.matching_answer ?? {}
+    if (ans.question_type === 'FILE_UPLOAD') return ans.file_answer ?? ''
     return ans.text_answer ?? ''
   }
 
@@ -437,11 +537,18 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
           )}
           {mode === 'edit' && (
             <>
-              <Button variant="outline" size="sm">
+              {isDraft && (
+                <Button variant="default" size="sm" onClick={handlePublish}>
+                  Опубликовать
+                </Button>
+              )}
+              {isDraft && (
+                <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
+                  Удалить
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => navigate(`/tests/${testId}/settings`)}>
                 Settings
-              </Button>
-              <Button variant="outline" size="sm">
-                Add from pool
               </Button>
             </>
           )}
@@ -463,75 +570,180 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
             results={reviewResults}
             onAddQuestion={mode === 'edit' ? handleAddQuestion : undefined}
             onDeleteQuestion={mode === 'edit' ? handleDeleteQuestion : undefined}
+            onAddFromPool={mode === 'edit' ? () => setPoolModalOpen(true) : undefined}
           />
         )}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          {currentQuestion ? (
-            <div className="max-w-3xl mx-auto space-y-6">
-              <TypstRender
-                source={currentQuestion.text || ''}
-                testId={numTestId}
-                questionId={currentQuestion.id}
-                mode={mode}
-              />
-              {mediaFiles.length > 0 && (
-                <MediaCarousel
-                  files={mediaFiles}
-                  mode={mode}
-                  onChange={
-                    mode === 'edit'
-                      ? (next) =>
-                          handleQuestionChange({
-                            image_url: next[0]?.url ?? null,
-                          } as any)
-                      : undefined
-                  }
-                />
-              )}
-              <AnswerBlocks
-                question={currentQuestion}
-                mode={mode}
-                value={
-                  mode === 'review'
-                    ? reviewAnswerFor(currentQuestion.id)
-                    : answers[currentQuestion.id]
-                }
-                onChange={handleAnswerChange}
-                onQuestionChange={mode === 'edit' ? handleQuestionChange : undefined}
-                correctOptionIds={reviewCorrectIdsFor(currentQuestion.id)}
-                explanation={explanationFor(currentQuestion.id)}
-              />
-              <div className="flex justify-between pt-4">
-                <Button
-                  variant="outline"
-                  disabled={currentIndex === 0}
-                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                >
-                  Previous
-                </Button>
-                {currentIndex < questions.length - 1 ? (
-                  <Button
-                    onClick={() =>
-                      setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))
-                    }
-                  >
-                    Next
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            {showSummary && summaryResult ? (
+              <div className="max-w-lg mx-auto space-y-6 py-12">
+                <div className="text-center space-y-3">
+                  <div className="text-5xl font-bold">
+                    {summaryResult.score}
+                    <span className="text-2xl text-muted-foreground font-nomal">/{summaryResult.max_score}</span>
+                  </div>
+                  <p className="text-lg text-muted-foreground">Test completed!</p>
+                </div>
+
+                <div className="flex justify-center gap-6">
+                  <div className="text-center">
+                    <div className="flex items-center gap-1.5 text-green-600">
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="text-xl font-semibold">
+                        {summaryResult.answers?.filter((a) => a.is_correct === true).length ?? 0}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Correct</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center gap-1.5 text-red-600">
+                      <XCircle className="h-5 w-5" />
+                      <span className="text-xl font-semibold">
+                        {summaryResult.answers?.filter((a) => a.is_correct === false).length ?? 0}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Wrong</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <BarChart3 className="h-5 w-5" />
+                      <span className="text-xl font-semibold">
+                        {(() => {
+                          const s = summaryResult.started_at ? new Date(summaryResult.started_at).getTime() : 0
+                          const f = summaryResult.finished_at ? new Date(summaryResult.finished_at).getTime() : Date.now()
+                          return formatDuration(Math.max(0, Math.floor((f - s) / 1000)))
+                        })()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Time</p>
+                  </div>
+                </div>
+
+                {summaryResult.answers && (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="space-y-2">
+                        {summaryResult.answers.map((a, i) => (
+                          <div key={a.question_id} className="flex items-center justify-between text-sm">
+                            <span className="truncate flex-1">Q{i + 1}</span>
+                            <span className={a.is_correct === true ? 'text-green-600 font-medium' : a.is_correct === false ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
+                              {a.points_earned ?? 0}/{a.points}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex justify-center gap-3 pt-4">
+                  <Button onClick={() => navigate(`/attempts/${summaryResult.attempt_id}`)}>
+                    View details
                   </Button>
-                ) : mode === 'take' ? (
-                  <Button onClick={handleFinish}>Submit All</Button>
-                ) : null}
+                  <Button variant="outline" onClick={() => navigate('/catalog')}>
+                    Back to catalog
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-4">
-              <p className="text-muted-foreground">Select a question to begin.</p>
-              {mode === 'edit' && (
-                <Button onClick={handleAddQuestion}>Add Question</Button>
-              )}
+            ) : currentQuestion ? (
+              <div className="max-w-3xl mx-auto space-y-6">
+                <TypstRender
+                  source={currentQuestion.text || ''}
+                  testId={numTestId}
+                  questionId={currentQuestion.id}
+                  mode={mode}
+                />
+                {(mode === 'edit' || mediaFiles.length > 0) && (
+                  <MediaCarousel
+                    files={mediaFiles}
+                    mode={mode}
+                    onChange={
+                      mode === 'edit'
+                        ? (next: { url: string }[]) =>
+                            handleQuestionChange({
+                              media_files: next.map((f) => f.url),
+                            })
+                        : undefined
+                    }
+                  />
+                )}
+                <AnswerBlocks
+                  question={currentQuestion}
+                  mode={mode}
+                  value={
+                    mode === 'review'
+                      ? reviewAnswerFor(currentQuestion.id)
+                      : answers[currentQuestion.id]
+                  }
+                  onChange={handleAnswerChange}
+                  onQuestionChange={mode === 'edit' ? handleQuestionChange : undefined}
+                  correctOptionIds={reviewCorrectIdsFor(currentQuestion.id)}
+                  explanation={explanationFor(currentQuestion.id)}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                <p className="text-muted-foreground">Select a question to begin.</p>
+                {mode === 'edit' && (
+                  <Button onClick={handleAddQuestion}>Add Question</Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Fixed bottom navigation */}
+          {showSummary ? null : currentQuestion && !showSummary && (
+            <div className="flex justify-between px-4 md:px-6 py-3 border-t bg-background shrink-0">
+              <Button
+                variant="outline"
+                disabled={currentIndex === 0}
+                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+              >
+                Previous
+              </Button>
+              {currentIndex < questions.length - 1 ? (
+                <Button
+                  onClick={() =>
+                    setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))
+                  }
+                >
+                  Next
+                </Button>
+              ) : mode === 'take' ? (
+                <Button onClick={handleFinish}>Submit All</Button>
+              ) : null}
             </div>
           )}
         </div>
       </div>
+      {mode === 'edit' && (
+        <QuestionPoolModal
+          testId={numTestId}
+          open={poolModalOpen}
+          onClose={() => setPoolModalOpen(false)}
+          onAdded={handleAddFromPool}
+        />
+      )}
+      {mode === 'edit' && (
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Удалить черновик?</DialogTitle>
+              <DialogDescription>
+                Это действие нельзя отменить. Черновик будет удален навсегда.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+                Отмена
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteTest}>
+                Удалить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

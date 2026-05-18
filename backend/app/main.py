@@ -18,7 +18,7 @@ logger = logging.getLogger("app.main")
 
 
 @contextlib.asynccontextmanager
-async def lifespan(application: fastapi.FastAPI) -> tp.AsyncGenerator[None, None]:
+async def lifespan(_application: fastapi.FastAPI) -> tp.AsyncGenerator[None, None]:
     logger.info(
         "app_started",
         extra={"app_name": core_config.settings.APP_NAME, "version": core_config.settings.APP_VERSION},

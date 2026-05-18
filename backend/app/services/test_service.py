@@ -84,7 +84,7 @@ class TestService:
         max_order = await self.question_repo.get_max_order(test_id)
         order = data.order_number if data.order_number > 0 else max_order + 1
 
-        question = await self.question_repo.create({
+        create_data: dict[str, tp.Any] = {
             "test_id": test_id,
             "question_type": data.question_type,
             "text": data.text,
@@ -93,7 +93,10 @@ class TestService:
             "explanation": data.explanation,
             "correct_answer": data.correct_answer,
             "image_url": data.image_url,
-        })
+        }
+        if data.question_data is not None:
+            create_data["question_data"] = data.question_data
+        question = await self.question_repo.create(create_data)
 
         for opt in data.options:
             await self.option_repo.create({
@@ -115,6 +118,8 @@ class TestService:
             raise svc_exc.ServiceError("Not the author", code="not_author")
 
         update_data = {k: v for k, v in data.model_dump(exclude_none=True).items() if k != "options"}
+        if "question_data" in update_data and update_data["question_data"] is None:
+            del update_data["question_data"]
         if update_data:
             await self.question_repo.update(question_id, update_data)
 
@@ -139,3 +144,46 @@ class TestService:
         if not test or test.author_id != user_id:
             raise svc_exc.ServiceError("Not the author", code="not_author")
         await self.question_repo.delete(question_id)
+
+    async def add_question_from_pool(
+        self, test_id: int, user_id: int, source_question_id: int
+    ) -> tc_models.Question:
+        test = await self.test_repo.get_by_id(test_id)
+        if not test:
+            raise svc_exc.ServiceError("Test not found", code="test_not_found")
+        if test.author_id != user_id:
+            raise svc_exc.ServiceError("Not the author", code="not_author")
+
+        source_question = await self.question_repo.get_by_id(source_question_id)
+        if not source_question:
+            raise svc_exc.ServiceError("Source question not found", code="question_not_found")
+
+        source_test = await self.test_repo.get_by_id(source_question.test_id)
+        if not source_test or source_test.author_id != user_id:
+            raise svc_exc.ServiceError("Cannot add question from another author's test", code="access_denied")
+
+        max_order = await self.question_repo.get_max_order(test_id)
+        create_data: dict[str, tp.Any] = {
+            "test_id": test_id,
+            "question_type": source_question.question_type,
+            "text": source_question.text,
+            "order_number": max_order + 1,
+            "points": source_question.points,
+            "explanation": source_question.explanation,
+            "correct_answer": source_question.correct_answer,
+            "image_url": source_question.image_url,
+            "question_data": source_question.question_data,
+        }
+        question = await self.question_repo.create(create_data)
+
+        source_options = await self.option_repo.get_by_question(source_question_id)
+        for opt in source_options:
+            await self.option_repo.create({
+                "question_id": question.id,
+                "text": opt.text,
+                "is_correct": opt.is_correct,
+                "order_number": opt.order_number,
+            })
+
+        questions = await self.question_repo.get_by_test(test_id)
+        return next(q for q in questions if q.id == question.id)

@@ -1,121 +1,24 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Clock, ListChecks } from 'lucide-react'
-import { searchCatalogApiV1CatalogGet, listTagsApiV1TagsGet, client } from '@/shared/api'
-import type { TestResponse, TagResponse } from '@/shared/api'
+import { Search, User } from 'lucide-react'
+import { searchCatalogApiV1CatalogGet, listTagsApiV1TagsGet, client, getCurrentUserProfileApiV1AuthMeGet } from '@/shared/api'
+import type { TestResponse, TagResponse, UserResponse } from '@/shared/api'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-
-function TestCard({
-  test,
-  onTagClick,
-  onAuthorClick,
-}: {
-  test: TestResponse
-  onTagClick: (slug: string) => void
-  onAuthorClick: (authorId: number) => void
-}) {
-  const handleTagClick = (e: React.MouseEvent, slug: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    onTagClick(slug)
-  }
-
-  const handleAuthorClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    onAuthorClick(test.author_id)
-  }
-
-  return (
-    <Link
-      to={`/tests/${test.id}`}
-      className="group block bg-white rounded-lg shadow-sm overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all"
-    >
-      <div className="h-48 w-full bg-gradient-to-br from-indigo-100 to-blue-50" />
-      <div className="p-4">
-        <h3 className="font-semibold text-base truncate mb-2">{test.title}</h3>
-        {test.tags && test.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {test.tags.map((tag) => (
-              <span
-                key={tag.id}
-                role="button"
-                tabIndex={0}
-                onClick={(e) => handleTagClick(e, tag.slug)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    onTagClick(tag.slug)
-                  }
-                }}
-              >
-                <Badge
-                  variant="default"
-                  className="cursor-pointer select-none hover:bg-indigo-200 transition-colors"
-                >
-                  {tag.name}
-                </Badge>
-              </span>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-          <span
-            role="button"
-            tabIndex={0}
-            className="cursor-pointer hover:underline"
-            onClick={handleAuthorClick}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onAuthorClick(test.author_id)
-              }
-            }}
-          >
-            Автор #{test.author_id}
-          </span>
-          <span className="flex items-center gap-1">
-            <ListChecks className="w-3.5 h-3.5" />
-            {test.questions_count ?? 0} вопросов
-          </span>
-          {test.time_limit_minutes && (
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              {test.time_limit_minutes} мин
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="h-48 bg-gray-200 animate-pulse" />
-      <div className="p-4 space-y-3">
-        <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-        <div className="flex gap-1">
-          <div className="h-5 w-14 bg-gray-200 rounded-full animate-pulse" />
-          <div className="h-5 w-16 bg-gray-200 rounded-full animate-pulse" />
-        </div>
-        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-      </div>
-    </div>
-  )
-}
+import { TestCard } from '@/shared/components/test/TestCard'
+import { SkeletonList } from '@/shared/components/ui/skeleton-card'
+import { EmptyState } from '@/shared/components/ui/empty-state'
 
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [inputValue, setInputValue] = useState(searchParams.get('q') || '')
+  const [authorLogin, setAuthorLogin] = useState(searchParams.get('author_login') || '')
 
   const activeTags = searchParams.get('tags')?.split(',').filter(Boolean) || []
-  const authorId = searchParams.get('authorId') || ''
 
   const debouncedQ = useDebouncedValue(inputValue, 300)
+  const debouncedAuthor = useDebouncedValue(authorLogin, 300)
 
   useEffect(() => {
     const nextQ = debouncedQ.trim()
@@ -140,6 +43,14 @@ export default function CatalogPage() {
     })
   }, [searchParams])
 
+  useEffect(() => {
+    const urlAuthor = searchParams.get('author_login') || ''
+    setAuthorLogin((prev) => {
+      if (prev === urlAuthor) return prev
+      return urlAuthor
+    })
+  }, [searchParams])
+
   const { data: tagsResponse } = useQuery({
     queryKey: ['tags'],
     queryFn: () => listTagsApiV1TagsGet({ client }),
@@ -147,7 +58,7 @@ export default function CatalogPage() {
   const tags: TagResponse[] = tagsResponse?.data || []
 
   const { data: catalogResponse, isLoading, error } = useQuery({
-    queryKey: ['catalog', debouncedQ, activeTags.join(','), authorId],
+    queryKey: ['catalog', debouncedQ, activeTags.join(','), debouncedAuthor],
     queryFn: () =>
       searchCatalogApiV1CatalogGet({
         client,
@@ -156,9 +67,10 @@ export default function CatalogPage() {
           tags: activeTags.length ? activeTags : undefined,
           skip: 0,
           limit: 20,
-          ...(authorId ? { author_id: Number(authorId) } : {}),
-        } as any,
+          ...(debouncedAuthor ? { author_login: debouncedAuthor } : {}),
+        },
       }),
+    enabled: true,
   })
   const tests: TestResponse[] = catalogResponse?.data || []
 
@@ -184,22 +96,25 @@ export default function CatalogPage() {
     setSearchParams(next, { replace: true })
   }
 
-  const setAuthorFilter = (id: number) => {
+  const setAuthorFilter = (login: string) => {
     const next = new URLSearchParams(searchParams)
-    next.set('authorId', String(id))
+    if (login) {
+      next.set('author_login', login)
+    } else {
+      next.delete('author_login')
+    }
     setSearchParams(next, { replace: true })
   }
 
   const resetFilters = () => {
     setSearchParams(new URLSearchParams(), { replace: true })
     setInputValue('')
+    setAuthorLogin('')
   }
-
-  const isEmpty = tests.length === 0 && !isLoading && !error
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="max-w-xl mx-auto mb-6 relative">
+      <div className="max-w-xl mx-auto mb-4 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="search"
@@ -210,7 +125,58 @@ export default function CatalogPage() {
         />
       </div>
 
+      {/* Author filter */}
+      <div className="max-w-md mx-auto mb-4 flex gap-2">
+        <div className="relative flex-1">
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={authorLogin}
+            onChange={(e) => setAuthorLogin(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setAuthorFilter(authorLogin.trim())
+              }
+            }}
+            placeholder="Фильтр по автору (логин)..."
+            className="w-full h-10 pl-10 pr-24 rounded-md border border-input bg-background text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          {debouncedAuthor && (
+            <button
+              onClick={() => {
+                setAuthorLogin('')
+                setAuthorFilter('')
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Сбросить
+            </button>
+          )}
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setAuthorFilter(authorLogin.trim())}
+          disabled={!authorLogin.trim()}
+        >
+          Найти
+        </Button>
+      </div>
+
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
+        {debouncedAuthor && (
+          <Badge variant="default" className="cursor-pointer select-none shrink-0 flex items-center gap-1">
+            {debouncedAuthor}
+            <button
+              onClick={() => {
+                setAuthorLogin('')
+                setAuthorFilter('')
+              }}
+              className="ml-1 text-xs"
+            >
+              ×
+            </button>
+          </Badge>
+        )}
         <span
           role="button"
           tabIndex={0}
@@ -223,7 +189,7 @@ export default function CatalogPage() {
           }}
         >
           <Badge
-            variant={activeTags.length === 0 ? 'default' : 'outline'}
+            variant={activeTags.length === 0 && !debouncedAuthor ? 'default' : 'outline'}
             className="cursor-pointer select-none shrink-0"
           >
             Все
@@ -252,39 +218,41 @@ export default function CatalogPage() {
         ))}
       </div>
 
-      {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </div>
-      )}
+      {isLoading && <SkeletonList count={6} />}
 
       {Boolean(error) && (
-        <div className="text-center py-16 text-red-600">
-          <p className="mb-4">Ошибка загрузки</p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Повторить
-          </Button>
-        </div>
+        <EmptyState
+          icon="search"
+          title="Ошибка загрузки"
+          description="Не удалось загрузить каталог"
+          action={
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Повторить
+            </Button>
+          }
+        />
       )}
 
-      {isEmpty && (
-        <div className="text-center py-16">
-          <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 mb-4">Нет тестов по заданному запросу</p>
-          <Button variant="ghost" onClick={resetFilters}>
-            Сбросить фильтры
-          </Button>
-        </div>
+      {tests.length === 0 && !isLoading && !error && (
+        <EmptyState
+          icon="search"
+          title="Нет тестов"
+          description="Нет тестов по заданному запросу"
+          action={
+            <Button variant="ghost" onClick={resetFilters}>
+              Сбросить фильтры
+            </Button>
+          }
+        />
       )}
 
-      {!isLoading && !error && tests.length > 0 && (
+      {tests.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
           {tests.map((test) => (
             <TestCard
               key={test.id}
               test={test}
+              showAuthor
               onTagClick={toggleTag}
               onAuthorClick={setAuthorFilter}
             />

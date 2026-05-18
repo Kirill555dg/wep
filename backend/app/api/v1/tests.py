@@ -1,3 +1,5 @@
+import datetime as dt
+
 import fastapi
 import sqlalchemy.ext.asyncio as sa_asyncio
 import starlette.status as http_status
@@ -6,6 +8,9 @@ from app.api import dependencies as deps
 from app.api import http_errors
 from app.db import session as db_session
 from app.models import users as user_models
+from app.repositories import test_constructor as tc_repos
+from app.schemas import attempts as attempt_schemas
+from app.schemas.pagination import Page
 from app.schemas import test_constructor as tc_schemas
 from app.services import exceptions as svc_exc
 from app.services import test_service as test_svc
@@ -148,14 +153,24 @@ async def delete_question(
 def _map_test_response(test: object) -> tc_schemas.TestResponse:
     tags = [tc_schemas.TagResponse.model_validate(tt.tag) for tt in (test.test_tags or [])]  # type: ignore[attr-defined]
     questions_count = len(test.questions) if test.questions else 0  # type: ignore[attr-defined]
+    author_name_parts = []
+    if test.author and test.author.first_name:  # type: ignore[attr-defined]
+        author_name_parts.append(test.author.first_name)  # type: ignore[attr-defined]
+    if test.author and test.author.last_name:  # type: ignore[attr-defined]
+        author_name_parts.append(test.author.last_name)  # type: ignore[attr-defined]
+    author_name = " ".join(author_name_parts).strip() or f"#{test.author_id}"  # type: ignore[attr-defined]
+    author_login = (test.author.username or test.author.email or "") if test.author else ""  # type: ignore[attr-defined]
     return tc_schemas.TestResponse(
         id=test.id,  # type: ignore[attr-defined]
         author_id=test.author_id,  # type: ignore[attr-defined]
+        author_name=author_name,
+        author_login=author_login,
         title=test.title,  # type: ignore[attr-defined]
         description=test.description,  # type: ignore[attr-defined]
         is_public=test.is_public,  # type: ignore[attr-defined]
         time_limit_minutes=test.time_limit_minutes,  # type: ignore[attr-defined]
         track_time=test.track_time,  # type: ignore[attr-defined]
+        image_url=test.image_url,  # type: ignore[attr-defined]
         questions_count=questions_count,
         tags=tags,
         created_at=test.created_at,  # type: ignore[attr-defined]
@@ -165,6 +180,13 @@ def _map_test_response(test: object) -> tc_schemas.TestResponse:
 
 def _map_detail(test: object) -> tc_schemas.TestDetailResponse:
     tags = [tc_schemas.TagResponse.model_validate(tt.tag) for tt in (test.test_tags or [])]  # type: ignore[attr-defined]
+    author_name_parts = []
+    if test.author and test.author.first_name:  # type: ignore[attr-defined]
+        author_name_parts.append(test.author.first_name)  # type: ignore[attr-defined]
+    if test.author and test.author.last_name:  # type: ignore[attr-defined]
+        author_name_parts.append(test.author.last_name)  # type: ignore[attr-defined]
+    author_name = " ".join(author_name_parts).strip() or f"#{test.author_id}"  # type: ignore[attr-defined]
+    author_login = (test.author.username or test.author.email or "") if test.author else ""  # type: ignore[attr-defined]
     questions = [
         tc_schemas.QuestionResponse(
             id=q.id,
@@ -173,6 +195,7 @@ def _map_detail(test: object) -> tc_schemas.TestDetailResponse:
             order_number=q.order_number,
             points=q.points,
             image_url=q.image_url,
+            question_data=q.question_data,
             options=[tc_schemas.OptionResponse.model_validate(o) for o in q.options],
         )
         for q in (test.questions or [])  # type: ignore[attr-defined]
@@ -180,11 +203,14 @@ def _map_detail(test: object) -> tc_schemas.TestDetailResponse:
     return tc_schemas.TestDetailResponse(
         id=test.id,  # type: ignore[attr-defined]
         author_id=test.author_id,  # type: ignore[attr-defined]
+        author_name=author_name,
+        author_login=author_login,
         title=test.title,  # type: ignore[attr-defined]
         description=test.description,  # type: ignore[attr-defined]
         is_public=test.is_public,  # type: ignore[attr-defined]
         time_limit_minutes=test.time_limit_minutes,  # type: ignore[attr-defined]
         track_time=test.track_time,  # type: ignore[attr-defined]
+        image_url=test.image_url,  # type: ignore[attr-defined]
         questions_count=len(questions),
         tags=tags,
         created_at=test.created_at,  # type: ignore[attr-defined]
@@ -193,8 +219,88 @@ def _map_detail(test: object) -> tc_schemas.TestDetailResponse:
     )
 
 
+@router.get("/{test_id}/attempts", response_model=attempt_schemas.PageAttemptAuthorSummary)
+async def list_test_attempts(
+    test_id: int,
+    skip: int = fastapi.Query(0, ge=0),
+    limit: int = fastapi.Query(20, ge=1, le=100),
+    current_user: user_models.User = fastapi.Depends(deps.get_current_user),
+    db: sa_asyncio.AsyncSession = fastapi.Depends(db_session.get_db),
+) -> Page[attempt_schemas.AttemptAuthorSummary]:
+    svc = test_svc.TestService(db)
+    test = await svc.test_repo.get_by_id(test_id)
+    if not test:
+        raise http_errors.not_found("Test not found")
+    if test.author_id != current_user.id:
+        raise http_errors.forbidden("Not the author")
+    attempt_repo = tc_repos.AttemptRepository(db)
+    rows, total = await attempt_repo.list_by_test_with_users(test_id, skip=skip, limit=limit)
+    items = []
+    for row in rows:
+        minutes = None
+        if row.finished_at and row.started_at:
+            minutes = int((row.finished_at - row.started_at).total_seconds() // 60)
+        user_name_parts = []
+        if row.user:
+            if row.user.first_name:
+                user_name_parts.append(row.user.first_name)
+            if row.user.last_name:
+                user_name_parts.append(row.user.last_name)
+        user_name = " ".join(user_name_parts).strip() or f"#{row.user_id}"
+        items.append(attempt_schemas.AttemptAuthorSummary(
+            id=row.id,
+            user_id=row.user_id,
+            user_name=user_name,
+            status=row.status,
+            score=row.score,
+            max_score=row.max_score,
+            started_at=row.started_at,
+            finished_at=row.finished_at,
+            time_spent_minutes=minutes,
+        ))
+    return attempt_schemas.PageAttemptAuthorSummary(items=items, total=total, skip=skip, limit=limit)
+
+
+@router.get("/questions/pool", response_model=list[tc_schemas.QuestionPoolResponse])
+async def list_question_pool(
+    query: str | None = fastapi.Query(None),
+    skip: int = fastapi.Query(0, ge=0),
+    limit: int = fastapi.Query(50, ge=1, le=100),
+    current_user: user_models.User = fastapi.Depends(deps.get_current_user),
+    db: sa_asyncio.AsyncSession = fastapi.Depends(db_session.get_db),
+) -> list[tc_schemas.QuestionPoolResponse]:
+    test_svc = test_svc.TestService(db)
+    questions = await test_svc.question_repo.list_by_author_pool(current_user.id, query=query, skip=skip, limit=limit)
+    return [tc_schemas.QuestionPoolResponse.model_validate(q) for q in questions]
+
+
+@router.post("/{test_id}/questions/{question_id}/from-pool", response_model=tc_schemas.QuestionAuthorResponse)
+async def add_question_from_pool(
+    test_id: int,
+    question_id: int,
+    current_user: user_models.User = fastapi.Depends(deps.get_current_user),
+    svc: test_svc.TestService = fastapi.Depends(_get_test_service),
+) -> tc_schemas.QuestionAuthorResponse:
+    try:
+        question = await svc.add_question_from_pool(test_id, current_user.id, question_id)
+    except svc_exc.ServiceError as exc:
+        if exc.code in ("test_not_found", "question_not_found"):
+            raise http_errors.not_found(exc.message)
+        if exc.code in ("not_author", "access_denied"):
+            raise http_errors.forbidden(exc.message)
+        raise
+    return tc_schemas.QuestionAuthorResponse.model_validate(question)
+
+
 def _map_author_detail(test: object) -> tc_schemas.TestAuthorDetailResponse:
     tags = [tc_schemas.TagResponse.model_validate(tt.tag) for tt in (test.test_tags or [])]  # type: ignore[attr-defined]
+    author_name_parts = []
+    if test.author and test.author.first_name:  # type: ignore[attr-defined]
+        author_name_parts.append(test.author.first_name)  # type: ignore[attr-defined]
+    if test.author and test.author.last_name:  # type: ignore[attr-defined]
+        author_name_parts.append(test.author.last_name)  # type: ignore[attr-defined]
+    author_name = " ".join(author_name_parts).strip() or f"#{test.author_id}"  # type: ignore[attr-defined]
+    author_login = (test.author.username or test.author.email or "") if test.author else ""  # type: ignore[attr-defined]
     questions = [
         tc_schemas.QuestionAuthorResponse(
             id=q.id,
@@ -205,6 +311,7 @@ def _map_author_detail(test: object) -> tc_schemas.TestAuthorDetailResponse:
             explanation=q.explanation,
             correct_answer=q.correct_answer,
             image_url=q.image_url,
+            question_data=q.question_data,
             options=[tc_schemas.OptionAuthorResponse.model_validate(o) for o in q.options],
         )
         for q in (test.questions or [])  # type: ignore[attr-defined]
@@ -212,6 +319,8 @@ def _map_author_detail(test: object) -> tc_schemas.TestAuthorDetailResponse:
     return tc_schemas.TestAuthorDetailResponse(
         id=test.id,  # type: ignore[attr-defined]
         author_id=test.author_id,  # type: ignore[attr-defined]
+        author_name=author_name,
+        author_login=author_login,
         title=test.title,  # type: ignore[attr-defined]
         description=test.description,  # type: ignore[attr-defined]
         is_public=test.is_public,  # type: ignore[attr-defined]
@@ -219,6 +328,7 @@ def _map_author_detail(test: object) -> tc_schemas.TestAuthorDetailResponse:
         track_time=test.track_time,  # type: ignore[attr-defined]
         attempt_limit=test.attempt_limit,  # type: ignore[attr-defined]
         completion_message=test.completion_message,  # type: ignore[attr-defined]
+        image_url=test.image_url,  # type: ignore[attr-defined]
         questions_count=len(questions),
         tags=tags,
         created_at=test.created_at,  # type: ignore[attr-defined]

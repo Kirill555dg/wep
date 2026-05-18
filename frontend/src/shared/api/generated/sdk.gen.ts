@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddQuestionApiV1TestsTestIdQuestionsPostData, AddQuestionApiV1TestsTestIdQuestionsPostErrors, AddQuestionApiV1TestsTestIdQuestionsPostResponses, CreateTagApiV1TagsPostData, CreateTagApiV1TagsPostErrors, CreateTagApiV1TagsPostResponses, CreateTestApiV1TestsPostData, CreateTestApiV1TestsPostErrors, CreateTestApiV1TestsPostResponses, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteData, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteErrors, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteResponses, DeleteTestApiV1TestsTestIdDeleteData, DeleteTestApiV1TestsTestIdDeleteErrors, DeleteTestApiV1TestsTestIdDeleteResponses, FinishAttemptApiV1AttemptsAttemptIdFinishPostData, FinishAttemptApiV1AttemptsAttemptIdFinishPostErrors, FinishAttemptApiV1AttemptsAttemptIdFinishPostResponses, GetActiveAttemptApiV1AttemptsActiveGetData, GetActiveAttemptApiV1AttemptsActiveGetErrors, GetActiveAttemptApiV1AttemptsActiveGetResponses, GetAttemptApiV1AttemptsAttemptIdGetData, GetAttemptApiV1AttemptsAttemptIdGetErrors, GetAttemptApiV1AttemptsAttemptIdGetResponses, GetAuthorStatsApiV1StatsMeGetData, GetAuthorStatsApiV1StatsMeGetErrors, GetAuthorStatsApiV1StatsMeGetResponses, GetCalendarApiV1StatsCalendarGetData, GetCalendarApiV1StatsCalendarGetErrors, GetCalendarApiV1StatsCalendarGetResponses, GetCurrentUserProfileApiV1AuthMeGetData, GetCurrentUserProfileApiV1AuthMeGetErrors, GetCurrentUserProfileApiV1AuthMeGetResponses, GetPublicTestApiV1CatalogTestIdGetData, GetPublicTestApiV1CatalogTestIdGetErrors, GetPublicTestApiV1CatalogTestIdGetResponses, GetResultApiV1AttemptsAttemptIdResultGetData, GetResultApiV1AttemptsAttemptIdResultGetErrors, GetResultApiV1AttemptsAttemptIdResultGetResponses, GetTestApiV1TestsTestIdGetData, GetTestApiV1TestsTestIdGetErrors, GetTestApiV1TestsTestIdGetResponses, GetTestStatsApiV1StatsTestsTestIdGetData, GetTestStatsApiV1StatsTestsTestIdGetErrors, GetTestStatsApiV1StatsTestsTestIdGetResponses, HealthCheckApiV1HealthGetData, HealthCheckApiV1HealthGetErrors, HealthCheckApiV1HealthGetResponses, ListMyAttemptsApiV1AttemptsGetData, ListMyAttemptsApiV1AttemptsGetErrors, ListMyAttemptsApiV1AttemptsGetResponses, ListMyTestsApiV1TestsGetData, ListMyTestsApiV1TestsGetErrors, ListMyTestsApiV1TestsGetResponses, ListTagsApiV1TagsGetData, ListTagsApiV1TagsGetErrors, ListTagsApiV1TagsGetResponses, LoginApiV1AuthLoginPostData, LoginApiV1AuthLoginPostErrors, LoginApiV1AuthLoginPostResponses, PingApiV1PingGetData, PingApiV1PingGetErrors, PingApiV1PingGetResponses, RegisterApiV1AuthRegisterPostData, RegisterApiV1AuthRegisterPostErrors, RegisterApiV1AuthRegisterPostResponses, RootGetData, RootGetErrors, RootGetResponses, SearchCatalogApiV1CatalogGetData, SearchCatalogApiV1CatalogGetErrors, SearchCatalogApiV1CatalogGetResponses, StartAttemptApiV1AttemptsPostData, StartAttemptApiV1AttemptsPostErrors, StartAttemptApiV1AttemptsPostResponses, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostData, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostErrors, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponses, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostData, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostErrors, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostResponses, UpdateMeApiV1UsersMePatchData, UpdateMeApiV1UsersMePatchErrors, UpdateMeApiV1UsersMePatchResponses, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchData, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchErrors, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchResponses, UpdateTestApiV1TestsTestIdPatchData, UpdateTestApiV1TestsTestIdPatchErrors, UpdateTestApiV1TestsTestIdPatchResponses, UploadMediaApiV1MediaUploadPostData, UploadMediaApiV1MediaUploadPostErrors, UploadMediaApiV1MediaUploadPostResponses } from './types.gen';
+import type { AddQuestionApiV1TestsTestIdQuestionsPostData, AddQuestionApiV1TestsTestIdQuestionsPostErrors, AddQuestionApiV1TestsTestIdQuestionsPostResponses, AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostData, AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostErrors, AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostResponses, CreateTagApiV1TagsPostData, CreateTagApiV1TagsPostErrors, CreateTagApiV1TagsPostResponses, CreateTestApiV1TestsPostData, CreateTestApiV1TestsPostErrors, CreateTestApiV1TestsPostResponses, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteData, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteErrors, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteResponses, DeleteTestApiV1TestsTestIdDeleteData, DeleteTestApiV1TestsTestIdDeleteErrors, DeleteTestApiV1TestsTestIdDeleteResponses, FinishAttemptApiV1AttemptsAttemptIdFinishPostData, FinishAttemptApiV1AttemptsAttemptIdFinishPostErrors, FinishAttemptApiV1AttemptsAttemptIdFinishPostResponses, GetActiveAttemptApiV1AttemptsActiveGetData, GetActiveAttemptApiV1AttemptsActiveGetErrors, GetActiveAttemptApiV1AttemptsActiveGetResponses, GetAttemptApiV1AttemptsAttemptIdGetData, GetAttemptApiV1AttemptsAttemptIdGetErrors, GetAttemptApiV1AttemptsAttemptIdGetResponses, GetAuthorStatsApiV1StatsMeGetData, GetAuthorStatsApiV1StatsMeGetErrors, GetAuthorStatsApiV1StatsMeGetResponses, GetCalendarApiV1StatsCalendarGetData, GetCalendarApiV1StatsCalendarGetErrors, GetCalendarApiV1StatsCalendarGetResponses, GetCurrentUserProfileApiV1AuthMeGetData, GetCurrentUserProfileApiV1AuthMeGetErrors, GetCurrentUserProfileApiV1AuthMeGetResponses, GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetData, GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetErrors, GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetResponses, GetPublicTestApiV1CatalogTestIdGetData, GetPublicTestApiV1CatalogTestIdGetErrors, GetPublicTestApiV1CatalogTestIdGetResponses, GetResultApiV1AttemptsAttemptIdResultGetData, GetResultApiV1AttemptsAttemptIdResultGetErrors, GetResultApiV1AttemptsAttemptIdResultGetResponses, GetScoreDistributionApiV1StatsTestsTestIdDistributionGetData, GetScoreDistributionApiV1StatsTestsTestIdDistributionGetErrors, GetScoreDistributionApiV1StatsTestsTestIdDistributionGetResponses, GetTestApiV1TestsTestIdGetData, GetTestApiV1TestsTestIdGetErrors, GetTestApiV1TestsTestIdGetResponses, GetTestStatsApiV1StatsTestsTestIdGetData, GetTestStatsApiV1StatsTestsTestIdGetErrors, GetTestStatsApiV1StatsTestsTestIdGetResponses, HealthCheckApiV1HealthGetData, HealthCheckApiV1HealthGetErrors, HealthCheckApiV1HealthGetResponses, ListMyAttemptsApiV1AttemptsGetData, ListMyAttemptsApiV1AttemptsGetErrors, ListMyAttemptsApiV1AttemptsGetResponses, ListMyTestsApiV1TestsGetData, ListMyTestsApiV1TestsGetErrors, ListMyTestsApiV1TestsGetResponses, ListQuestionPoolApiV1TestsQuestionsPoolGetData, ListQuestionPoolApiV1TestsQuestionsPoolGetErrors, ListQuestionPoolApiV1TestsQuestionsPoolGetResponses, ListTagsApiV1TagsGetData, ListTagsApiV1TagsGetErrors, ListTagsApiV1TagsGetResponses, ListTestAttemptsApiV1TestsTestIdAttemptsGetData, ListTestAttemptsApiV1TestsTestIdAttemptsGetErrors, ListTestAttemptsApiV1TestsTestIdAttemptsGetResponses, LoginApiV1AuthLoginPostData, LoginApiV1AuthLoginPostErrors, LoginApiV1AuthLoginPostResponses, PingApiV1PingGetData, PingApiV1PingGetErrors, PingApiV1PingGetResponses, RegisterApiV1AuthRegisterPostData, RegisterApiV1AuthRegisterPostErrors, RegisterApiV1AuthRegisterPostResponses, RootGetData, RootGetErrors, RootGetResponses, SearchCatalogApiV1CatalogGetData, SearchCatalogApiV1CatalogGetErrors, SearchCatalogApiV1CatalogGetResponses, StartAttemptApiV1AttemptsPostData, StartAttemptApiV1AttemptsPostErrors, StartAttemptApiV1AttemptsPostResponses, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostData, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostErrors, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponses, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostData, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostErrors, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostResponses, UpdateMeApiV1UsersMePatchData, UpdateMeApiV1UsersMePatchErrors, UpdateMeApiV1UsersMePatchResponses, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchData, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchErrors, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchResponses, UpdateTestApiV1TestsTestIdPatchData, UpdateTestApiV1TestsTestIdPatchErrors, UpdateTestApiV1TestsTestIdPatchResponses, UploadAnswerFileApiV1MediaUploadAnswerPostData, UploadAnswerFileApiV1MediaUploadAnswerPostErrors, UploadAnswerFileApiV1MediaUploadAnswerPostResponses, UploadMediaApiV1MediaUploadPostData, UploadMediaApiV1MediaUploadPostErrors, UploadMediaApiV1MediaUploadPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -173,6 +173,33 @@ export const updateQuestionApiV1TestsTestIdQuestionsQuestionIdPatch = <ThrowOnEr
 });
 
 /**
+ * List Test Attempts
+ */
+export const listTestAttemptsApiV1TestsTestIdAttemptsGet = <ThrowOnError extends boolean = false>(options: Options<ListTestAttemptsApiV1TestsTestIdAttemptsGetData, ThrowOnError>) => (options.client ?? client).get<ListTestAttemptsApiV1TestsTestIdAttemptsGetResponses, ListTestAttemptsApiV1TestsTestIdAttemptsGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/tests/{test_id}/attempts',
+    ...options
+});
+
+/**
+ * List Question Pool
+ */
+export const listQuestionPoolApiV1TestsQuestionsPoolGet = <ThrowOnError extends boolean = false>(options?: Options<ListQuestionPoolApiV1TestsQuestionsPoolGetData, ThrowOnError>) => (options?.client ?? client).get<ListQuestionPoolApiV1TestsQuestionsPoolGetResponses, ListQuestionPoolApiV1TestsQuestionsPoolGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/tests/questions/pool',
+    ...options
+});
+
+/**
+ * Add Question From Pool
+ */
+export const addQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPost = <ThrowOnError extends boolean = false>(options: Options<AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostData, ThrowOnError>) => (options.client ?? client).post<AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostResponses, AddQuestionFromPoolApiV1TestsTestIdQuestionsQuestionIdFromPoolPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/tests/{test_id}/questions/{question_id}/from-pool',
+    ...options
+});
+
+/**
  * Search Catalog
  */
 export const searchCatalogApiV1CatalogGet = <ThrowOnError extends boolean = false>(options?: Options<SearchCatalogApiV1CatalogGetData, ThrowOnError>) => (options?.client ?? client).get<SearchCatalogApiV1CatalogGetResponses, SearchCatalogApiV1CatalogGetErrors, ThrowOnError>({ url: '/api/v1/catalog/', ...options });
@@ -312,12 +339,44 @@ export const getCalendarApiV1StatsCalendarGet = <ThrowOnError extends boolean = 
 });
 
 /**
+ * Get Score Distribution
+ */
+export const getScoreDistributionApiV1StatsTestsTestIdDistributionGet = <ThrowOnError extends boolean = false>(options: Options<GetScoreDistributionApiV1StatsTestsTestIdDistributionGetData, ThrowOnError>) => (options.client ?? client).get<GetScoreDistributionApiV1StatsTestsTestIdDistributionGetResponses, GetScoreDistributionApiV1StatsTestsTestIdDistributionGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/stats/tests/{test_id}/distribution',
+    ...options
+});
+
+/**
+ * Get Per Question Stats
+ */
+export const getPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGet = <ThrowOnError extends boolean = false>(options: Options<GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetData, ThrowOnError>) => (options.client ?? client).get<GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetResponses, GetPerQuestionStatsApiV1StatsTestsTestIdPerQuestionGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/stats/tests/{test_id}/per-question',
+    ...options
+});
+
+/**
  * Upload Media
  */
 export const uploadMediaApiV1MediaUploadPost = <ThrowOnError extends boolean = false>(options: Options<UploadMediaApiV1MediaUploadPostData, ThrowOnError>) => (options.client ?? client).post<UploadMediaApiV1MediaUploadPostResponses, UploadMediaApiV1MediaUploadPostErrors, ThrowOnError>({
     ...formDataBodySerializer,
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/media/upload',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Upload Answer File
+ */
+export const uploadAnswerFileApiV1MediaUploadAnswerPost = <ThrowOnError extends boolean = false>(options: Options<UploadAnswerFileApiV1MediaUploadAnswerPostData, ThrowOnError>) => (options.client ?? client).post<UploadAnswerFileApiV1MediaUploadAnswerPostResponses, UploadAnswerFileApiV1MediaUploadAnswerPostErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/media/upload-answer',
     ...options,
     headers: {
         'Content-Type': null,
