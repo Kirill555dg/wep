@@ -5,6 +5,28 @@ export type ClientOptions = {
 };
 
 /**
+ * ActiveAttemptResponse
+ */
+export type ActiveAttemptResponse = {
+    /**
+     * Has Active
+     */
+    has_active: boolean;
+    /**
+     * Attempt Id
+     */
+    attempt_id: number | null;
+    /**
+     * Status
+     */
+    status: string | null;
+    /**
+     * Attempts Used
+     */
+    attempts_used: number;
+};
+
+/**
  * AnswerResponse
  */
 export type AnswerResponse = {
@@ -193,6 +215,48 @@ export type AttemptStartRequest = {
 export type AttemptStatus = 'in_progress' | 'completed' | 'expired' | 'abandoned';
 
 /**
+ * AttemptSummary
+ */
+export type AttemptSummary = {
+    /**
+     * Id
+     */
+    id: number;
+    /**
+     * Test Id
+     */
+    test_id: number;
+    /**
+     * Test Title
+     */
+    test_title: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Score
+     */
+    score: number | null;
+    /**
+     * Max Score
+     */
+    max_score: number | null;
+    /**
+     * Started At
+     */
+    started_at: string;
+    /**
+     * Finished At
+     */
+    finished_at: string | null;
+    /**
+     * Time Spent Minutes
+     */
+    time_spent_minutes: number | null;
+};
+
+/**
  * AuthorStatsResponse
  */
 export type AuthorStatsResponse = {
@@ -222,6 +286,50 @@ export type BodyUploadMediaApiV1MediaUploadPost = {
      * File
      */
     file: Blob | File;
+};
+
+/**
+ * BulkAnswersRequest
+ */
+export type BulkAnswersRequest = {
+    /**
+     * Answers
+     */
+    answers: Array<AnswerSubmitRequest>;
+};
+
+/**
+ * BulkAnswersResponse
+ */
+export type BulkAnswersResponse = {
+    /**
+     * Saved
+     */
+    saved: number;
+    /**
+     * Errors
+     */
+    errors?: Array<string> | null;
+};
+
+/**
+ * CalendarResponse
+ */
+export type CalendarResponse = {
+    /**
+     * Year
+     */
+    year: number;
+    /**
+     * Month
+     */
+    month: number;
+    /**
+     * Days
+     */
+    days: {
+        [key: string]: number;
+    };
 };
 
 /**
@@ -304,6 +412,28 @@ export type OptionResponse = {
      * Order Number
      */
     order_number: number;
+};
+
+/**
+ * Page[AttemptSummary]
+ */
+export type PageAttemptSummary = {
+    /**
+     * Items
+     */
+    items: Array<AttemptSummary>;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Skip
+     */
+    skip: number;
+    /**
+     * Limit
+     */
+    limit: number;
 };
 
 /**
@@ -851,6 +981,44 @@ export type UserResponse = {
 };
 
 /**
+ * UserUpdate
+ */
+export type UserUpdate = {
+    /**
+     * Username
+     */
+    username?: string | null;
+    /**
+     * Email
+     */
+    email?: string | null;
+    /**
+     * First Name
+     */
+    first_name?: string | null;
+    /**
+     * Last Name
+     */
+    last_name?: string | null;
+    /**
+     * Middle Name
+     */
+    middle_name?: string | null;
+    /**
+     * Full Name
+     */
+    full_name?: string | null;
+    /**
+     * Avatar Url
+     */
+    avatar_url?: string | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+};
+
+/**
  * ValidationError
  */
 export type ValidationError = {
@@ -1151,6 +1319,55 @@ export type GetCurrentUserProfileApiV1AuthMeGetResponses = {
 };
 
 export type GetCurrentUserProfileApiV1AuthMeGetResponse = GetCurrentUserProfileApiV1AuthMeGetResponses[keyof GetCurrentUserProfileApiV1AuthMeGetResponses];
+
+export type UpdateMeApiV1UsersMePatchData = {
+    body: UserUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me';
+};
+
+export type UpdateMeApiV1UsersMePatchErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type UpdateMeApiV1UsersMePatchError = UpdateMeApiV1UsersMePatchErrors[keyof UpdateMeApiV1UsersMePatchErrors];
+
+export type UpdateMeApiV1UsersMePatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserResponse;
+};
+
+export type UpdateMeApiV1UsersMePatchResponse = UpdateMeApiV1UsersMePatchResponses[keyof UpdateMeApiV1UsersMePatchResponses];
 
 export type ListMyTestsApiV1TestsGetData = {
     body?: never;
@@ -1817,6 +2034,80 @@ export type CreateTagApiV1TagsPostResponses = {
 
 export type CreateTagApiV1TagsPostResponse = CreateTagApiV1TagsPostResponses[keyof CreateTagApiV1TagsPostResponses];
 
+export type ListMyAttemptsApiV1AttemptsGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Status
+         */
+        status?: string | null;
+        /**
+         * Test Id
+         */
+        test_id?: number | null;
+        /**
+         * Date From
+         */
+        date_from?: string | null;
+        /**
+         * Date To
+         */
+        date_to?: string | null;
+    };
+    url: '/api/v1/attempts/';
+};
+
+export type ListMyAttemptsApiV1AttemptsGetErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type ListMyAttemptsApiV1AttemptsGetError = ListMyAttemptsApiV1AttemptsGetErrors[keyof ListMyAttemptsApiV1AttemptsGetErrors];
+
+export type ListMyAttemptsApiV1AttemptsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: PageAttemptSummary;
+};
+
+export type ListMyAttemptsApiV1AttemptsGetResponse = ListMyAttemptsApiV1AttemptsGetResponses[keyof ListMyAttemptsApiV1AttemptsGetResponses];
+
 export type StartAttemptApiV1AttemptsPostData = {
     body: AttemptStartRequest;
     path?: never;
@@ -1865,6 +2156,60 @@ export type StartAttemptApiV1AttemptsPostResponses = {
 };
 
 export type StartAttemptApiV1AttemptsPostResponse = StartAttemptApiV1AttemptsPostResponses[keyof StartAttemptApiV1AttemptsPostResponses];
+
+export type GetActiveAttemptApiV1AttemptsActiveGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Test Id
+         */
+        test_id: number;
+    };
+    url: '/api/v1/attempts/active';
+};
+
+export type GetActiveAttemptApiV1AttemptsActiveGetErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetActiveAttemptApiV1AttemptsActiveGetError = GetActiveAttemptApiV1AttemptsActiveGetErrors[keyof GetActiveAttemptApiV1AttemptsActiveGetErrors];
+
+export type GetActiveAttemptApiV1AttemptsActiveGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ActiveAttemptResponse;
+};
+
+export type GetActiveAttemptApiV1AttemptsActiveGetResponse = GetActiveAttemptApiV1AttemptsActiveGetResponses[keyof GetActiveAttemptApiV1AttemptsActiveGetResponses];
 
 export type GetAttemptApiV1AttemptsAttemptIdGetData = {
     body?: never;
@@ -1973,6 +2318,60 @@ export type SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponses = {
 };
 
 export type SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponse = SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponses[keyof SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponses];
+
+export type SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostData = {
+    body: BulkAnswersRequest;
+    path: {
+        /**
+         * Attempt Id
+         */
+        attempt_id: number;
+    };
+    query?: never;
+    url: '/api/v1/attempts/{attempt_id}/bulk-answers';
+};
+
+export type SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostError = SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostErrors[keyof SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostErrors];
+
+export type SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: BulkAnswersResponse;
+};
+
+export type SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostResponse = SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostResponses[keyof SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostResponses];
 
 export type FinishAttemptApiV1AttemptsAttemptIdFinishPostData = {
     body?: never;
@@ -2184,6 +2583,64 @@ export type GetTestStatsApiV1StatsTestsTestIdGetResponses = {
 };
 
 export type GetTestStatsApiV1StatsTestsTestIdGetResponse = GetTestStatsApiV1StatsTestsTestIdGetResponses[keyof GetTestStatsApiV1StatsTestsTestIdGetResponses];
+
+export type GetCalendarApiV1StatsCalendarGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Year
+         */
+        year?: number;
+        /**
+         * Month
+         */
+        month?: number;
+    };
+    url: '/api/v1/stats/calendar';
+};
+
+export type GetCalendarApiV1StatsCalendarGetErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Forbidden
+     */
+    403: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponse;
+};
+
+export type GetCalendarApiV1StatsCalendarGetError = GetCalendarApiV1StatsCalendarGetErrors[keyof GetCalendarApiV1StatsCalendarGetErrors];
+
+export type GetCalendarApiV1StatsCalendarGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: CalendarResponse;
+};
+
+export type GetCalendarApiV1StatsCalendarGetResponse = GetCalendarApiV1StatsCalendarGetResponses[keyof GetCalendarApiV1StatsCalendarGetResponses];
 
 export type UploadMediaApiV1MediaUploadPostData = {
     body: BodyUploadMediaApiV1MediaUploadPost;

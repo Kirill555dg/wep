@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddQuestionApiV1TestsTestIdQuestionsPostData, AddQuestionApiV1TestsTestIdQuestionsPostErrors, AddQuestionApiV1TestsTestIdQuestionsPostResponses, CreateTagApiV1TagsPostData, CreateTagApiV1TagsPostErrors, CreateTagApiV1TagsPostResponses, CreateTestApiV1TestsPostData, CreateTestApiV1TestsPostErrors, CreateTestApiV1TestsPostResponses, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteData, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteErrors, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteResponses, DeleteTestApiV1TestsTestIdDeleteData, DeleteTestApiV1TestsTestIdDeleteErrors, DeleteTestApiV1TestsTestIdDeleteResponses, FinishAttemptApiV1AttemptsAttemptIdFinishPostData, FinishAttemptApiV1AttemptsAttemptIdFinishPostErrors, FinishAttemptApiV1AttemptsAttemptIdFinishPostResponses, GetAttemptApiV1AttemptsAttemptIdGetData, GetAttemptApiV1AttemptsAttemptIdGetErrors, GetAttemptApiV1AttemptsAttemptIdGetResponses, GetAuthorStatsApiV1StatsMeGetData, GetAuthorStatsApiV1StatsMeGetErrors, GetAuthorStatsApiV1StatsMeGetResponses, GetCurrentUserProfileApiV1AuthMeGetData, GetCurrentUserProfileApiV1AuthMeGetErrors, GetCurrentUserProfileApiV1AuthMeGetResponses, GetPublicTestApiV1CatalogTestIdGetData, GetPublicTestApiV1CatalogTestIdGetErrors, GetPublicTestApiV1CatalogTestIdGetResponses, GetResultApiV1AttemptsAttemptIdResultGetData, GetResultApiV1AttemptsAttemptIdResultGetErrors, GetResultApiV1AttemptsAttemptIdResultGetResponses, GetTestApiV1TestsTestIdGetData, GetTestApiV1TestsTestIdGetErrors, GetTestApiV1TestsTestIdGetResponses, GetTestStatsApiV1StatsTestsTestIdGetData, GetTestStatsApiV1StatsTestsTestIdGetErrors, GetTestStatsApiV1StatsTestsTestIdGetResponses, HealthCheckApiV1HealthGetData, HealthCheckApiV1HealthGetErrors, HealthCheckApiV1HealthGetResponses, ListMyTestsApiV1TestsGetData, ListMyTestsApiV1TestsGetErrors, ListMyTestsApiV1TestsGetResponses, ListTagsApiV1TagsGetData, ListTagsApiV1TagsGetErrors, ListTagsApiV1TagsGetResponses, LoginApiV1AuthLoginPostData, LoginApiV1AuthLoginPostErrors, LoginApiV1AuthLoginPostResponses, PingApiV1PingGetData, PingApiV1PingGetErrors, PingApiV1PingGetResponses, RegisterApiV1AuthRegisterPostData, RegisterApiV1AuthRegisterPostErrors, RegisterApiV1AuthRegisterPostResponses, RootGetData, RootGetErrors, RootGetResponses, SearchCatalogApiV1CatalogGetData, SearchCatalogApiV1CatalogGetErrors, SearchCatalogApiV1CatalogGetResponses, StartAttemptApiV1AttemptsPostData, StartAttemptApiV1AttemptsPostErrors, StartAttemptApiV1AttemptsPostResponses, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostData, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostErrors, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponses, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchData, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchErrors, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchResponses, UpdateTestApiV1TestsTestIdPatchData, UpdateTestApiV1TestsTestIdPatchErrors, UpdateTestApiV1TestsTestIdPatchResponses, UploadMediaApiV1MediaUploadPostData, UploadMediaApiV1MediaUploadPostErrors, UploadMediaApiV1MediaUploadPostResponses } from './types.gen';
+import type { AddQuestionApiV1TestsTestIdQuestionsPostData, AddQuestionApiV1TestsTestIdQuestionsPostErrors, AddQuestionApiV1TestsTestIdQuestionsPostResponses, CreateTagApiV1TagsPostData, CreateTagApiV1TagsPostErrors, CreateTagApiV1TagsPostResponses, CreateTestApiV1TestsPostData, CreateTestApiV1TestsPostErrors, CreateTestApiV1TestsPostResponses, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteData, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteErrors, DeleteQuestionApiV1TestsTestIdQuestionsQuestionIdDeleteResponses, DeleteTestApiV1TestsTestIdDeleteData, DeleteTestApiV1TestsTestIdDeleteErrors, DeleteTestApiV1TestsTestIdDeleteResponses, FinishAttemptApiV1AttemptsAttemptIdFinishPostData, FinishAttemptApiV1AttemptsAttemptIdFinishPostErrors, FinishAttemptApiV1AttemptsAttemptIdFinishPostResponses, GetActiveAttemptApiV1AttemptsActiveGetData, GetActiveAttemptApiV1AttemptsActiveGetErrors, GetActiveAttemptApiV1AttemptsActiveGetResponses, GetAttemptApiV1AttemptsAttemptIdGetData, GetAttemptApiV1AttemptsAttemptIdGetErrors, GetAttemptApiV1AttemptsAttemptIdGetResponses, GetAuthorStatsApiV1StatsMeGetData, GetAuthorStatsApiV1StatsMeGetErrors, GetAuthorStatsApiV1StatsMeGetResponses, GetCalendarApiV1StatsCalendarGetData, GetCalendarApiV1StatsCalendarGetErrors, GetCalendarApiV1StatsCalendarGetResponses, GetCurrentUserProfileApiV1AuthMeGetData, GetCurrentUserProfileApiV1AuthMeGetErrors, GetCurrentUserProfileApiV1AuthMeGetResponses, GetPublicTestApiV1CatalogTestIdGetData, GetPublicTestApiV1CatalogTestIdGetErrors, GetPublicTestApiV1CatalogTestIdGetResponses, GetResultApiV1AttemptsAttemptIdResultGetData, GetResultApiV1AttemptsAttemptIdResultGetErrors, GetResultApiV1AttemptsAttemptIdResultGetResponses, GetTestApiV1TestsTestIdGetData, GetTestApiV1TestsTestIdGetErrors, GetTestApiV1TestsTestIdGetResponses, GetTestStatsApiV1StatsTestsTestIdGetData, GetTestStatsApiV1StatsTestsTestIdGetErrors, GetTestStatsApiV1StatsTestsTestIdGetResponses, HealthCheckApiV1HealthGetData, HealthCheckApiV1HealthGetErrors, HealthCheckApiV1HealthGetResponses, ListMyAttemptsApiV1AttemptsGetData, ListMyAttemptsApiV1AttemptsGetErrors, ListMyAttemptsApiV1AttemptsGetResponses, ListMyTestsApiV1TestsGetData, ListMyTestsApiV1TestsGetErrors, ListMyTestsApiV1TestsGetResponses, ListTagsApiV1TagsGetData, ListTagsApiV1TagsGetErrors, ListTagsApiV1TagsGetResponses, LoginApiV1AuthLoginPostData, LoginApiV1AuthLoginPostErrors, LoginApiV1AuthLoginPostResponses, PingApiV1PingGetData, PingApiV1PingGetErrors, PingApiV1PingGetResponses, RegisterApiV1AuthRegisterPostData, RegisterApiV1AuthRegisterPostErrors, RegisterApiV1AuthRegisterPostResponses, RootGetData, RootGetErrors, RootGetResponses, SearchCatalogApiV1CatalogGetData, SearchCatalogApiV1CatalogGetErrors, SearchCatalogApiV1CatalogGetResponses, StartAttemptApiV1AttemptsPostData, StartAttemptApiV1AttemptsPostErrors, StartAttemptApiV1AttemptsPostResponses, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostData, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostErrors, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponses, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostData, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostErrors, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostResponses, UpdateMeApiV1UsersMePatchData, UpdateMeApiV1UsersMePatchErrors, UpdateMeApiV1UsersMePatchResponses, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchData, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchErrors, UpdateQuestionApiV1TestsTestIdQuestionsQuestionIdPatchResponses, UpdateTestApiV1TestsTestIdPatchData, UpdateTestApiV1TestsTestIdPatchErrors, UpdateTestApiV1TestsTestIdPatchResponses, UploadMediaApiV1MediaUploadPostData, UploadMediaApiV1MediaUploadPostErrors, UploadMediaApiV1MediaUploadPostResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -69,6 +69,19 @@ export const getCurrentUserProfileApiV1AuthMeGet = <ThrowOnError extends boolean
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/auth/me',
     ...options
+});
+
+/**
+ * Update Me
+ */
+export const updateMeApiV1UsersMePatch = <ThrowOnError extends boolean = false>(options: Options<UpdateMeApiV1UsersMePatchData, ThrowOnError>) => (options.client ?? client).patch<UpdateMeApiV1UsersMePatchResponses, UpdateMeApiV1UsersMePatchErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -188,6 +201,15 @@ export const createTagApiV1TagsPost = <ThrowOnError extends boolean = false>(opt
 });
 
 /**
+ * List My Attempts
+ */
+export const listMyAttemptsApiV1AttemptsGet = <ThrowOnError extends boolean = false>(options?: Options<ListMyAttemptsApiV1AttemptsGetData, ThrowOnError>) => (options?.client ?? client).get<ListMyAttemptsApiV1AttemptsGetResponses, ListMyAttemptsApiV1AttemptsGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/attempts/',
+    ...options
+});
+
+/**
  * Start Attempt
  */
 export const startAttemptApiV1AttemptsPost = <ThrowOnError extends boolean = false>(options: Options<StartAttemptApiV1AttemptsPostData, ThrowOnError>) => (options.client ?? client).post<StartAttemptApiV1AttemptsPostResponses, StartAttemptApiV1AttemptsPostErrors, ThrowOnError>({
@@ -198,6 +220,15 @@ export const startAttemptApiV1AttemptsPost = <ThrowOnError extends boolean = fal
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Get Active Attempt
+ */
+export const getActiveAttemptApiV1AttemptsActiveGet = <ThrowOnError extends boolean = false>(options: Options<GetActiveAttemptApiV1AttemptsActiveGetData, ThrowOnError>) => (options.client ?? client).get<GetActiveAttemptApiV1AttemptsActiveGetResponses, GetActiveAttemptApiV1AttemptsActiveGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/attempts/active',
+    ...options
 });
 
 /**
@@ -215,6 +246,19 @@ export const getAttemptApiV1AttemptsAttemptIdGet = <ThrowOnError extends boolean
 export const submitAnswerApiV1AttemptsAttemptIdAnswersPost = <ThrowOnError extends boolean = false>(options: Options<SubmitAnswerApiV1AttemptsAttemptIdAnswersPostData, ThrowOnError>) => (options.client ?? client).post<SubmitAnswerApiV1AttemptsAttemptIdAnswersPostResponses, SubmitAnswerApiV1AttemptsAttemptIdAnswersPostErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/attempts/{attempt_id}/answers',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Submit Bulk Answers
+ */
+export const submitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPost = <ThrowOnError extends boolean = false>(options: Options<SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostData, ThrowOnError>) => (options.client ?? client).post<SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostResponses, SubmitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPostErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/attempts/{attempt_id}/bulk-answers',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -255,6 +299,15 @@ export const getAuthorStatsApiV1StatsMeGet = <ThrowOnError extends boolean = fal
 export const getTestStatsApiV1StatsTestsTestIdGet = <ThrowOnError extends boolean = false>(options: Options<GetTestStatsApiV1StatsTestsTestIdGetData, ThrowOnError>) => (options.client ?? client).get<GetTestStatsApiV1StatsTestsTestIdGetResponses, GetTestStatsApiV1StatsTestsTestIdGetErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/stats/tests/{test_id}',
+    ...options
+});
+
+/**
+ * Get Calendar
+ */
+export const getCalendarApiV1StatsCalendarGet = <ThrowOnError extends boolean = false>(options?: Options<GetCalendarApiV1StatsCalendarGetData, ThrowOnError>) => (options?.client ?? client).get<GetCalendarApiV1StatsCalendarGetResponses, GetCalendarApiV1StatsCalendarGetErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/stats/calendar',
     ...options
 });
 
