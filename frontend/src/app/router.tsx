@@ -2,6 +2,7 @@ import {Routes, Route, Navigate} from 'react-router-dom'
 import CatalogPage from '@/pages/catalog/CatalogPage'
 import TestViewPage from '@/pages/test-view/TestViewPage'
 import TakeTestPage from '@/pages/test-content/TakeTestPage'
+import TypstEditorPage from '@/pages/test-content/TypstEditorPage'
 import HistoryPage from '@/pages/history/HistoryPage'
 import MyTestsPage from '@/pages/my-tests/MyTestsPage'
 import ResultsPage from '@/pages/results/ResultsPage'
@@ -17,6 +18,7 @@ export default function AppRouter() {
       <Route path="/tests/:testId" element={<TestViewPage />} />
       <Route path="/tests/:testId/take" element={<TakeTestPage />} />
       <Route path="/tests/:testId/edit" element={<TakeTestPage editMode />} />
+      <Route path="/tests/:testId/questions/:questionId/typst" element={<TypstEditorPage />} />
       <Route path="/history" element={<HistoryPage />} />
       <Route path="/my-tests" element={<MyTestsPage />} />
       <Route path="/attempts/:attemptId" element={<ResultsPage />} />

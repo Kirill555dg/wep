@@ -3,7 +3,7 @@
  */
 import {create} from 'zustand';
 import {persist} from 'zustand/middleware';
-import {UserResponse} from '@/shared/api/client/testConstructorAPI.schemas';
+import type { UserResponse } from '@/shared/api'
 
 interface UserState {
   user: UserResponse | null;

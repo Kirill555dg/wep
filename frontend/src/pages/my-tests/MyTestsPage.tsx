@@ -156,7 +156,7 @@ export default function MyTestsPage() {
         },
       }),
     onSuccess: (res) => {
-      navigate(`/tests/${res.data.id}/edit`)
+      navigate(`/tests/${res.data!.id}/edit`)
     },
     onError: (err) => {
       const { message } = getApiError(err)
@@ -227,7 +227,7 @@ export default function MyTestsPage() {
         </div>
       )}
 
-      {error && (
+      {Boolean(error) && (
         <div className="text-center py-16 text-red-600">
           <p className="mb-4">Ошибка загрузки</p>
           <Button variant="outline" onClick={() => window.location.reload()}>

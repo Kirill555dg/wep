@@ -59,6 +59,7 @@ export type {
   UserCreate,
   TokenResponse,
   UserUpdate,
+  ActiveAttemptResponse,
   TestResponse,
   TestDetailResponse,
   TestAuthorDetailResponse,
@@ -66,10 +67,12 @@ export type {
   TestUpdate,
   QuestionResponse,
   QuestionAuthorResponse,
+  QuestionType,
   QuestionCreate,
   QuestionUpdate,
   OptionCreate,
   OptionResponse,
+  OptionAuthorResponse,
   TagResponse,
   TagCreate,
   AttemptResponse,
@@ -81,9 +84,7 @@ export type {
   CalendarResponse,
   PageAttemptSummary,
   TestStatsResponse,
-  CatalogSearchParams,
   ErrorResponse,
-  Page,
 } from './generated/types.gen'
 
 // Re-export client for custom calls if needed

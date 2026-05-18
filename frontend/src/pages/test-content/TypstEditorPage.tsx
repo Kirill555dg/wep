@@ -27,7 +27,7 @@ export default function TypstEditorPage() {
     return () => clearTimeout(timer)
   }, [source])
 
-  const handleSave = useCallback(async () {
+  const handleSave = useCallback(async () => {
     if (!testId || !questionId) return
     setSaving(true)
     try {

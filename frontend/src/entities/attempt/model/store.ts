@@ -1,5 +1,5 @@
 import {create} from 'zustand'
-import type {AttemptResponse, AnswerSubmitRequest} from '@/shared/api/client/testConstructorAPI.schemas'
+import type {AttemptResponse, AnswerSubmitRequest} from '@/shared/api'
 import type {ATTEMPT_STATUS} from '@/shared/config/constants'
 
 export interface Answer {

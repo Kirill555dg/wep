@@ -135,8 +135,7 @@ export default function ResultsPage() {
   const currentAnswer = answers[currentIdxSafe]
   const currentQuestion = questions[currentIdxSafe]
 
-  const completionMessage =
-    (result as any).completion_message ?? test?.completion_message ?? null
+  const completionMessage = (result as any).completion_message ?? null
 
   const mediaFiles = currentQuestion?.image_url
     ? [

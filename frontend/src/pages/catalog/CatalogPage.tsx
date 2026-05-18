@@ -260,7 +260,7 @@ export default function CatalogPage() {
         </div>
       )}
 
-      {error && (
+      {Boolean(error) && (
         <div className="text-center py-16 text-red-600">
           <p className="mb-4">Ошибка загрузки</p>
           <Button variant="outline" onClick={() => window.location.reload()}>

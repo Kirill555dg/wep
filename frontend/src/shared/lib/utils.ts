@@ -8,20 +8,20 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getQuestionTypeLabel(type: QuestionType): string {
   const labels: Record<QuestionType, string> = {
-    single_choice: 'Одиночный выбор',
-    multiple_choice: 'Множественный выбор',
-    text: 'Текстовый ответ',
-    essay: 'Эссе',
+    SINGLE_CHOICE: 'Одиночный выбор',
+    MULTIPLE_CHOICE: 'Множественный выбор',
+    TEXT: 'Текстовый ответ',
+    ESSAY: 'Эссе',
   }
   return labels[type] || type
 }
 
 export function getQuestionTypeIcon(type: QuestionType): string {
   const icons: Record<QuestionType, string> = {
-    single_choice: '🔘',
-    multiple_choice: '☑️',
-    text: '📝',
-    essay: '📄',
+    SINGLE_CHOICE: '🔘',
+    MULTIPLE_CHOICE: '☑️',
+    TEXT: '📝',
+    ESSAY: '📄',
   }
   return icons[type] || '❓'
 }

@@ -45,8 +45,9 @@ export default function LoginPage() {
   const onSubmit = (values: LoginForm) => {
     login.mutate(values, {
       onSuccess: (res) => {
-        useUserStore.getState().setToken(res.data.access_token)
-        useUserStore.getState().setUser(res.data.user)
+        const data = res.data!
+        useUserStore.getState().setToken(data.access_token)
+        useUserStore.getState().setUser(data.user)
         const redirect = searchParams.get('redirect') || '/catalog'
         navigate(redirect)
       },

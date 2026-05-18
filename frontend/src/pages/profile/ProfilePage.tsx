@@ -34,7 +34,7 @@ export default function ProfilePage() {
   const {success, error} = useToast()
   const queryClient = useQueryClient()
   const setUser = useUserStore((s) => s.setUser)
-  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user?.avatar_url || undefined)
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>((user as any)?.avatar_url || undefined)
   const [uploading, setUploading] = useState(false)
 
   const {
