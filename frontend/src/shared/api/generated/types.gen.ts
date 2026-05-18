@@ -1825,6 +1825,10 @@ export type SearchCatalogApiV1CatalogGetData = {
          */
         tags?: Array<string>;
         /**
+         * Author Id
+         */
+        author_id?: number | null;
+        /**
          * Skip
          */
         skip?: number;
