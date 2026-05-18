@@ -1,3 +1,4 @@
+import datetime as dt
 import re
 import typing as tp
 import logging
@@ -279,6 +280,42 @@ class AttemptRepository(base_repo.BaseRepository[tc_models.Attempt]):
         )
         result = await self.db.execute(stmt)
         return {row.test_id: {"total": row.total, "completed": row.completed} for row in result}
+
+    async def list_by_user(
+        self, user_id: int, skip: int = 0, limit: int = 20,
+        status: str | None = None, test_id: int | None = None,
+        date_from: dt.datetime | None = None, date_to: dt.datetime | None = None,
+    ) -> tuple[list[tc_models.Attempt], int]:
+        stmt = (
+            sa.select(tc_models.Attempt)
+            .where(tc_models.Attempt.user_id == user_id)
+            .options(sqla_orm.selectinload(tc_models.Attempt.test))
+            .order_by(tc_models.Attempt.started_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        if test_id is not None:
+            stmt = stmt.where(tc_models.Attempt.test_id == test_id)
+        if status is not None:
+            stmt = stmt.where(tc_models.Attempt.status == status)
+        if date_from is not None:
+            stmt = stmt.where(tc_models.Attempt.started_at >= date_from)
+        if date_to is not None:
+            stmt = stmt.where(tc_models.Attempt.started_at <= date_to)
+        rows = tp.cast(list[tc_models.Attempt], await self._scalars_all(stmt))
+
+        count_stmt = sa.select(sa.func.count()).select_from(tc_models.Attempt).where(tc_models.Attempt.user_id == user_id)
+        if test_id is not None:
+            count_stmt = count_stmt.where(tc_models.Attempt.test_id == test_id)
+        if status is not None:
+            count_stmt = count_stmt.where(tc_models.Attempt.status == status)
+        if date_from is not None:
+            count_stmt = count_stmt.where(tc_models.Attempt.started_at >= date_from)
+        if date_to is not None:
+            count_stmt = count_stmt.where(tc_models.Attempt.started_at <= date_to)
+        result = await self.db.execute(count_stmt)
+        total = tp.cast(int, result.scalar_one())
+        return rows, total
 
 
 class AnswerRepository(base_repo.BaseRepository[tc_models.Answer]):

@@ -1,75 +1,50 @@
-import { useRef } from "react";
-import { Button } from "@/shared/ui/button";
-import { Camera } from "lucide-react";
-import { UserAvatar } from "@/entities/user/ui/UserAvatar";
+import {useRef} from 'react'
+import {Camera} from 'lucide-react'
+import {Avatar, AvatarFallback, AvatarImage} from '@/shared/ui/avatar'
 
 interface Props {
-  fullName: string;
-  avatarUrl?: string;
-  isEditing: boolean;
-  activeRole: "teacher" | "student";
-  onSwitchRole: (role: "teacher" | "student") => void;
-  roleSwitchVisible?: boolean;
-  onAvatarChange?: (file: File | null) => void;
+  initials: string
+  previewUrl?: string
+  onSelect: (file: File) => void
+  disabled?: boolean
 }
 
 export function ProfileAvatarBlock({
-  fullName,
-  avatarUrl,
-  isEditing,
-  activeRole,
-  onSwitchRole,
-  onAvatarChange,
+  initials,
+  previewUrl,
+  onSelect,
+  disabled,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
+  const handleClick = () => {
+    if (!disabled) fileInputRef.current?.click()
+  }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    if (onAvatarChange) onAvatarChange(file);
-  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) onSelect(file)
+  }
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative">
-        <UserAvatar avatar={avatarUrl} size="h-32 w-32 sm:h-48 sm:w-48" className="border-2" />
-
-        {isEditing && (
-          <>
-            <Button
-              size="icon"
-              className="absolute bottom-0 right-0 rounded-full h-10 w-10 bg-blue-600 hover:bg-blue-700"
-              onClick={handleAvatarClick}
-              type="button"
-            >
-              <Camera className="h-5 w-5 text-white" />
-            </Button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-          </>
-        )}
+      <div className="relative cursor-pointer" onClick={handleClick}>
+        <Avatar className="h-20 w-20">
+          <AvatarImage src={previewUrl ?? ''} alt="avatar" />
+          <AvatarFallback className="text-xl">{initials}</AvatarFallback>
+        </Avatar>
+        <div className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-1.5">
+          <Camera className="h-4 w-4" />
+        </div>
       </div>
-
-      <h2 className="text-xl font-bold mt-4 text-center">{fullName}</h2>
-
-      <div className="mt-6 flex gap-2 w-full">
-        <Button
-          variant={activeRole === "student" ? "default" : "outline"}
-          className="flex-1"
-          onClick={() => onSwitchRole("student")}
-        >
-          Ученик
-        </Button>
-        <Button
-          variant={activeRole === "teacher" ? "default" : "outline"}
-          className="flex-1"
-          onClick={() => onSwitchRole("teacher")}
-        >
-          Преподаватель
-        </Button>
-      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleChange}
+        disabled={disabled}
+      />
     </div>
-  );
+  )
 }
