@@ -49,7 +49,12 @@ export default function RegisterPage() {
 
   const onSubmit = (values: RegisterForm) => {
     register.mutate(values, {
-      onSuccess: () => {
+      onSuccess: (res) => {
+        if ('error' in res) {
+          const { message } = getApiError(res)
+          toast.error(message)
+          return
+        }
         const redirect = searchParams.get('redirect')
         if (redirect) {
           navigate(`/login?redirect=${encodeURIComponent(redirect)}`)

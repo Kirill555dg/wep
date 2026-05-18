@@ -45,6 +45,11 @@ export default function LoginPage() {
   const onSubmit = (values: LoginForm) => {
     login.mutate(values, {
       onSuccess: (res) => {
+        if ('error' in res) {
+          const { message } = getApiError(res)
+          toast.error(message)
+          return
+        }
         const data = res.data!
         useUserStore.getState().setToken(data.access_token)
         useUserStore.getState().setUser(data.user)
