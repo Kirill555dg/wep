@@ -32,12 +32,18 @@ class TestService:
             await self.test_repo.add_tags(test.id, tag_ids)
         return await self.test_repo.get_by_id_with_questions(test.id)  # type: ignore[return-value]
 
-    async def get_test(self, test_id: int, user_id: int) -> tc_models.Test:
+    async def get_test(self, test_id: int, user_id: int | None) -> tc_models.Test:
         test = await self.test_repo.get_by_id_with_questions(test_id)
         if not test:
             raise svc_exc.ServiceError("Test not found", code="test_not_found")
-        if not test.is_public and test.author_id != user_id:
+        
+        is_authorized = test.is_public
+        if not test.is_public and user_id is not None and test.author_id == user_id:
+            is_authorized = True
+        
+        if not is_authorized:
             raise svc_exc.ServiceError("Access denied", code="test_access_denied")
+        
         return test
 
     async def update_test(self, test_id: int, user_id: int, data: tc_schemas.TestUpdate) -> tc_models.Test:

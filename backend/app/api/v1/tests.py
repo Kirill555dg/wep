@@ -46,18 +46,21 @@ async def list_my_tests(
 @router.get("/{test_id}", response_model=tc_schemas.TestAuthorDetailResponse | tc_schemas.TestDetailResponse)
 async def get_test(
     test_id: int,
-    current_user: user_models.User = fastapi.Depends(deps.get_current_user),
+    current_user: user_models.User | None = fastapi.Depends(deps.get_current_user_optional),
     svc: test_svc.TestService = fastapi.Depends(_get_test_service),
 ) -> tc_schemas.TestAuthorDetailResponse | tc_schemas.TestDetailResponse:
+    user_id = current_user.id if current_user else None
+    
     try:
-        test = await svc.get_test(test_id, current_user.id)
+        test = await svc.get_test(test_id, user_id)
     except svc_exc.ServiceError as exc:
         if exc.code == "test_not_found":
             raise http_errors.not_found("Test not found")
         if exc.code == "test_access_denied":
             raise http_errors.forbidden("Access denied")
         raise
-    if test.author_id == current_user.id:
+    
+    if test.author_id == user_id:
         return _map_author_detail(test)
     return _map_detail(test)
 
