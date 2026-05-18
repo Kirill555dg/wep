@@ -17,12 +17,12 @@ export const useUserStore = create<UserState>()(
   persist(
     (set) => ({
       user: null,
-      token: localStorage.getItem('access_token'),
+      token: null,
       setUser: (user) => set({user}),
       setToken: (token) => set({token}),
       logout: () => {
-        localStorage.removeItem('access_token');
-        set({user: null, token: null});
+        localStorage.clear()
+        set({user: null, token: null})
       },
     }),
     {

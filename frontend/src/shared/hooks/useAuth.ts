@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUserStore } from '@/entities/user/model/store'
-import { client } from '@/shared/api'
 
 export function useAuth() {
   const user = useUserStore((s) => s.user)
@@ -13,7 +12,6 @@ export function useAuth() {
 
   const logout = useCallback(() => {
     storeLogout()
-    client.setConfig({ auth: undefined })
   }, [storeLogout])
 
   const requireAuth = useCallback(

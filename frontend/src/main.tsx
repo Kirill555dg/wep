@@ -8,11 +8,14 @@ import './shared/styles/globals.css'
 import { client } from '@/shared/api'
 import { useUserStore } from '@/entities/user/model/store'
 
-// Sync client auth with persisted token before first render
-const token = useUserStore.getState().token
-if (token) {
-  client.setConfig({ auth: token })
-}
+// Every request with Bearer security reads the CURRENT token from Zustand.
+// No manual re-config needed on login/logout.
+client.setConfig({
+  auth: () => {
+    const token = useUserStore.getState().token
+    return token ?? undefined
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -22,5 +25,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <AppRouter />
       </BrowserRouter>
     </Providers>
-  </React.StrictMode>
+  </React.StrictMode>,
 )

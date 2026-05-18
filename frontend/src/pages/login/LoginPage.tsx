@@ -10,7 +10,6 @@ import { useAuth } from '@/shared/hooks/useAuth'
 import { useUserStore } from '@/entities/user/model/store'
 import { useLogin } from '@/features/auth/api/useAuth'
 import { getApiError } from '@/shared/lib/api-error'
-import { client } from '@/shared/api'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -49,7 +48,6 @@ export default function LoginPage() {
         const data = res.data!
         useUserStore.getState().setToken(data.access_token)
         useUserStore.getState().setUser(data.user)
-        client.setConfig({ auth: data.access_token })
         const redirect = searchParams.get('redirect') || '/catalog'
         navigate(redirect)
       },
