@@ -14,9 +14,15 @@ class CatalogService:
         self, params: tc_schemas.CatalogSearchParams
     ) -> tuple[list[tc_models.Test], int]:
         tests = await self.test_repo.get_public(
-            skip=params.skip, limit=params.limit, query=params.q, tag_slugs=params.tags or None
+            skip=params.skip,
+            limit=params.limit,
+            query=params.q,
+            tag_slugs=params.tags or None,
+            author_id=params.author_id,
         )
-        total = await self.test_repo.count_public(query=params.q, tag_slugs=params.tags or None)
+        total = await self.test_repo.count_public(
+            query=params.q, tag_slugs=params.tags or None, author_id=params.author_id
+        )
         return tests, total
 
     async def get_public_test_detail(self, test_id: int) -> tc_models.Test:

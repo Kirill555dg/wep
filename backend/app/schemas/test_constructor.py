@@ -160,11 +160,42 @@ class TestAuthorDetailResponse(TestResponse):
     questions: list[QuestionAuthorResponse] = []
 
 
+# --- Attempt List (for History) ---
+
+class AttemptListItem(pydantic.BaseModel):
+    id: int
+    test_id: int
+    test_title: str
+    status: AttemptStatus
+    score: int | None
+    max_score: int | None
+    started_at: dt.datetime
+    finished_at: dt.datetime | None
+    time_spent_minutes: int | None  # computed or stored
+
+    model_config = pydantic.ConfigDict(from_attributes=True)
+
+
+# --- Calendar ---
+
+class CalendarDayData(pydantic.BaseModel):
+    date: str  # "2026-05-18"
+    count: int
+    tests: list[str]  # test titles taken that day
+
+
+class CalendarMonthResponse(pydantic.BaseModel):
+    year: int
+    month: int
+    days: dict[str, int]  # {"2026-05-01": 3, "2026-05-02": 0, ...}
+
+
 # --- Catalog ---
 
 class CatalogSearchParams(pydantic.BaseModel):
     q: str | None = None
     tags: list[str] = pydantic.Field(default_factory=list)
+    author_id: int | None = None
     skip: int = pydantic.Field(default=0, ge=0)
     limit: int = pydantic.Field(default=20, ge=1, le=100)
 

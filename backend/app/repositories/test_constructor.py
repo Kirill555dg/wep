@@ -41,6 +41,7 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
         limit: int = 20,
         query: str | None = None,
         tag_slugs: list[str] | None = None,
+        author_id: int | None = None,
     ) -> list[tc_models.Test]:
         stmt = (
             sa.select(tc_models.Test)
@@ -50,6 +51,8 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
                 sqla_orm.selectinload(tc_models.Test.test_tags).selectinload(tc_models.TestTag.tag),
             )
         )
+        if author_id is not None:
+            stmt = stmt.where(tc_models.Test.author_id == author_id)
         if query:
             stmt = stmt.where(
                 sa.or_(tc_models.Test.title.ilike(f"%{query}%"), tc_models.Test.description.ilike(f"%{query}%"))
@@ -70,8 +73,12 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
 
         return tp.cast(list[tc_models.Test], result)
 
-    async def count_public(self, query: str | None = None, tag_slugs: list[str] | None = None) -> int:
+    async def count_public(
+        self, query: str | None = None, tag_slugs: list[str] | None = None, author_id: int | None = None
+    ) -> int:
         stmt = sa.select(sa.func.count()).select_from(tc_models.Test).where(tc_models.Test.is_public.is_(True))
+        if author_id is not None:
+            stmt = stmt.where(tc_models.Test.author_id == author_id)
         if query:
             stmt = stmt.where(
                 sa.or_(tc_models.Test.title.ilike(f"%{query}%"), tc_models.Test.description.ilike(f"%{query}%"))
@@ -179,7 +186,9 @@ class AttemptRepository(base_repo.BaseRepository[tc_models.Attempt]):
         )
         return tp.cast(tc_models.Attempt | None, await self._scalar_one_or_none(stmt))
 
-    async def get_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> list[tc_models.Attempt]:
+    async def get_by_user(
+        self, user_id: int, skip: int = 0, limit: int = 100, test_id: int | None = None, status: str | None = None
+    ) -> list[tc_models.Attempt]:
         stmt = (
             sa.select(tc_models.Attempt)
             .where(tc_models.Attempt.user_id == user_id)
@@ -187,7 +196,41 @@ class AttemptRepository(base_repo.BaseRepository[tc_models.Attempt]):
             .offset(skip)
             .limit(limit)
         )
+        if test_id is not None:
+            stmt = stmt.where(tc_models.Attempt.test_id == test_id)
+        if status is not None:
+            stmt = stmt.where(tc_models.Attempt.status == status)
         return tp.cast(list[tc_models.Attempt], await self._scalars_all(stmt))
+
+    async def count_by_user(self, user_id: int, test_id: int | None = None, status: str | None = None) -> int:
+        stmt = sa.select(sa.func.count()).select_from(tc_models.Attempt).where(tc_models.Attempt.user_id == user_id)
+        if test_id is not None:
+            stmt = stmt.where(tc_models.Attempt.test_id == test_id)
+        if status is not None:
+            stmt = stmt.where(tc_models.Attempt.status == status)
+        result = await self.db.execute(stmt)
+        return tp.cast(int, result.scalar_one())
+
+    async def get_calendar(self, user_id: int, year: int, month: int) -> dict[str, int]:
+        from calendar import monthrange
+        _, last_day = monthrange(year, month)
+        start = dt.datetime(year, month, 1, tzinfo=dt.timezone.utc)
+        end = dt.datetime(year, month, last_day, 23, 59, 59, tzinfo=dt.timezone.utc)
+
+        stmt = (
+            sa.select(
+                sa.func.date(tc_models.Attempt.started_at).label("day"),
+                sa.func.count().label("cnt"),
+            )
+            .where(
+                tc_models.Attempt.user_id == user_id,
+                tc_models.Attempt.started_at >= start,
+                tc_models.Attempt.started_at <= end,
+            )
+            .group_by(sa.func.date(tc_models.Attempt.started_at))
+        )
+        result = await self.db.execute(stmt)
+        return {str(row.day): row.cnt for row in result}
 
     async def get_by_id_with_answers(self, attempt_id: int) -> tc_models.Attempt | None:
         stmt = (
