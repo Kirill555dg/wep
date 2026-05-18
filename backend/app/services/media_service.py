@@ -8,7 +8,15 @@ from app.services import exceptions as svc_exc
 
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
-IMAGE_CONTENT_TYPES = frozenset({"image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp", "image/x-ms-bmp"})
+IMAGE_CONTENT_TYPES = frozenset({
+    "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp", "image/x-ms-bmp",
+    "audio/mpeg", "audio/wav", "audio/x-wav", "audio/ogg", "audio/mp4", "audio/m4a",
+    "video/mp4", "video/webm", "video/quicktime", "video/avi", "video/x-msvideo",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+})
 ANSWER_CONTENT_TYPES = frozenset({
     "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp", "image/x-ms-bmp",
     "audio/mpeg", "audio/wav", "audio/x-wav", "audio/ogg", "audio/mp4", "audio/m4a",

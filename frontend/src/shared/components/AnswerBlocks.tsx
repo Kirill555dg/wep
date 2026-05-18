@@ -1,11 +1,10 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { Check, Plus, X, Upload, FileText, Download, ChevronDown, ChevronUp } from 'lucide-react'
+import { Check, Plus, X, Upload, FileText, Download, ChevronDown, ChevronUp, GripVertical } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
 
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Textarea } from '@/shared/ui/textarea'
-import { Checkbox } from '@/shared/ui/checkbox'
 import { Select, SelectItem } from '@/shared/ui/select'
 import TypstRender from '@/shared/components/TypstRender'
 import { uploadAnswerFileApiV1MediaUploadAnswerPost } from '@/shared/api'
@@ -22,54 +21,41 @@ function isAuthorQuestion(q: AnyQuestion): q is QuestionAuthorResponse {
 
 function ExplanationBlock({ explanation }: { explanation: string }) {
   const [expanded, setExpanded] = useState(false)
-  const hasTypst = explanation.includes('$') || explanation.includes('#') || explanation.includes('```')
-
+  const hasTypst = explanation.includes('$') || explanation.includes('#')
   return (
-    <div className="rounded-lg border p-3 bg-blue-50 text-blue-800">
+    <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3">
       <button
-        className="flex items-center gap-2 text-sm font-medium w-full text-left hover:opacity-80"
+        className="flex items-center gap-2 text-sm font-medium text-blue-700 w-full text-left"
         onClick={() => setExpanded((v) => !v)}
       >
         {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        <span>Объяснение</span>
+        Пояснение
       </button>
       {expanded && (
-        <div className="mt-2 text-sm">
-          {hasTypst ? (
-            <TypstRender source={explanation} mode="review" />
-          ) : (
-            <p className="whitespace-pre-wrap">{explanation}</p>
-          )}
+        <div className="mt-2 text-sm text-blue-900">
+          {hasTypst ? <TypstRender source={explanation} mode="review" /> : <p className="whitespace-pre-wrap">{explanation}</p>}
         </div>
       )}
     </div>
   )
 }
 
-const QUESTION_TYPES: QType[] = [
-  'SINGLE_CHOICE',
-  'MULTIPLE_CHOICE',
-  'TEXT',
-  'ESSAY',
-  'MATCHING',
-  'FILE_UPLOAD',
-]
-
-type AnyQuestion = QuestionResponse | QuestionAuthorResponse
+const QUESTION_TYPES: QType[] = ['SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'TEXT', 'ESSAY', 'MATCHING', 'FILE_UPLOAD']
+const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 
 function typeLabel(t: QType) {
   switch (t) {
-    case 'SINGLE_CHOICE': return 'Single Choice'
-    case 'MULTIPLE_CHOICE': return 'Multiple Choice'
-    case 'TEXT': return 'Text'
-    case 'ESSAY': return 'Essay'
-    case 'MATCHING': return 'Matching'
-    case 'FILE_UPLOAD': return 'File Upload'
+    case 'SINGLE_CHOICE': return 'Один ответ'
+    case 'MULTIPLE_CHOICE': return 'Несколько ответов'
+    case 'TEXT': return 'Текст'
+    case 'ESSAY': return 'Эссе'
+    case 'MATCHING': return 'Соответствие'
+    case 'FILE_UPLOAD': return 'Файл'
   }
 }
 
+type AnyQuestion = QuestionResponse | QuestionAuthorResponse
 type MatchingPair = { id: number; term: string; definition: string }
-
 type MatchingAnswer = Record<number, number>
 
 interface AnswerBlocksProps {
@@ -78,553 +64,344 @@ interface AnswerBlocksProps {
   value?: unknown
   onChange?: (value: unknown) => void
   onQuestionChange?: (patch: Partial<QuestionAuthorResponse>) => void
+  onOpenOptionEditor?: (idx: number, currentText: string) => void
   correctOptionIds?: number[]
   explanation?: string | null
 }
 
-export default function AnswerBlocks({
-  question,
-  mode,
-  value,
-  onChange,
-  onQuestionChange,
-  correctOptionIds,
-  explanation,
-}: AnswerBlocksProps) {
+export default function AnswerBlocks({ question, mode, value, onChange, onQuestionChange, onOpenOptionEditor, correctOptionIds, explanation }: AnswerBlocksProps) {
   const isEdit = mode === 'edit'
   const isReview = mode === 'review'
   const options = question.options || []
   const qType = question.question_type as QType
-
   const selectedSingle = typeof value === 'number' ? value : null
   const selectedMultiple = Array.isArray(value) ? (value as number[]) : []
   const textValue = typeof value === 'string' ? value : ''
-
   const questionData = (question.question_data ?? {}) as Record<string, unknown>
-  const matchingPairs = (questionData.matching_pairs as MatchingPair[] | undefined)
-  const matchingAnswer = useMemo(() => {
-    if (qType !== 'MATCHING') return {} as Record<number, number>
-    const v = value as MatchingAnswer | undefined
-    return v ?? {}
-  }, [qType, value])
+  const matchingPairs = questionData.matching_pairs as MatchingPair[] | undefined
+  const matchingAnswer = useMemo(() => qType === 'MATCHING' ? ((value as MatchingAnswer) ?? {}) : {}, [qType, value])
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-
   const fileAnswerUrl = typeof value === 'string' && value.startsWith('http') ? value : null
 
   useEffect(() => {
-    if (fileAnswerUrl && !uploadedUrl && !uploadedFile) {
-      setUploadedUrl(fileAnswerUrl)
-    }
+    if (fileAnswerUrl && !uploadedUrl && !uploadedFile) setUploadedUrl(fileAnswerUrl)
   }, [fileAnswerUrl, uploadedUrl, uploadedFile])
 
-  const handleSingleClick = (id: number) => {
-    if (isReview) return
-    onChange?.(selectedSingle === id ? null : id)
-  }
-
+  const handleSingleClick = (id: number) => { if (!isReview) onChange?.(selectedSingle === id ? null : id) }
   const handleMultipleToggle = (id: number) => {
     if (isReview) return
-    const next = selectedMultiple.includes(id)
-      ? selectedMultiple.filter((x) => x !== id)
-      : [...selectedMultiple, id]
-    onChange?.(next)
+    onChange?.(selectedMultiple.includes(id) ? selectedMultiple.filter(x => x !== id) : [...selectedMultiple, id])
   }
 
-  const handleTextChange = (v: string) => {
-    if (isReview) return
-    onChange?.(v)
-  }
-
-  const handleMatchingChange = (termId: number, defId: number) => {
-    if (isReview) return
-    onChange?.({ ...matchingAnswer, [termId]: defId })
-  }
-
-  const onDrop = useCallback(
-    async (accepted: File[]) => {
-      if (isReview || !accepted.length || !onChange) return
-      const file = accepted[0]
-      setUploadedFile(file)
-      setUploading(true)
-      try {
-        const res = await uploadAnswerFileApiV1MediaUploadAnswerPost({ body: { file: file as Blob } })
-        const data = (res.data || res) as Record<string, unknown>
-        const url = (data.url as string) || ''
-        if (url) {
-          setUploadedUrl(url)
-          onChange(url)
-          setUploading(false)
-          return
-        }
-      } catch {
-        // fallback to blob URL
-      }
-      const url = URL.createObjectURL(file)
-      setUploadedUrl(url)
-      onChange(url)
-      setUploading(false)
-    },
-    [isReview, onChange],
-  )
+  const onDrop = useCallback(async (accepted: File[]) => {
+    if (isReview || !accepted.length || !onChange) return
+    const file = accepted[0]; setUploadedFile(file); setUploading(true)
+    try {
+      const res = await uploadAnswerFileApiV1MediaUploadAnswerPost({ body: { file: file as Blob } })
+      const data = (res.data || res) as Record<string, unknown>
+      const url = (data.url as string) || ''
+      if (url) { setUploadedUrl(url); onChange(url); setUploading(false); return }
+    } catch {}
+    const url = URL.createObjectURL(file); setUploadedUrl(url); onChange(url); setUploading(false)
+  }, [isReview, onChange])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    disabled: isReview,
-    maxFiles: 1,
-    maxSize: 10 * 1024 * 1024,
-    accept: {
-      'image/*': [],
-      'application/pdf': [],
-      'application/msword': [],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [],
-      'text/plain': [],
-      'video/*': [],
-      'audio/*': [],
-    },
+    onDrop, disabled: isReview, maxFiles: 1, maxSize: 10 * 1024 * 1024,
+    accept: { 'image/*': [], 'application/pdf': [], 'text/plain': [], 'video/*': [], 'audio/*': [] },
   })
 
   const addOption = () => {
-    if (!isEdit || !isAuthorQuestion(question)) return
-    if ((question.options?.length || 0) >= 8) return
-    const next: OptionAuthorResponse[] = [
-      ...(question.options || []),
-      {
-        id: -Date.now(),
-        text: '',
-        order_number: (question.options?.length || 0) + 1,
-        is_correct: false,
-      },
-    ]
+    if (!isEdit || !isAuthorQuestion(question) || (question.options?.length || 0) >= 8) return
+    const next: OptionAuthorResponse[] = [...(question.options || []), { id: -Date.now(), text: '', order_number: (question.options?.length || 0) + 1, is_correct: false }]
     onQuestionChange?.({ options: next })
   }
-
   const removeOption = (idx: number) => {
     if (!isEdit || !isAuthorQuestion(question)) return
-    const next = (question.options || []).filter((_, i) => i !== idx)
-    onQuestionChange?.({
-      options: next.map((o, i) => ({ ...o, order_number: i + 1 })) as OptionAuthorResponse[],
-    })
+    onQuestionChange?.({ options: (question.options || []).filter((_, i) => i !== idx).map((o, i) => ({ ...o, order_number: i + 1 })) as OptionAuthorResponse[] })
   }
-
   const updateOptionText = (idx: number, text: string) => {
     if (!isEdit || !isAuthorQuestion(question)) return
-    const next = (question.options || []).map((o, i) =>
-      i === idx ? { ...o, text } : o
-    ) as OptionAuthorResponse[]
-    onQuestionChange?.({ options: next })
+    onQuestionChange?.({ options: (question.options || []).map((o, i) => i === idx ? { ...o, text } : o) as OptionAuthorResponse[] })
   }
-
   const toggleOptionCorrect = (idx: number) => {
     if (!isEdit || !isAuthorQuestion(question)) return
-    const next = (question.options || []).map((o, i) =>
-      i === idx ? { ...o, is_correct: !o.is_correct } : o
-    ) as OptionAuthorResponse[]
-    onQuestionChange?.({ options: next })
+    onQuestionChange?.({ options: (question.options || []).map((o, i) => i === idx ? { ...o, is_correct: !o.is_correct } : o) as OptionAuthorResponse[] })
   }
-
-  const setPoints = (pts: string) => {
-    if (!isEdit || !isAuthorQuestion(question)) return
-    const num = Number(pts)
-    onQuestionChange?.({ points: Number.isNaN(num) ? 0 : num })
-  }
-
-  const setExplanation = (text: string) => {
-    if (!isEdit || !isAuthorQuestion(question)) return
-    onQuestionChange?.({ explanation: text })
-  }
-
-  const setType = (type: string) => {
-    if (!isEdit || !isAuthorQuestion(question)) return
-    onQuestionChange?.({ question_type: type as QType })
-  }
-
-  const setQuestionData = (patch: Record<string, unknown>) => {
-    onQuestionChange?.({ question_data: { ...questionData, ...patch } })
-  }
-
+  const setQuestionData = (patch: Record<string, unknown>) => onQuestionChange?.({ question_data: { ...questionData, ...patch } })
   const addMatchingPair = () => {
-    if (!isEdit || !isAuthorQuestion(question)) return
-    const pairs = matchingPairs || []
-    if (pairs.length >= 6) return
-    const next = [
-      ...pairs,
-      { id: -Date.now(), term: '', definition: '' },
-    ]
-    setQuestionData({ matching_pairs: next })
+    if (!isEdit || (matchingPairs || []).length >= 6) return
+    setQuestionData({ matching_pairs: [...(matchingPairs || []), { id: -Date.now(), term: '', definition: '' }] })
   }
-
-  const updateMatchingPair = (idx: number, field: 'term' | 'definition', value: string) => {
-    if (!isEdit || !isAuthorQuestion(question)) return
-    const pairs = [...(matchingPairs || [])]
-    pairs[idx] = { ...pairs[idx], [field]: value }
+  const updateMatchingPair = (idx: number, field: 'term' | 'definition', val: string) => {
+    if (!isEdit) return
+    const pairs = [...(matchingPairs || [])]; pairs[idx] = { ...pairs[idx], [field]: val }
     setQuestionData({ matching_pairs: pairs })
   }
-
   const removeMatchingPair = (idx: number) => {
-    if (!isEdit || !isAuthorQuestion(question)) return
-    const pairs = (matchingPairs || []).filter((_, i) => i !== idx)
-    setQuestionData({ matching_pairs: pairs })
+    if (!isEdit) return
+    setQuestionData({ matching_pairs: (matchingPairs || []).filter((_, i) => i !== idx) })
   }
+  const shuffledDefinitions = useMemo(() => qType !== 'MATCHING' || !matchingPairs ? [] : [...matchingPairs].sort(() => Math.random() - 0.5), [qType, matchingPairs])
 
-  const blockClass = (optId: number, isSelected: boolean) => {
-    let base = 'rounded-lg border p-4 transition-colors min-w-[120px]'
-    if (isReview) {
-      const isCorrectOpt = correctOptionIds?.includes(optId)
-      if (isCorrectOpt) base += ' bg-green-50 border-green-500 text-green-700'
-      else if (isSelected) base += ' bg-red-50 border-red-500 text-red-700'
-      else base += ' bg-background border-input text-foreground'
-    } else if (isSelected) {
-      base += ' bg-primary/10 border-primary text-primary cursor-pointer'
-    } else {
-      base += ' bg-background border-input hover:bg-accent cursor-pointer'
-    }
-    return base
-  }
+  // ── Header: type + points in edit mode ──────────────────────────────────
+  const editHeader = isEdit && isAuthorQuestion(question) && (
+    <div className="flex items-center gap-4 text-sm flex-wrap">
+      <label className="flex items-center gap-2 text-muted-foreground shrink-0">
+        <span className="text-sm">Тип:</span>
+        <Select value={question.question_type} onChange={(e) => onQuestionChange?.({ question_type: e.target.value as QType })} className="h-9 text-sm w-52">
+          {QUESTION_TYPES.map(t => <SelectItem key={t} value={t}>{typeLabel(t)}</SelectItem>)}
+        </Select>
+      </label>
+      <label className="flex items-center gap-2 text-muted-foreground shrink-0">
+        <span className="text-sm">Баллов:</span>
+        <Input type="number" min={0} value={isAuthorQuestion(question) ? question.points : 0} onChange={e => onQuestionChange?.({ points: Number(e.target.value) || 0 })} className="h-9 w-16 text-sm text-center" />
+      </label>
+    </div>
+  )
 
-  const shuffledDefinitions = useMemo(() => {
-    if (qType !== 'MATCHING' || !matchingPairs) return []
-    return [...matchingPairs].sort(() => Math.random() - 0.5)
-  }, [qType, matchingPairs])
-
-  return (
-    <div className="w-full my-4 space-y-4">
-      {isEdit && isAuthorQuestion(question) && (
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Type:</span>
-            <Select
-              value={question.question_type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-44"
-            >
-              {QUESTION_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {typeLabel(t)}
-                </SelectItem>
-              ))}
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Points:</span>
-            <Input
-              type="number"
-              min={0}
-              value={question.points}
-              onChange={(e) => setPoints(e.target.value)}
-              className="w-20"
-            />
-          </div>
-        </div>
-      )}
-
-      {(qType === 'SINGLE_CHOICE' || qType === 'MULTIPLE_CHOICE') && (
-        <div className="flex flex-wrap gap-3">
-          {options.map((opt, idx) => {
-            const isSelected =
-              qType === 'SINGLE_CHOICE'
-                ? selectedSingle === opt.id
-                : selectedMultiple.includes(opt.id)
-
-            return (
-              <div
-                key={opt.id}
-                className={isEdit ? 'flex items-start gap-2 w-full' : 'contents'}
-              >
+  // ── SINGLE / MULTIPLE CHOICE ──────────────────────────────────────────────
+  if (qType === 'SINGLE_CHOICE' || qType === 'MULTIPLE_CHOICE') {
+    if (isEdit) {
+      return (
+        <div className="space-y-3">
+          {editHeader}
+          <div className="space-y-2">
+            {options.map((opt, idx) => {
+              const isCorrect = (opt as OptionAuthorResponse).is_correct
+              return (
                 <div
-                  className={`${isEdit ? 'flex-1' : 'flex-1 basis-[45%]'} ${blockClass(opt.id, isSelected)}`}
-                  onClick={() => {
-                    if (qType === 'SINGLE_CHOICE') handleSingleClick(opt.id)
-                    else handleMultipleToggle(opt.id)
-                  }}
+                  key={opt.id}
+                  className={`group flex items-start gap-2 rounded-lg border px-3 py-2.5 transition-colors ${
+                    isCorrect ? 'border-green-400 bg-green-50' : 'border-border bg-background hover:bg-muted/20'
+                  }`}
                 >
-                  <div className="flex items-center gap-2">
-                    {qType === 'MULTIPLE_CHOICE' && !isEdit && (
-                      <div
-                        className={`h-4 w-4 rounded border flex items-center justify-center ${
-                          isSelected
-                            ? 'bg-primary border-primary'
-                            : 'border-muted-foreground'
-                        }`}
-                      >
-                        {isSelected && (
-                          <Check className="h-3 w-3 text-primary-foreground" />
-                        )}
-                      </div>
-                    )}
-                    {isEdit ? (
-                      <Input
-                        value={opt.text}
-                        onChange={(e) => updateOptionText(idx, e.target.value)}
-                        placeholder="Option text..."
-                        className="bg-transparent border-none shadow-none focus-visible:ring-0 px-0"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <TypstRender source={opt.text} mode="take" />
-                    )}
+                  {/* Letter badge */}
+                  <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-muted-foreground bg-muted shrink-0 mt-0.5">
+                    {OPTION_LETTERS[idx]}
+                  </span>
+
+                  {/* Option content: rendered Typst or placeholder */}
+                  <div
+                    className="flex-1 min-w-0 min-h-[24px] cursor-pointer"
+                    onClick={() => onOpenOptionEditor?.(idx, opt.text)}
+                  >
+                    {opt.text
+                      ? <TypstRender source={opt.text} mode="take" compact />
+                      : <span className="text-sm text-muted-foreground/50 italic">
+                          Вариант {OPTION_LETTERS[idx]} — нажмите для редактирования
+                        </span>
+                    }
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                    <button
+                      onClick={() => onOpenOptionEditor?.(idx, opt.text)}
+                      title="Редактировать"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                    >
+                      Изм.
+                    </button>
+                    <button
+                      onClick={() => toggleOptionCorrect(idx)}
+                      title={isCorrect ? 'Убрать правильный' : 'Отметить правильным'}
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        isCorrect ? 'bg-green-500 border-green-500 text-white' : 'border-muted-foreground/30 hover:border-green-400'
+                      }`}
+                    >
+                      {isCorrect && <Check className="h-3 w-3" />}
+                    </button>
+                    <button onClick={() => removeOption(idx)} className="text-muted-foreground/30 hover:text-destructive">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
-                {isEdit && isAuthorQuestion(question) && (
-                  <>
-                    <label className="flex items-center gap-1 text-xs whitespace-nowrap mt-2">
-                      <Checkbox
-                        checked={(opt as OptionAuthorResponse).is_correct}
-                        onCheckedChange={() => toggleOptionCorrect(idx)}
-                      />
-                      correct?
-                    </label>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 mt-1"
-                      onClick={() => removeOption(idx)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
+              )
+            })}
+            {options.length < 8 && (
+              <button
+                onClick={addOption}
+                className="w-full flex items-center gap-2 rounded-lg border border-dashed border-muted-foreground/25 px-3 py-2 text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Добавить вариант
+              </button>
+            )}
+          </div>
+          {isAuthorQuestion(question) && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Пояснение (необязательно)</p>
+              <Textarea rows={2} placeholder="Показывается студенту после проверки..." value={question.explanation || ''} onChange={e => onQuestionChange?.({ explanation: e.target.value })} className="text-sm resize-none" />
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // take / review
+    return (
+      <div className="space-y-2">
+        {options.map((opt, idx) => {
+          const isSelected = qType === 'SINGLE_CHOICE' ? selectedSingle === opt.id : selectedMultiple.includes(opt.id)
+          const isCorrectOpt = isReview && correctOptionIds?.includes(opt.id)
+          const isWrongSelected = isReview && isSelected && !isCorrectOpt
+          return (
+            <div
+              key={opt.id}
+              onClick={() => qType === 'SINGLE_CHOICE' ? handleSingleClick(opt.id) : handleMultipleToggle(opt.id)}
+              className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 transition-all select-none ${
+                isReview
+                  ? isCorrectOpt ? 'border-green-500 bg-green-50' : isWrongSelected ? 'border-red-400 bg-red-50' : 'border-border bg-background'
+                  : isSelected ? 'border-primary bg-primary/8 cursor-pointer' : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30 cursor-pointer'
+              }`}
+            >
+              <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${
+                isReview ? isCorrectOpt ? 'bg-green-500 text-white' : isWrongSelected ? 'bg-red-400 text-white' : 'bg-muted text-muted-foreground'
+                : isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}>
+                {OPTION_LETTERS[idx]}
+              </span>
+              <div className="flex-1 min-w-0">
+                <TypstRender source={opt.text || ''} mode="take" compact />
+              </div>
+              {isReview && isCorrectOpt && <Check className="h-4 w-4 text-green-600 shrink-0" />}
+              {isReview && isWrongSelected && <X className="h-4 w-4 text-red-500 shrink-0" />}
+            </div>
+          )
+        })}
+        {isReview && explanation && <ExplanationBlock explanation={explanation} />}
+      </div>
+    )
+  }
+
+  // ── TEXT / ESSAY ──────────────────────────────────────────────────────────
+  if (qType === 'TEXT' || qType === 'ESSAY') {
+    if (isEdit && isAuthorQuestion(question)) {
+      return (
+        <div className="space-y-3">
+          {editHeader}
+          <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+            Студент введёт ответ в текстовое поле
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Правильный ответ (для автопроверки)</p>
+            <Input value={question.correct_answer || ''} onChange={e => onQuestionChange?.({ correct_answer: e.target.value })} placeholder="Ожидаемый ответ..." className="text-sm" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Пояснение</p>
+            <Textarea rows={2} placeholder="Необязательное пояснение..." value={question.explanation || ''} onChange={e => onQuestionChange?.({ explanation: e.target.value })} className="text-sm resize-none" />
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className="space-y-3">
+        <Textarea rows={5} placeholder="Введите ответ..." value={textValue} onChange={e => onChange?.(e.target.value)} disabled={isReview} className="w-full resize-none" />
+        {isReview && explanation && <ExplanationBlock explanation={explanation} />}
+      </div>
+    )
+  }
+
+  // ── MATCHING ──────────────────────────────────────────────────────────────
+  if (qType === 'MATCHING') {
+    if (isEdit) {
+      return (
+        <div className="space-y-3">
+          {editHeader}
+          <div className="space-y-2">
+            {matchingPairs?.map((pair, idx) => (
+              <div key={pair.id} className="flex items-center gap-2">
+                <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Input value={pair.term} onChange={e => updateMatchingPair(idx, 'term', e.target.value)} placeholder="Термин..." className="flex-1 h-8 text-sm" />
+                <span className="text-muted-foreground text-sm">→</span>
+                <Input value={pair.definition} onChange={e => updateMatchingPair(idx, 'definition', e.target.value)} placeholder="Определение..." className="flex-1 h-8 text-sm" />
+                <button onClick={() => removeMatchingPair(idx)} className="text-muted-foreground/40 hover:text-destructive"><X className="h-4 w-4" /></button>
+              </div>
+            ))}
+            {(!matchingPairs || matchingPairs.length < 6) && (
+              <Button variant="outline" size="sm" onClick={addMatchingPair} className="w-full">
+                <Plus className="h-4 w-4 mr-1" /> Добавить пару
+              </Button>
+            )}
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Термины</p>
+          {matchingPairs?.map(pair => (
+            <div key={pair.id} className="rounded-lg border bg-background p-3 text-sm font-medium">{pair.term}</div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Соответствия</p>
+          {shuffledDefinitions.map(def => {
+            const selectedTerm = Object.entries(matchingAnswer).find(([_, v]) => v === def.id)
+            return (
+              <div key={def.id} className={`rounded-lg border p-3 text-sm ${isReview && selectedTerm ? 'bg-green-50 border-green-400' : 'bg-background'}`}>
+                <div className="flex items-center gap-2">
+                  <span className="flex-1">{def.definition}</span>
+                  {!isReview && (
+                    <select className="text-xs border rounded px-2 py-1 bg-background" value={selectedTerm?.[0] ?? ''} onChange={e => onChange?.({ ...matchingAnswer, [Number(e.target.value)]: def.id })}>
+                      <option value="">—</option>
+                      {matchingPairs?.map(p => <option key={p.id} value={p.id}>{p.term}</option>)}
+                    </select>
+                  )}
+                </div>
               </div>
             )
           })}
-          {isEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={addOption}
-              disabled={options.length >= 8}
-            >
-              <Plus className="h-4 w-4 mr-1" /> Add option
-            </Button>
-          )}
         </div>
-      )}
+        {isReview && explanation && <div className="col-span-2"><ExplanationBlock explanation={explanation} /></div>}
+      </div>
+    )
+  }
 
-      {(qType === 'TEXT' || qType === 'ESSAY') && (
-        <Textarea
-          rows={6}
-          placeholder="Type your answer here..."
-          value={textValue}
-          onChange={(e) => handleTextChange(e.target.value)}
-          disabled={isReview}
-          className="w-full"
-        />
-      )}
-
-      {qType === 'MATCHING' && (
-        <div className="space-y-4">
-          {isEdit ? (
-            <div className="space-y-3">
-              {(!matchingPairs || matchingPairs.length === 0) && (
-                <p className="text-sm text-muted-foreground">
-                  Add matching pairs (term → definition).
-                </p>
-              )}
-              {matchingPairs?.map((pair, idx) => (
-                <div key={pair.id} className="flex items-start gap-2">
-                  <div className="flex-1 space-y-1">
-                    <span className="text-xs text-muted-foreground">Term</span>
-                    <Input
-                      value={pair.term}
-                      onChange={(e) => updateMatchingPair(idx, 'term', e.target.value)}
-                      placeholder="Enter term..."
-                    />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <span className="text-xs text-muted-foreground">Definition</span>
-                    <Input
-                      value={pair.definition}
-                      onChange={(e) => updateMatchingPair(idx, 'definition', e.target.value)}
-                      placeholder="Enter definition..."
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 mt-5"
-                    onClick={() => removeMatchingPair(idx)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {(!matchingPairs || matchingPairs.length < 6) && (
-                <Button variant="outline" size="sm" onClick={addMatchingPair}>
-                  <Plus className="h-4 w-4 mr-1" /> Add pair
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">Terms</p>
-                {matchingPairs?.map((pair) => (
-                  <div
-                    key={pair.id}
-                    className="rounded-lg border bg-background p-3 text-sm font-medium"
-                  >
-                    {pair.term}
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">Matches</p>
-                {shuffledDefinitions.map((def) => {
-                  const selectedTerm = Object.entries(matchingAnswer).find(
-                    ([_, v]) => v === def.id,
-                  )
-                  return (
-                    <div
-                      key={def.id}
-                      className={`rounded-lg border p-3 text-sm ${
-                        isReview
-                          ? selectedTerm
-                            ? Number(selectedTerm[0]) ===
-                              matchingPairs?.find((p) => p.definition === def.definition)?.id
-                              ? 'bg-green-50 border-green-500'
-                              : 'bg-red-50 border-red-500'
-                            : 'bg-background'
-                          : 'bg-background'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="flex-1">{def.definition}</span>
-                        {!isReview && (
-                          <select
-                            className="text-xs border rounded px-2 py-1 bg-background"
-                            value={selectedTerm?.[0] ?? ''}
-                            onChange={(e) =>
-                              handleMatchingChange(
-                                Number(e.target.value),
-                                def.id,
-                              )
-                            }
-                          >
-                            <option value="">—</option>
-                            {matchingPairs?.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.term}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        {isReview && selectedTerm && (
-                          <span className="text-xs text-muted-foreground">
-                            → {matchingPairs?.find((p) => p.id === Number(selectedTerm[0]))?.term}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {qType === 'FILE_UPLOAD' && (
+  // ── FILE_UPLOAD ───────────────────────────────────────────────────────────
+  if (qType === 'FILE_UPLOAD') {
+    if (isEdit) {
+      return (
         <div className="space-y-3">
-          {isEdit ? (
-            <div className="rounded-lg border-2 border-dashed p-6 text-center text-sm text-muted-foreground">
-              <FileText className="h-8 w-8 mx-auto mb-2" />
-              <p>File upload is enabled for this question</p>
-              <p className="text-xs mt-1">Students will be able to upload images, PDFs, audio, video, text</p>
-            </div>
-          ) : uploading ? (
-            <div className="rounded-lg border p-4 flex items-center gap-3 text-muted-foreground">
-              <FileText className="h-8 w-8" />
-              <span className="text-sm">Uploading...</span>
-            </div>
-          ) : uploadedUrl || fileAnswerUrl ? (
-            <div className="rounded-lg border p-4 flex items-center gap-3">
-              <FileText className="h-8 w-8 text-primary" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {uploadedFile?.name || 'Uploaded file'}
-                </p>
-                {uploadedFile && (
-                  <p className="text-xs text-muted-foreground">
-                    {(uploadedFile.size / 1024).toFixed(1)} KB
-                  </p>
-                )}
-              </div>
-              {!isReview && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setUploadedFile(null)
-                    setUploadedUrl(null)
-                    onChange?.(null)
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-              <Button variant="outline" size="sm" asChild>
-                <a href={uploadedUrl || fileAnswerUrl || '#'} download={uploadedFile?.name} target="_blank" rel="noreferrer">
-                  <Download className="h-4 w-4 mr-1" />
-                  Download
-                </a>
-              </Button>
-            </div>
-          ) : (
-            <div
-              {...getRootProps()}
-              className={`rounded-lg border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
-                isDragActive
-                  ? 'border-primary bg-primary/5'
-                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-              } ${isReview ? 'pointer-events-none opacity-60' : ''}`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              {isDragActive ? (
-                <p className="text-sm font-medium">Drop file here...</p>
-              ) : (
-                <>
-                  <p className="text-sm font-medium">
-                    {isReview ? 'No file uploaded' : 'Drop file here or click to browse'}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Max 10 MB — images, PDF, documents, audio, video
-                  </p>
-                </>
-              )}
-            </div>
-          )}
+          {editHeader}
+          <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-5 text-center text-sm text-muted-foreground">
+            <FileText className="h-6 w-6 mx-auto mb-2 text-muted-foreground/50" />
+            <p>Студент загружает файл-ответ</p>
+          </div>
         </div>
-      )}
-
-      {qType !== 'SINGLE_CHOICE' &&
-        qType !== 'MULTIPLE_CHOICE' &&
-        qType !== 'TEXT' &&
-        qType !== 'ESSAY' &&
-        qType !== 'MATCHING' &&
-        qType !== 'FILE_UPLOAD' && (
-          <div className="p-4 border rounded bg-muted text-muted-foreground text-sm">
-            This question type is not yet implemented.
+      )
+    }
+    return (
+      <div className="space-y-3">
+        {uploading ? (
+          <div className="rounded-lg border p-4 flex items-center gap-3 text-muted-foreground">
+            <FileText className="h-6 w-6" /><span className="text-sm">Загрузка...</span>
+          </div>
+        ) : uploadedUrl ? (
+          <div className="rounded-lg border p-4 flex items-center gap-3">
+            <FileText className="h-6 w-6 text-primary" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{uploadedFile?.name || 'Файл'}</p>
+              {uploadedFile && <p className="text-xs text-muted-foreground">{(uploadedFile.size / 1024).toFixed(1)} KB</p>}
+            </div>
+            {!isReview && <Button variant="ghost" size="sm" onClick={() => { setUploadedFile(null); setUploadedUrl(null); onChange?.(null) }}><X className="h-4 w-4" /></Button>}
+            <Button variant="outline" size="sm" asChild><a href={uploadedUrl} download={uploadedFile?.name} target="_blank" rel="noreferrer"><Download className="h-4 w-4 mr-1" />Скачать</a></Button>
+          </div>
+        ) : (
+          <div {...getRootProps()} className={`rounded-xl border-2 border-dashed p-7 text-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/50'} ${isReview ? 'pointer-events-none opacity-60' : ''}`}>
+            <input {...getInputProps()} />
+            <Upload className="h-7 w-7 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm font-medium">{isDragActive ? 'Отпустите...' : isReview ? 'Файл не загружен' : 'Перетащите или кликните'}</p>
+            <p className="text-xs text-muted-foreground mt-1">До 10 МБ</p>
           </div>
         )}
+      </div>
+    )
+  }
 
-      {isReview && explanation && (
-        <ExplanationBlock explanation={explanation} />
-      )}
-
-      {isEdit && isAuthorQuestion(question) && (
-        <div className="space-y-1">
-          <span className="text-sm font-medium">Explanation:</span>
-          <Textarea
-            rows={3}
-            placeholder="Optional explanation shown in review..."
-            value={question.explanation || ''}
-            onChange={(e) => setExplanation(e.target.value)}
-          />
-        </div>
-      )}
-    </div>
-  )
+  return <div className="p-4 border rounded bg-muted text-muted-foreground text-sm">Тип вопроса не поддерживается.</div>
 }

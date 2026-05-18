@@ -1,33 +1,33 @@
-/**
- * Lazy-initializing component that renders Typst source as inline SVG.
- *
- * Uses @myriaddreamin/typst.ts WASM compiler.
- */
 import {useEffect, useRef, useState, Suspense} from 'react'
 import {Loader} from '@/shared/ui/loader'
 import {renderTypstSvg} from '@/shared/lib/typst'
 
 interface TypstPreviewProps {
   source: string
+  compact?: boolean
   className?: string
 }
 
-function _TypstPreview({source, className}: TypstPreviewProps) {
+function _TypstPreview({source, compact, className}: TypstPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [svg, setSvg] = useState<string>('')
 
   useEffect(() => {
     let cancelled = false
-    renderTypstSvg(source).then((html) => {
+    renderTypstSvg(source, compact).then((html) => {
       if (!cancelled) setSvg(html)
     }).catch(() => {
-      if (!cancelled) setSvg(`<pre class="text-red-500">Typst render failed</pre>`)
+      if (!cancelled) setSvg(`<pre style="font-size:13px;white-space:pre-wrap">${source}</pre>`)
     })
     return () => { cancelled = true }
-  }, [source])
+  }, [source, compact])
 
   return (
-    <div ref={containerRef} className={className} dangerouslySetInnerHTML={{__html: svg}} />
+    <div
+      ref={containerRef}
+      className={className ?? ''}
+      dangerouslySetInnerHTML={{__html: svg}}
+    />
   )
 }
 

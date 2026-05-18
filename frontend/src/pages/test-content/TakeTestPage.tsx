@@ -5,10 +5,11 @@
  */
 import { useState, useEffect } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Clock, CheckCircle2, XCircle, BarChart3 } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle2, XCircle, BarChart3, Save, Eye, Code2 } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Loader } from '@/shared/ui/loader'
 import { Card, CardContent } from '@/shared/ui/card'
+import { Textarea } from '@/shared/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -86,6 +87,47 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
   const [pendingPatch, setPendingPatch] = useState<Partial<QuestionAuthorResponse> | null>(null)
   const [isDraft, setIsDraft] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  // Mock question titles (local only, not persisted to backend)
+  const [questionTitles, setQuestionTitles] = useState<Record<number, string>>({})
+
+  // Typst editor modal
+  const [typstOpen, setTypstOpen] = useState(false)
+  const [typstSource, setTypstSource] = useState('')
+  const [typstDebounced, setTypstDebounced] = useState('')
+  const [typstTarget, setTypstTarget] = useState<'question' | number>('question')
+
+  useEffect(() => {
+    const t = setTimeout(() => setTypstDebounced(typstSource), 500)
+    return () => clearTimeout(t)
+  }, [typstSource])
+
+  const openTypstEditor = () => {
+    const q = questions[currentIndex]
+    setTypstTarget('question')
+    setTypstSource(q?.text || '')
+    setTypstDebounced(q?.text || '')
+    setTypstOpen(true)
+  }
+
+  const openOptionEditor = (idx: number, currentText: string) => {
+    setTypstTarget(idx)
+    setTypstSource(currentText)
+    setTypstDebounced(currentText)
+    setTypstOpen(true)
+  }
+
+  const saveTypstEditor = () => {
+    if (typstTarget === 'question') {
+      handleQuestionChange({ text: typstSource })
+    } else {
+      const q = questions[currentIndex] as QuestionAuthorResponse
+      const opts = (q?.options || []).map((o, i) =>
+        i === typstTarget ? { ...o, text: typstSource } : o
+      ) as OptionAuthorResponse[]
+      handleQuestionChange({ options: opts })
+    }
+    setTypstOpen(false)
+  }
 
   // load test (take / edit)
   useEffect(() => {
@@ -353,24 +395,48 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
 
   const handleAddQuestion = async () => {
     if (mode !== 'edit' || !numTestId) return
+    const newIndex = questions.length
+    const mockQuestion: QuestionAuthorResponse = {
+      id: -Date.now(),
+      question_type: 'SINGLE_CHOICE',
+      text: '',
+      order_number: newIndex + 1,
+      points: 1,
+      explanation: null,
+      correct_answer: null,
+      image_url: null,
+      media_files: [],
+      question_data: null,
+      options: [
+        { id: -Date.now() - 1, text: '', order_number: 1, is_correct: false },
+        { id: -Date.now() - 2, text: '', order_number: 2, is_correct: false },
+      ],
+    }
+    // Optimistically add mock question immediately
+    setQuestions((prev) => [...prev, mockQuestion])
+    setCurrentIndex(newIndex)
+    // Try to persist to backend
     try {
       const res = await addQuestionApiV1TestsTestIdQuestionsPost({
         path: { test_id: numTestId },
         body: {
           question_type: 'SINGLE_CHOICE',
           text: '',
-          order_number: questions.length + 1,
+          order_number: newIndex + 1,
           points: 1,
-          options: [{ text: 'Option 1', is_correct: false, order_number: 1 }],
+          options: [
+            { text: '', is_correct: false, order_number: 1 },
+            { text: '', is_correct: false, order_number: 2 },
+          ],
         },
       })
       const data = res.data as QuestionAuthorResponse | undefined
       if (data) {
-        setQuestions((prev) => [...prev, data])
-        setCurrentIndex(questions.length)
+        // Replace mock with real question from backend
+        setQuestions((prev) => prev.map((q) => q.id === mockQuestion.id ? data : q))
       }
     } catch {
-      toast.error('Failed to add question')
+      // Keep the mock question for local editing — will sync on next save
     }
   }
 
@@ -439,12 +505,17 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
 
   const currentQuestion = questions[currentIndex]
 
-  const mediaFiles = (currentQuestion?.media_files ?? []).map((url, i) => ({
-    id: `media-${i}`,
-    url,
-    type: 'image' as const,
-    filename: `media-${i}`,
-  }))
+  const detectMediaType = (url: string): 'image' | 'audio' | 'video' => {
+    const p = url.toLowerCase().split('?')[0]
+    if (/\.(mp3|wav|ogg|m4a|aac|flac)$/.test(p)) return 'audio'
+    if (/\.(mp4|webm|mov|avi|mkv|ogv)$/.test(p)) return 'video'
+    return 'image'
+  }
+
+  const mediaFiles = (currentQuestion?.media_files ?? []).map((url, i) => {
+    const filename = url.split('/').pop()?.split('?')[0] || `media-${i}`
+    return { id: `media-${i}`, url, type: detectMediaType(url), filename }
+  })
 
   const reviewResults = (() => {
     if (mode !== 'review' || !reviewAttempt?.answers) return undefined
@@ -510,9 +581,9 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-[calc(100vh-48px)] flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b h-14 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b h-12 shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate(backTo)}>
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -537,8 +608,22 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
           )}
           {mode === 'edit' && (
             <>
+              {pendingPatch && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Save className="h-3 w-3" /> Сохранение...
+                </span>
+              )}
+              {isDraft && (
+                <span className="text-xs bg-amber-100 text-amber-700 font-medium px-2 py-1 rounded-full">
+                  Черновик
+                </span>
+              )}
+              <Button variant="outline" size="sm" onClick={() => navigate(`/tests/${testId}/settings`)}>
+                Настройки
+              </Button>
               {isDraft && (
                 <Button variant="default" size="sm" onClick={handlePublish}>
+                  <Eye className="h-4 w-4 mr-1" />
                   Опубликовать
                 </Button>
               )}
@@ -547,9 +632,6 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
                   Удалить
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={() => navigate(`/tests/${testId}/settings`)}>
-                Settings
-              </Button>
             </>
           )}
           {mode === 'review' && (
@@ -560,7 +642,7 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
 
       {/* Body */}
       <div className="flex-1 flex overflow-hidden">
-        {questions.length > 0 && (
+        {(questions.length > 0 || mode === 'edit') && (
           <QuestionPanel
             questions={questions}
             currentIndex={currentIndex}
@@ -574,7 +656,7 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
           />
         )}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="flex-1 overflow-y-auto p-3 md:p-5">
             {showSummary && summaryResult ? (
               <div className="max-w-lg mx-auto space-y-6 py-12">
                 <div className="text-center space-y-3">
@@ -646,13 +728,46 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
                 </div>
               </div>
             ) : currentQuestion ? (
-              <div className="max-w-3xl mx-auto space-y-6">
-                <TypstRender
-                  source={currentQuestion.text || ''}
-                  testId={numTestId}
-                  questionId={currentQuestion.id}
-                  mode={mode}
-                />
+              <div className="max-w-3xl mx-auto space-y-5">
+                {/* Question title field */}
+                {mode === 'edit' ? (
+                  <input
+                    value={questionTitles[currentQuestion.id] ?? ''}
+                    onChange={e => setQuestionTitles(prev => ({ ...prev, [currentQuestion.id]: e.target.value }))}
+                    placeholder="Название вопроса (необязательно)..."
+                    className="w-full text-base font-semibold bg-transparent border-b border-border pb-1 outline-none placeholder-muted-foreground/40 focus:border-primary transition-colors"
+                  />
+                ) : questionTitles[currentQuestion.id] ? (
+                  <p className="text-base font-semibold">{questionTitles[currentQuestion.id]}</p>
+                ) : null}
+
+                {/* Question text */}
+                {mode === 'edit' ? (
+                  <div className="rounded-xl border bg-background px-5 py-5 relative group min-h-[80px]">
+                    {currentQuestion.text
+                      ? <TypstRender source={currentQuestion.text} mode="take" />
+                      : <p className="text-muted-foreground text-sm italic">Текст вопроса не задан — нажмите «Редактировать»</p>
+                    }
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={openTypstEditor}
+                      className="absolute top-3 right-3 gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Code2 className="h-3.5 w-3.5" />
+                      Редактировать
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="px-1">
+                    <TypstRender
+                      source={currentQuestion.text || ''}
+                      testId={numTestId}
+                      questionId={currentQuestion.id}
+                      mode={mode}
+                    />
+                  </div>
+                )}
                 {(mode === 'edit' || mediaFiles.length > 0) && (
                   <MediaCarousel
                     files={mediaFiles}
@@ -677,15 +792,30 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
                   }
                   onChange={handleAnswerChange}
                   onQuestionChange={mode === 'edit' ? handleQuestionChange : undefined}
+                  onOpenOptionEditor={mode === 'edit' ? openOptionEditor : undefined}
                   correctOptionIds={reviewCorrectIdsFor(currentQuestion.id)}
                   explanation={explanationFor(currentQuestion.id)}
                 />
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-4">
-                <p className="text-muted-foreground">Select a question to begin.</p>
-                {mode === 'edit' && (
-                  <Button onClick={handleAddQuestion}>Add Question</Button>
+              <div className="flex flex-col items-center justify-center h-full gap-5 py-20">
+                {mode === 'edit' ? (
+                  <>
+                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-semibold text-foreground">Нет вопросов</p>
+                      <p className="text-sm text-muted-foreground mt-1">Добавьте первый вопрос в тест</p>
+                    </div>
+                    <Button onClick={handleAddQuestion} size="lg">
+                      Добавить вопрос
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">Выберите вопрос.</p>
                 )}
               </div>
             )}
@@ -724,6 +854,50 @@ export default function TakeTestPage({ editMode = false }: { editMode?: boolean 
           onAdded={handleAddFromPool}
         />
       )}
+
+      {/* Typst live editor modal */}
+      <Dialog open={typstOpen} onOpenChange={setTypstOpen}>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b shrink-0">
+            <div className="flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-primary" />
+              <span className="font-semibold text-sm">
+                {typstTarget === 'question' ? 'Текст вопроса' : `Вариант ${['A','B','C','D','E','F','G','H'][typstTarget as number]}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setTypstOpen(false)}>Отмена</Button>
+              <Button size="sm" onClick={saveTypstEditor}>Сохранить и закрыть</Button>
+            </div>
+          </div>
+          <div className="flex-1 flex overflow-hidden">
+            {/* Source */}
+            <div className="flex-1 flex flex-col border-r">
+              <div className="px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/40 border-b">
+                Исходный код
+              </div>
+              <Textarea
+                className="flex-1 resize-none rounded-none border-0 font-mono text-sm focus-visible:ring-0 h-full"
+                value={typstSource}
+                onChange={(e) => setTypstSource(e.target.value)}
+                placeholder={"Примеры:\n$x^2 + y^2 = r^2$\n\n#bold[Жирный текст]\n\n- Список\n- Элементов"}
+              />
+            </div>
+            {/* Preview */}
+            <div className="flex-1 flex flex-col">
+              <div className="px-4 py-2 text-xs font-semibold text-muted-foreground bg-muted/40 border-b">
+                Предпросмотр
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                {typstDebounced
+                  ? <TypstRender source={typstDebounced} mode="take" />
+                  : <p className="text-muted-foreground text-sm">Начните вводить текст...</p>
+                }
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       {mode === 'edit' && (
         <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <DialogContent>
