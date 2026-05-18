@@ -4,13 +4,18 @@
  */
 export function getApiError(err: unknown): { code: string; message: string } {
   const anyErr = err as Record<string, unknown>
-  const body = anyErr?.error as Record<string, string> | undefined
+  const nestedError = anyErr?.error
+  const body = (typeof nestedError === 'object' && nestedError !== null) 
+    ? (nestedError as Record<string, unknown>).error as Record<string, string> | undefined
+    : undefined
+  
   const message = body?.message ?? 
+                 anyErr?.message as string ?? 
                  (typeof anyErr === 'string' ? anyErr : 
-                 anyErr?.message as string ?? JSON.stringify(err))
+                 'Произошла ошибка. Попробуйте снова.')
   
   return {
-    code: body?.code ?? 'unknown',
+    code: body?.code ?? (typeof nestedError === 'object' ? (nestedError as Record<string, unknown>).code as string : undefined) ?? 'unknown',
     message: message,
   }
 }
