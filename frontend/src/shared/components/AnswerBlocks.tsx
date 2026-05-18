@@ -143,7 +143,7 @@ export default function AnswerBlocks({
       base += ' bg-background border-input hover:bg-accent cursor-pointer'
     }
     return base
-n  }
+  }
 
   return (
     <div className="w-full my-4 space-y-4">

@@ -8,7 +8,10 @@ export {
   // Auth
   loginApiV1AuthLoginPost,
   registerApiV1AuthRegisterPost,
+
+  // Users
   getCurrentUserProfileApiV1AuthMeGet,
+  updateMeApiV1UsersMePatch,
 
   // Tests
   listMyTestsApiV1TestsGet,
@@ -30,6 +33,7 @@ export {
   getActiveAttemptApiV1AttemptsActiveGet,
   getAttemptApiV1AttemptsAttemptIdGet,
   submitAnswerApiV1AttemptsAttemptIdAnswersPost,
+  submitBulkAnswersApiV1AttemptsAttemptIdBulkAnswersPost,
   finishAttemptApiV1AttemptsAttemptIdFinishPost,
   getResultApiV1AttemptsAttemptIdResultGet,
 
@@ -54,6 +58,7 @@ export type {
   LoginRequest,
   UserCreate,
   TokenResponse,
+  UserUpdate,
   TestResponse,
   TestDetailResponse,
   TestAuthorDetailResponse,
