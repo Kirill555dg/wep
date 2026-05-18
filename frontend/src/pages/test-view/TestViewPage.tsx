@@ -256,7 +256,7 @@ export default function TestViewPage() {
     data: testResponse,
     isLoading: testLoading,
   } = useQuery({
-    queryKey: ['test', testId],
+    queryKey: ['test', testId, user?.id],
     queryFn: () => getPublicTestApiV1CatalogTestIdGet({ client, path: { test_id: id } }),
     enabled: !Number.isNaN(id),
   })
