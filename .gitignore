@@ -36,6 +36,7 @@ dist/
 build/
 uv.lock
 uv-build
+**/logs
 
 # Hypothesis
 **/.hypothesis/
