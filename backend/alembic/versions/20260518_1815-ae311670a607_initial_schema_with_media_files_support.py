@@ -1,8 +1,8 @@
-"""init
+"""Initial schema with media_files support
 
-Revision ID: d82fa57d2ce6
+Revision ID: ae311670a607
 Revises: 
-Create Date: 2026-05-18 02:50:54.493928
+Create Date: 2026-05-18 18:15:02.327764
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'd82fa57d2ce6'
+revision: str = 'ae311670a607'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -68,6 +68,8 @@ def upgrade() -> None:
     sa.Column('attempt_limit', sa.Integer(), nullable=True),
     sa.Column('track_time', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('completion_message', sa.Text(), nullable=True),
+    sa.Column('image_url', sa.String(length=512), nullable=True),
+    sa.Column('media_files', sa.JSON(), nullable=True),
     sa.Column('questions_count', sa.Integer(), server_default='0', nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
@@ -88,12 +90,12 @@ def upgrade() -> None:
     sa.Column('status', sa.String(length=50), nullable=False),
     sa.ForeignKeyConstraint(['test_id'], ['tests.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('user_id', 'test_id', name='uq_user_test_active_attempt')
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_attempts_id'), 'attempts', ['id'], unique=False)
     op.create_index(op.f('ix_attempts_test_id'), 'attempts', ['test_id'], unique=False)
     op.create_index(op.f('ix_attempts_user_id'), 'attempts', ['user_id'], unique=False)
+    op.create_index('uq_user_test_active_attempt', 'attempts', ['user_id', 'test_id'], unique=True, postgresql_where=sa.text("status = 'in_progress'"))
     op.create_table('questions',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('test_id', sa.Integer(), nullable=False),
@@ -104,6 +106,8 @@ def upgrade() -> None:
     sa.Column('explanation', sa.Text(), nullable=True),
     sa.Column('correct_answer', sa.Text(), nullable=True),
     sa.Column('image_url', sa.String(length=512), nullable=True),
+    sa.Column('media_files', sa.JSON(), nullable=True),
+    sa.Column('question_data', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['test_id'], ['tests.id'], ondelete='CASCADE'),
@@ -124,6 +128,8 @@ def upgrade() -> None:
     sa.Column('question_id', sa.Integer(), nullable=False),
     sa.Column('selected_option_ids', sa.JSON(), nullable=True),
     sa.Column('text_answer', sa.Text(), nullable=True),
+    sa.Column('matching_answer', sa.JSON(), nullable=True),
+    sa.Column('file_answer', sa.Text(), nullable=True),
     sa.Column('is_correct', sa.Boolean(), nullable=True),
     sa.Column('points_earned', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -162,6 +168,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_questions_test_id'), table_name='questions')
     op.drop_index(op.f('ix_questions_id'), table_name='questions')
     op.drop_table('questions')
+    op.drop_index('uq_user_test_active_attempt', table_name='attempts', postgresql_where=sa.text("status = 'in_progress'"))
     op.drop_index(op.f('ix_attempts_user_id'), table_name='attempts')
     op.drop_index(op.f('ix_attempts_test_id'), table_name='attempts')
     op.drop_index(op.f('ix_attempts_id'), table_name='attempts')
