@@ -184,6 +184,7 @@ def _map_detail(test: object) -> tc_schemas.TestDetailResponse:
         description=test.description,  # type: ignore[attr-defined]
         is_public=test.is_public,  # type: ignore[attr-defined]
         time_limit_minutes=test.time_limit_minutes,  # type: ignore[attr-defined]
+        track_time=test.track_time,  # type: ignore[attr-defined]
         questions_count=len(questions),
         tags=tags,
         created_at=test.created_at,  # type: ignore[attr-defined]
@@ -215,6 +216,9 @@ def _map_author_detail(test: object) -> tc_schemas.TestAuthorDetailResponse:
         description=test.description,  # type: ignore[attr-defined]
         is_public=test.is_public,  # type: ignore[attr-defined]
         time_limit_minutes=test.time_limit_minutes,  # type: ignore[attr-defined]
+        track_time=test.track_time,  # type: ignore[attr-defined]
+        attempt_limit=test.attempt_limit,  # type: ignore[attr-defined]
+        completion_message=test.completion_message,  # type: ignore[attr-defined]
         questions_count=len(questions),
         tags=tags,
         created_at=test.created_at,  # type: ignore[attr-defined]
