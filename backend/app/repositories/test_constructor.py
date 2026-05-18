@@ -45,18 +45,32 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
         tag_slugs: list[str] | None = None,
         author_id: int | None = None,
         author_login: str | None = None,
+        include_my_drafts: bool = False,
+        my_user_id: int | None = None,
     ) -> list[tc_models.Test]:
         from app.models import users as user_models
 
         stmt = (
             sa.select(tc_models.Test)
-            .where(tc_models.Test.is_public.is_(True))
             .options(
                 sqla_orm.selectinload(tc_models.Test.author),
                 sqla_orm.selectinload(tc_models.Test.questions),
                 sqla_orm.selectinload(tc_models.Test.test_tags).selectinload(tc_models.TestTag.tag),
             )
         )
+
+        if not include_my_drafts or my_user_id is None:
+            stmt = stmt.where(tc_models.Test.is_public.is_(True))
+        else:
+            stmt = stmt.where(
+                sa.or_(
+                    tc_models.Test.is_public.is_(True),
+                    sa.and_(
+                        tc_models.Test.is_public.is_(False),
+                        tc_models.Test.author_id == my_user_id,
+                    ),
+                )
+            )
         if author_id is not None:
             stmt = stmt.where(tc_models.Test.author_id == author_id)
         if author_login is not None:

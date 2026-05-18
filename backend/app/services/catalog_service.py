@@ -11,7 +11,10 @@ class CatalogService:
         self.test_repo = tc_repos.TestRepository(db)
 
     async def search_public_tests(
-        self, params: tc_schemas.CatalogSearchParams
+        self, 
+        params: tc_schemas.CatalogSearchParams,
+        include_my_drafts: bool = False,
+        my_user_id: int | None = None,
     ) -> tuple[list[tc_models.Test], int]:
         tests = await self.test_repo.get_public(
             skip=params.skip,
@@ -20,6 +23,8 @@ class CatalogService:
             tag_slugs=params.tags or None,
             author_id=params.author_id,
             author_login=params.author_login,
+            include_my_drafts=include_my_drafts,
+            my_user_id=my_user_id,
         )
         total = await self.test_repo.count_public(
             query=params.q,
@@ -29,10 +34,14 @@ class CatalogService:
         )
         return tests, total
 
-    async def get_public_test_detail(self, test_id: int) -> tc_models.Test:
+    async def get_public_test_detail(self, test_id: int, user_id: int | None = None) -> tc_models.Test:
         test = await self.test_repo.get_by_id_with_questions(test_id)
-        if not test or not test.is_public:
+        if not test:
             raise svc_exc.ServiceError("Test not found", code="test_not_found")
+        
+        if not test.is_public and (user_id is None or test.author_id != user_id):
+            raise svc_exc.ServiceError("Test not found", code="test_not_found")
+        
         return test
 
 

@@ -1,7 +1,9 @@
 import fastapi
 import sqlalchemy.ext.asyncio as sa_asyncio
 
+from app.api import dependencies as deps
 from app.api import http_errors
+from app.models import users as user_models
 from app.api.v1 import tests as tests_router
 from app.db import session as db_session
 from app.schemas import test_constructor as tc_schemas
@@ -33,10 +35,12 @@ async def search_catalog(
 @router.get("/{test_id}", response_model=tc_schemas.TestDetailResponse)
 async def get_public_test(
     test_id: int,
+    current_user: user_models.User | None = fastapi.Depends(deps.get_current_user_optional),
     svc: catalog_svc.CatalogService = fastapi.Depends(_get_catalog_service),
 ) -> tc_schemas.TestDetailResponse:
+    user_id = current_user.id if current_user else None
     try:
-        test = await svc.get_public_test_detail(test_id)
+        test = await svc.get_public_test_detail(test_id, user_id=user_id)
     except svc_exc.ServiceError as exc:
         if exc.code == "test_not_found":
             raise http_errors.not_found("Test not found")
