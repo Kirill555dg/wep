@@ -25,7 +25,7 @@ const schema = z.object({
   description: z.string().optional(),
   is_public: z.boolean(),
   track_time: z.boolean(),
-  time_limit_minutes: z.number().min(1).nullable().optional(),
+  time_limit_minutes: z.number().nullable().optional(),
   attempt_limit: z.number().min(1).nullable().optional(),
   tag_names: z.array(z.string()),
   completion_message: z.string().nullable().optional(),
@@ -67,6 +67,12 @@ export default function CreateTestPage() {
 
   const trackTime = watch('track_time')
   const tagNames = watch('tag_names') ?? []
+
+  useEffect(() => {
+    if (!trackTime) {
+      setValue('time_limit_minutes', null)
+    }
+  }, [trackTime, setValue])
 
   const [allTags, setAllTags] = useState<Array<{ id: number; name: string }>>([])
 

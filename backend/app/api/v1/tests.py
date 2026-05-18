@@ -155,6 +155,7 @@ def _map_test_response(test: object) -> tc_schemas.TestResponse:
         description=test.description,  # type: ignore[attr-defined]
         is_public=test.is_public,  # type: ignore[attr-defined]
         time_limit_minutes=test.time_limit_minutes,  # type: ignore[attr-defined]
+        track_time=test.track_time,  # type: ignore[attr-defined]
         questions_count=questions_count,
         tags=tags,
         created_at=test.created_at,  # type: ignore[attr-defined]
