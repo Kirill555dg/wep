@@ -92,6 +92,7 @@ export default function CreateTestPage() {
   })
 
   const onSubmit = (data: FormData) => {
+    console.log('[DEBUG] submit', data)
     const body: TestCreate = {
       title: data.title,
       description: data.description || null,
@@ -102,6 +103,7 @@ export default function CreateTestPage() {
       tag_names: data.tag_names,
       completion_message: data.completion_message || null,
     }
+    console.log('[DEBUG] body', body)
     createMutation.mutate(body)
   }
 
@@ -333,6 +335,7 @@ export default function CreateTestPage() {
               type="submit"
               className="w-full"
               disabled={isSubmitting || createMutation.isPending}
+              onClick={() => console.log('[DEBUG] button clicked')}
             >
               {createMutation.isPending ? 'Создание...' : 'Создать тест'}
             </Button>
