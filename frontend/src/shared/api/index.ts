@@ -27,6 +27,7 @@ export {
   // Attempts
   startAttemptApiV1AttemptsPost,
   listMyAttemptsApiV1AttemptsGet,
+  getActiveAttemptApiV1AttemptsActiveGet,
   getAttemptApiV1AttemptsAttemptIdGet,
   submitAnswerApiV1AttemptsAttemptIdAnswersPost,
   finishAttemptApiV1AttemptsAttemptIdFinishPost,
