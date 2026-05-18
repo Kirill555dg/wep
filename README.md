@@ -7,7 +7,7 @@
 ## Возможности
 
 - Конструктор вопросов с Typst-рендерингом формул прямо в браузере
-- Типы вопросов: одиночный/множественный выбор, текстовый ответ, соответствие, загрузка файла
+- Типы вопросов: одиночный/множественный выбор, текст, соответствие, загрузка файла
 - Прикрепление медиафайлов к вопросам (изображения, аудио, видео)
 - Публичный каталог тестов с поиском по тегам; приватный доступ по ссылке
 - Автоматическая проверка ответов и статистика прохождений
@@ -25,20 +25,26 @@
 
 ```
 wep/
-├── backend/          # FastAPI-приложение
-│   ├── app/          # api, services, models, repositories
-│   ├── alembic/      # Миграции БД
+├── backend/               # FastAPI-приложение
+│   ├── app/               # api, services, models, repositories
+│   ├── alembic/           # Миграции БД
+│   ├── .env.example       # Шаблон переменных окружения для backend
 │   ├── Dockerfile
 │   └── requirements.txt
-├── frontend/         # React-приложение
-│   ├── src/          # FSD: app, pages, widgets, features, entities, shared
+├── frontend/              # React-приложение
+│   ├── src/               # FSD: app, pages, widgets, features, entities, shared
+│   ├── .env.example       # Шаблон переменных окружения для frontend
+│   ├── nginx-prod.conf    # Nginx-конфиг для продакшн-образа (нужно сменить домен)
 │   ├── Dockerfile.prod
 │   └── package.json
-├── deploy/           # Docker Compose
-│   ├── docker-compose.yml       # dev (только инфраструктура)
-│   └── docker-compose.prod.yml  # продакшн
-└── coursework/       # Курсовая работа (Typst)
+├── deploy/                # Docker Compose
+│   ├── .env.example       # Шаблон переменных окружения для docker-compose
+│   ├── docker-compose.yml          # dev (только инфраструктура: Postgres + MinIO)
+│   └── docker-compose.prod.yml     # продакшн (все сервисы)
+└── coursework/            # Курсовая работа (Typst)
 ```
+
+---
 
 ## Локальная разработка
 
@@ -46,7 +52,7 @@ wep/
 
 ```bash
 cd deploy
-cp .env.example .env   # заполнить значения
+cp .env.example .env      # значения по умолчанию подходят для dev
 docker compose up -d
 ```
 
@@ -54,33 +60,40 @@ docker compose up -d
 
 ```bash
 cd backend
+cp .env.example .env      # DATABASE_URL, SECRET_KEY, MINIO_* уже заполнены для dev
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 alembic upgrade head
 uvicorn app.main:app --reload --port 8023
 ```
 
-Backend: `http://localhost:8023`  
-Документация API: `http://localhost:8023/api/docs`
+- API: `http://localhost:8023`
+- Swagger: `http://localhost:8023/api/docs`
 
 ### 3. Frontend
 
 ```bash
 cd frontend
+cp .env.example .env      # VITE_API_URL оставить пустым (прокси через nginx) или
+                          # раскомментировать строку с localhost для dev без Docker
 bun install
 bun run dev
 ```
 
-Frontend: `http://localhost:5174`
+- Приложение: `http://localhost:5174`
 
 ---
 
 ## Развёртывание в продакшн
 
-### Требования
+> **Быстрый старт:** после клонирования запустите `bash setup.sh` — скрипт установит Docker, запросит домен и пароли, настроит SSL, соберёт образы и применит миграции.
+
+### Ручная установка
+
+#### Требования
 
 - VPS с Docker и Docker Compose (Ubuntu 22.04+)
-- Домен с A-записью на IP сервера
+- Домен с A-записью, указывающей на IP сервера
 - Открытые порты 80 и 443
 
 ### 1. Клонировать репозиторий
@@ -90,48 +103,68 @@ git clone https://github.com/Kirill555dg/wep.git -b prksp_coursework
 cd wep
 ```
 
-### 2. Создать `.env`
+### 2. Получить SSL-сертификат
 
 ```bash
+apt install -y certbot
+certbot certonly --standalone -d your-domain.example
+```
+
+Сертификат будет сохранён в `/etc/letsencrypt/live/your-domain.example/`.
+
+### 3. Прописать домен в Nginx-конфиге
+
+Файл `frontend/nginx-prod.conf` содержит `your-domain` — заменить на реальный домен:
+
+```bash
+sed -i 's/your-domain/your-domain.example/g' frontend/nginx-prod.conf
+```
+
+### 4. Создать `.env` для docker-compose
+
+```bash
+cp deploy/.env.example deploy/.env
 nano deploy/.env
 ```
+
+Минимальный `deploy/.env` для продакшна:
 
 ```env
 POSTGRES_USER=wep
 POSTGRES_PASSWORD=<надёжный пароль>
 POSTGRES_DB=wep_db
 
-SECRET_KEY=<случайная строка 64+ символа>
+SECRET_KEY=<вывод: python3 -c "import secrets; print(secrets.token_hex(32))">
 
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=<надёжный пароль>
 MINIO_BUCKET=wep-media
-MINIO_PUBLIC_URL=https://<ваш-домен>/media
+MINIO_PUBLIC_URL=https://your-domain.example/media
 
-BACKEND_CORS_ORIGINS=https://<ваш-домен>
+BACKEND_CORS_ORIGINS=["https://your-domain.example"]
 ```
 
-### 3. Получить SSL-сертификат
-
-```bash
-apt install -y certbot
-certbot certonly --standalone -d <ваш-домен>
-```
-
-### 4. Запустить
+### 5. Собрать и запустить
 
 ```bash
 cd deploy
 docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### 6. Применить миграции БД
+
+```bash
 docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 ```
 
-### 5. Проверить
+### 7. Проверить
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
-curl https://<ваш-домен>/api/v1/health
+curl https://your-domain.example/api/v1/health
 ```
+
+Ожидаемый ответ: `{"status": "ok"}`.
 
 ### Обновление
 
@@ -146,14 +179,27 @@ docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 
 ## Переменные окружения
 
+Переменные окружения разделены по двум файлам:
+
+### `deploy/.env` — для docker-compose и backend-контейнера
+
 | Переменная | Описание |
 |---|---|
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Параметры подключения к PostgreSQL |
-| `SECRET_KEY` | Секрет для подписи JWT-токенов (64+ символа) |
-| `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | Учётные данные MinIO |
-| `MINIO_BUCKET` | Имя бакета для хранения медиафайлов |
-| `MINIO_PUBLIC_URL` | Публичный URL бакета (для presigned-ссылок) |
-| `BACKEND_CORS_ORIGINS` | Разрешённые CORS-источники (домен фронтенда) |
+| `POSTGRES_USER` | Пользователь PostgreSQL |
+| `POSTGRES_PASSWORD` | Пароль PostgreSQL |
+| `POSTGRES_DB` | Имя базы данных |
+| `SECRET_KEY` | Секрет для подписи JWT (64+ символа) |
+| `MINIO_ACCESS_KEY` | Логин MinIO |
+| `MINIO_SECRET_KEY` | Пароль MinIO |
+| `MINIO_BUCKET` | Имя бакета для медиафайлов |
+| `MINIO_PUBLIC_URL` | Публичный URL бакета (`https://домен/media`) |
+| `BACKEND_CORS_ORIGINS` | JSON-массив разрешённых CORS-источников |
+
+### `frontend/.env` — для сборки фронтенда
+
+| Переменная | Описание |
+|---|---|
+| `VITE_API_URL` | URL бэкенда. Пустая строка — запросы через nginx на том же домене (продакшн). `http://localhost:8023/api` — для dev без Docker. |
 
 ---
 
