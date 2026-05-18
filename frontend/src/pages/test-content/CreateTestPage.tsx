@@ -92,7 +92,6 @@ export default function CreateTestPage() {
   })
 
   const onSubmit = (data: FormData) => {
-    console.log('[DEBUG] submit', data)
     const body: TestCreate = {
       title: data.title,
       description: data.description || null,
@@ -103,7 +102,6 @@ export default function CreateTestPage() {
       tag_names: data.tag_names,
       completion_message: data.completion_message || null,
     }
-    console.log('[DEBUG] body', body)
     createMutation.mutate(body)
   }
 
@@ -147,6 +145,18 @@ export default function CreateTestPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Global validation summary */}
+            {Object.keys(errors).length > 0 && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 space-y-1">
+                <p className="font-semibold">Исправьте ошибки:</p>
+                {Object.entries(errors).map(([key, err]) => (
+                  <p key={key}>
+                    {key}: {String(err?.message || 'неверное значение')}
+                  </p>
+                ))}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="title">Название</Label>
               <Input id="title" {...register('title')} placeholder="Название теста" />
@@ -335,7 +345,6 @@ export default function CreateTestPage() {
               type="submit"
               className="w-full"
               disabled={isSubmitting || createMutation.isPending}
-              onClick={() => console.log('[DEBUG] button clicked')}
             >
               {createMutation.isPending ? 'Создание...' : 'Создать тест'}
             </Button>
