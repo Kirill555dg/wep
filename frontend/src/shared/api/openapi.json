@@ -1540,6 +1540,22 @@
             }
           },
           {
+            "name": "author_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Author Id"
+            }
+          },
+          {
             "name": "skip",
             "in": "query",
             "required": false,

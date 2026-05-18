@@ -19,11 +19,12 @@ def _get_catalog_service(db: sa_asyncio.AsyncSession = fastapi.Depends(db_sessio
 async def search_catalog(
     q: str | None = None,
     tags: list[str] = fastapi.Query(default_factory=list),
+    author_id: int | None = None,
     skip: int = 0,
     limit: int = 20,
     svc: catalog_svc.CatalogService = fastapi.Depends(_get_catalog_service),
 ) -> list[tc_schemas.TestResponse]:
-    params = tc_schemas.CatalogSearchParams(q=q, tags=tags, skip=skip, limit=limit)
+    params = tc_schemas.CatalogSearchParams(q=q, tags=tags, author_id=author_id, skip=skip, limit=limit)
     results, _ = await svc.search_public_tests(params)
     return [tests_router._map_test_response(t) for t in results]
 
