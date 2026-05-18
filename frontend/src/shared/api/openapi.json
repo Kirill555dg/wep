@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Test Constructor API",
+    "title": "Web Education Platform API",
     "version": "1.0.0"
   },
   "paths": {
@@ -3531,10 +3531,10 @@
       "QuestionType": {
         "type": "string",
         "enum": [
-          "single_choice",
-          "multiple_choice",
-          "text",
-          "essay"
+          "SINGLE_CHOICE",
+          "MULTIPLE_CHOICE",
+          "TEXT",
+          "ESSAY"
         ],
         "title": "QuestionType"
       },
@@ -3715,6 +3715,10 @@
             ],
             "title": "Time Limit Minutes"
           },
+          "track_time": {
+            "type": "boolean",
+            "title": "Track Time"
+          },
           "questions_count": {
             "type": "integer",
             "title": "Questions Count",
@@ -3738,6 +3742,28 @@
             "format": "date-time",
             "title": "Updated At"
           },
+          "attempt_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt Limit"
+          },
+          "completion_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Message"
+          },
           "questions": {
             "items": {
               "$ref": "#/components/schemas/QuestionAuthorResponse"
@@ -3755,8 +3781,11 @@
           "description",
           "is_public",
           "time_limit_minutes",
+          "track_time",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "attempt_limit",
+          "completion_message"
         ],
         "title": "TestAuthorDetailResponse"
       },
@@ -3795,6 +3824,34 @@
               }
             ],
             "title": "Time Limit Minutes"
+          },
+          "attempt_limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt Limit"
+          },
+          "track_time": {
+            "type": "boolean",
+            "title": "Track Time",
+            "default": true
+          },
+          "completion_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Message"
           },
           "tag_names": {
             "items": {
@@ -3850,6 +3907,10 @@
             ],
             "title": "Time Limit Minutes"
           },
+          "track_time": {
+            "type": "boolean",
+            "title": "Track Time"
+          },
           "questions_count": {
             "type": "integer",
             "title": "Questions Count",
@@ -3890,6 +3951,7 @@
           "description",
           "is_public",
           "time_limit_minutes",
+          "track_time",
           "created_at",
           "updated_at"
         ],
@@ -3935,6 +3997,10 @@
             ],
             "title": "Time Limit Minutes"
           },
+          "track_time": {
+            "type": "boolean",
+            "title": "Track Time"
+          },
           "questions_count": {
             "type": "integer",
             "title": "Questions Count",
@@ -3967,6 +4033,7 @@
           "description",
           "is_public",
           "time_limit_minutes",
+          "track_time",
           "created_at",
           "updated_at"
         ],
@@ -4072,6 +4139,40 @@
               }
             ],
             "title": "Time Limit Minutes"
+          },
+          "attempt_limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt Limit"
+          },
+          "track_time": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Time"
+          },
+          "completion_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Message"
           },
           "tag_names": {
             "anyOf": [

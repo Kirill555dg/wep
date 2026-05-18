@@ -9,13 +9,13 @@ class User(db_session.Base):
     __tablename__ = "users"
 
     id = sa.Column(sa.Integer, primary_key=True, index=True)
-    username = sa.Column(sa.String(100), unique=True, nullable=False, index=True)
     email = sa.Column(sa.String(255), unique=True, nullable=False, index=True)
-    first_name = sa.Column(sa.String(100), nullable=False)
-    last_name = sa.Column(sa.String(100), nullable=False)
+    first_name = sa.Column(sa.String(100), nullable=True)
+    last_name = sa.Column(sa.String(100), nullable=True)
     middle_name = sa.Column(sa.String(100), nullable=True)
-    full_name = sa.Column(sa.String(255), nullable=False)
-    avatar_url = sa.Column(sa.String(500), nullable=True)
+    full_name = sa.Column(sa.String(255), nullable=True)
+    username = sa.Column(sa.String(100), unique=True, nullable=True, index=True)
+    avatar_url = sa.Column(sa.String(512), nullable=True)
     is_active = sa.Column(sa.Boolean, default=True, nullable=False)
     created_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, nullable=False)
     updated_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, onupdate=dte.utc_now, nullable=False)

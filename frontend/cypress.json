@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Курсовая работа - Полный тест пользовательских сценариев",
+    "tests": [
+      "cypress/e2e/coursework-scenarios.cy.ts"
+    ],
+    "testConfig": {},
+    "env": {
+      "API_URL": "http://localhost:8023/api/v1",
+      "SLOW_MODE": false
+    },
+    "viewportWidth": 1280,
+    "viewportHeight": 720,
+    "video": false,
+    "screenshotOnRunFailure": true
+  }
+]

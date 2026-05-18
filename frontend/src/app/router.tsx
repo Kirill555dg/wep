@@ -1,32 +1,29 @@
 import {Routes, Route, Navigate} from 'react-router-dom'
 import CatalogPage from '@/pages/catalog/CatalogPage'
-import EditorPage from '@/pages/editor/EditorPage'
-import TakeTestPage from '@/pages/take-test/TakeTestPage'
+import TestViewPage from '@/pages/test-view/TestViewPage'
+import TakeTestPage from '@/pages/test-content/TakeTestPage'
+import HistoryPage from '@/pages/history/HistoryPage'
+import MyTestsPage from '@/pages/my-tests/MyTestsPage'
 import ResultsPage from '@/pages/results/ResultsPage'
 import LoginPage from '@/pages/login/LoginPage'
 import RegisterPage from '@/pages/register/RegisterPage'
 import ProfilePage from '@/pages/profile/ProfilePage'
-import StatsPage from '@/pages/stats/StatsPage'
-import AuthGuard from './guards/AuthGuard'
-import MainLayout from '@/widgets/layout/MainLayout'
 
 export default function AppRouter() {
   return (
-    <MainLayout>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route element={<AuthGuard />}>
-          <Route path="/" element={<CatalogPage />} />
-          <Route path="/catalog" element={<CatalogPage />} />
-          <Route path="/editor/:testId?" element={<EditorPage />} />
-          <Route path="/take/:testId" element={<TakeTestPage />} />
-          <Route path="/results/:attemptId" element={<ResultsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/stats" element={<StatsPage />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </MainLayout>
+    <Routes>
+      <Route path="/" element={<Navigate to="/catalog" replace />} />
+      <Route path="/catalog" element={<CatalogPage />} />
+      <Route path="/tests/:testId" element={<TestViewPage />} />
+      <Route path="/tests/:testId/take" element={<TakeTestPage />} />
+      <Route path="/tests/:testId/edit" element={<TakeTestPage editMode />} />
+      <Route path="/history" element={<HistoryPage />} />
+      <Route path="/my-tests" element={<MyTestsPage />} />
+      <Route path="/attempts/:attemptId" element={<ResultsPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="*" element={<Navigate to="/catalog" replace />} />
+    </Routes>
   )
 }

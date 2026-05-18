@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wep_password}
       POSTGRES_DB: ${POSTGRES_DB:-wep_education}
     ports:
-      - "${POSTGRES_PORT:-5434}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -56,8 +56,6 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-wep-media}
       MINIO_PUBLIC_URL: http://localhost:9000
       MINIO_SECURE: "false"
-    ports:
-      - "8023:8023"
     depends_on:
       postgres:
         condition: service_healthy

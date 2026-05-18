@@ -414,7 +414,7 @@ export type QuestionResponse = {
 /**
  * QuestionType
  */
-export type QuestionType = 'single_choice' | 'multiple_choice' | 'text' | 'essay';
+export type QuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TEXT' | 'ESSAY';
 
 /**
  * QuestionUpdate
@@ -508,6 +508,10 @@ export type TestAuthorDetailResponse = {
      */
     time_limit_minutes: number | null;
     /**
+     * Track Time
+     */
+    track_time: boolean;
+    /**
      * Questions Count
      */
     questions_count?: number;
@@ -523,6 +527,14 @@ export type TestAuthorDetailResponse = {
      * Updated At
      */
     updated_at: string;
+    /**
+     * Attempt Limit
+     */
+    attempt_limit: number | null;
+    /**
+     * Completion Message
+     */
+    completion_message: string | null;
     /**
      * Questions
      */
@@ -549,6 +561,18 @@ export type TestCreate = {
      * Time Limit Minutes
      */
     time_limit_minutes?: number | null;
+    /**
+     * Attempt Limit
+     */
+    attempt_limit?: number | null;
+    /**
+     * Track Time
+     */
+    track_time?: boolean;
+    /**
+     * Completion Message
+     */
+    completion_message?: string | null;
     /**
      * Tag Names
      */
@@ -583,6 +607,10 @@ export type TestDetailResponse = {
      * Time Limit Minutes
      */
     time_limit_minutes: number | null;
+    /**
+     * Track Time
+     */
+    track_time: boolean;
     /**
      * Questions Count
      */
@@ -633,6 +661,10 @@ export type TestResponse = {
      * Time Limit Minutes
      */
     time_limit_minutes: number | null;
+    /**
+     * Track Time
+     */
+    track_time: boolean;
     /**
      * Questions Count
      */
@@ -701,6 +733,18 @@ export type TestUpdate = {
      * Time Limit Minutes
      */
     time_limit_minutes?: number | null;
+    /**
+     * Attempt Limit
+     */
+    attempt_limit?: number | null;
+    /**
+     * Track Time
+     */
+    track_time?: boolean | null;
+    /**
+     * Completion Message
+     */
+    completion_message?: string | null;
     /**
      * Tag Names
      */

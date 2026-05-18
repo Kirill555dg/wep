@@ -29,7 +29,7 @@ def health_check() -> dict[str, tp.Any]:
 
 
 @router.get("/ping")
-def ping() -> dict[str, str]:
+async def ping() -> dict[str, str]:
     """
     Simple ping endpoint
 

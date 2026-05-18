@@ -1,24 +1,9 @@
-import enum
-
 import sqlalchemy as sa
 import sqlalchemy.orm as sqla_orm
+from sqlalchemy.types import Enum as SAEnum
 
 from app.core import datetime_extensions as dte
 from app.db import session as db_session
-
-
-class QuestionType(str, enum.Enum):
-    SINGLE_CHOICE = "single_choice"
-    MULTIPLE_CHOICE = "multiple_choice"
-    TEXT = "text"
-    ESSAY = "essay"
-
-
-class AttemptStatus(str, enum.Enum):
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    EXPIRED = "expired"
-    ABANDONED = "abandoned"
 
 
 class Test(db_session.Base):
@@ -30,6 +15,10 @@ class Test(db_session.Base):
     description = sa.Column(sa.Text, nullable=True)
     is_public = sa.Column(sa.Boolean, default=False, nullable=False)
     time_limit_minutes = sa.Column(sa.Integer, nullable=True)
+    attempt_limit = sa.Column(sa.Integer, nullable=True)  # None = unlimited
+    track_time = sa.Column(sa.Boolean, default=True, nullable=False, server_default=sa.text('true'))
+    completion_message = sa.Column(sa.Text, nullable=True)
+    questions_count = sa.Column(sa.Integer, default=0, server_default='0', nullable=False)
     created_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, nullable=False)
     updated_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, onupdate=dte.utc_now, nullable=False)
 
@@ -49,13 +38,13 @@ class Question(db_session.Base):
 
     id = sa.Column(sa.Integer, primary_key=True, index=True)
     test_id = sa.Column(sa.Integer, sa.ForeignKey("tests.id", ondelete="CASCADE"), nullable=False, index=True)
-    question_type = sa.Column(sa.Enum(QuestionType), nullable=False)
+    question_type = sa.Column(sa.String(50), nullable=False)
     text = sa.Column(sa.Text, nullable=False)
     order_number = sa.Column(sa.Integer, default=0, nullable=False)
     points = sa.Column(sa.Integer, default=1, nullable=False)
     explanation = sa.Column(sa.Text, nullable=True)
     correct_answer = sa.Column(sa.Text, nullable=True)
-    image_url = sa.Column(sa.String(1024), nullable=True)
+    image_url = sa.Column(sa.String(512), nullable=True)
     created_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, nullable=False)
     updated_at = sa.Column(sa.DateTime(timezone=True), default=dte.utc_now, onupdate=dte.utc_now, nullable=False)
 
@@ -113,8 +102,7 @@ class TestTag(db_session.Base):
 class Attempt(db_session.Base):
     __tablename__ = "attempts"
     __table_args__ = (
-        sa.Index("ix_attempts_user_test_active", "user_id", "test_id", unique=True,
-                 postgresql_where=sa.text("status = 'IN_PROGRESS'")),
+        sa.UniqueConstraint("user_id", "test_id", name="uq_user_test_active_attempt"),
     )
 
     id = sa.Column(sa.Integer, primary_key=True, index=True)
@@ -125,7 +113,7 @@ class Attempt(db_session.Base):
     expires_at = sa.Column(sa.DateTime(timezone=True), nullable=True)
     score = sa.Column(sa.Integer, nullable=True)
     max_score = sa.Column(sa.Integer, nullable=True)
-    status = sa.Column(sa.Enum(AttemptStatus), default=AttemptStatus.IN_PROGRESS, nullable=False)
+    status = sa.Column(sa.String(50), nullable=False)
 
     test = sqla_orm.relationship("Test", back_populates="attempts")
     user = sqla_orm.relationship("User", foreign_keys=[user_id])

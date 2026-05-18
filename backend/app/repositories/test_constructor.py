@@ -1,5 +1,6 @@
 import re
 import typing as tp
+import logging
 
 import sqlalchemy as sa
 import sqlalchemy.ext.asyncio as sa_asyncio
@@ -7,6 +8,8 @@ import sqlalchemy.orm as sqla_orm
 
 from app.models import test_constructor as tc_models
 from app.repositories import base as base_repo
+
+LOGGER = logging.getLogger(__name__)
 
 
 class TestRepository(base_repo.BaseRepository[tc_models.Test]):
@@ -58,7 +61,14 @@ class TestRepository(base_repo.BaseRepository[tc_models.Test]):
                 .where(tc_models.Tag.slug.in_(tag_slugs))
             )
         stmt = stmt.offset(skip).limit(limit).order_by(tc_models.Test.created_at.desc())
-        return tp.cast(list[tc_models.Test], await self._scalars_all(stmt))
+
+        LOGGER.info(f"Executing get_public query: skip={skip}, limit={limit}, query={query}, tag_slugs={tag_slugs}")
+
+        result = await self._scalars_all(stmt)
+
+        LOGGER.info(f"get_public returned {len(result)} tests")
+
+        return tp.cast(list[tc_models.Test], result)
 
     async def count_public(self, query: str | None = None, tag_slugs: list[str] | None = None) -> int:
         stmt = sa.select(sa.func.count()).select_from(tc_models.Test).where(tc_models.Test.is_public.is_(True))

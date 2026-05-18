@@ -73,11 +73,6 @@ lerna-debug.log*
 *.tmp
 *.temp
 
-# AI
-**/AGENTS.md
-**/CLAUDE.md
-**/.claude/
-
 # Tools build artifacts
 **/.build-venv/
 

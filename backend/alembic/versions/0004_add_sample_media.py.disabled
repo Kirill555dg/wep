@@ -1,0 +1,69 @@
+"""
+Migration to add sample media files and typst content
+"""
+from alembic import op
+import sqlalchemy as sa
+from datetime import datetime
+
+revision = '0004_add_sample_media'
+down_revision = '0003role'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # Add sample media URLs to existing questions
+    conn = op.get_bind()
+
+    # Update existing questions with sample media content
+    conn.execute("""
+        UPDATE questions
+        SET text = 'Вычислите значение выражения: $x^2 + 2x + 1$, при $x = 3$'
+        WHERE text LIKE 'Вопрос%' AND question_type = 'single_choice'
+        LIMIT 10
+    """)
+
+    conn.execute("""
+        UPDATE questions
+        SET text = 'Решите систему уравнений:
+        $$
+        \\begin{cases}
+        2x + y = 5 \\\\
+        x - y = 1
+        \\end{cases}
+        $$'
+        WHERE text LIKE 'Вопрос%' AND question_type = 'multiple_choice'
+        LIMIT 8
+    """)
+
+    # Add sample media URLs to some questions
+    sample_images = [
+        'https://cdn.pixabay.com/photo/2016/02/01/00/56/geometry-1172767_640.png',
+        'https://cdn.pixabay.com/photo/2018/05/08/09/38/physics-3387111_640.png',
+        'https://cdn.pixabay.com/photo/2017/08/10/03/47/maths-2618934_640.png',
+        'https://cdn.pixabay.com/photo/2018/05/30/16/24/chemistry-3438566_640.png',
+    ]
+
+    for i, image_url in enumerate(sample_images):
+        conn.execute("""
+            UPDATE questions
+            SET image_url = %s
+            WHERE id % %s = 0 AND text LIKE 'Вопрос%'
+            LIMIT 1
+        """, image_url, len(sample_images) - i)
+
+    print("✅ Added sample media files and typst content")
+
+
+def downgrade():
+    # Remove sample content
+    conn = op.get_bind()
+
+    conn.execute("""
+        UPDATE questions
+        SET text = 'Вопрос ' || (order_number) || ': [заголовок теста]',
+            image_url = NULL
+        WHERE text LIKE '%$%$%' OR image_url IS NOT NULL
+    """)
+
+    print("❌ Removed sample media files and typst content")

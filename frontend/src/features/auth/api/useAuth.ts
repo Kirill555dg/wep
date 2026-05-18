@@ -1,51 +1,38 @@
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {toast} from '@/shared/hooks/use-toast';
-import {useUserStore} from '@/entities/user/model/store';
-import {
-  loginApiV1AuthLoginPost,
-  registerApiV1AuthRegisterPost,
-  getCurrentUserProfileApiV1AuthMeGet,
-} from '@/shared/api/client/auth';
-import {LoginRequest, UserCreate} from '@/shared/api/client/testConstructorAPI.schemas';
+import { useState } from 'react'
+import { loginApiV1AuthLoginPost, registerApiV1AuthRegisterPost } from '@/shared/api'
+import { client } from '@/shared/api/generated/client.gen'
 
 export function useLogin() {
-  const setToken = useUserStore((s) => s.setToken);
-  const setUser = useUserStore((s) => s.setUser);
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: LoginRequest) => loginApiV1AuthLoginPost(data),
-    onSuccess: (res) => {
-      if ('data' in res && res.data.access_token) {
-        setToken(res.data.access_token);
-        setUser(res.data.user);
-        qc.invalidateQueries({queryKey: ['auth', 'me']});
+  const [isLoading, setIsLoading] = useState(false)
+
+  const mutate = async (data: { username_or_email: string; password: string }) => {
+    try {
+      setIsLoading(true)
+      const response = await loginApiV1AuthLoginPost({ client, body: data })
+      const result = response.data as any
+      if (result?.access_token) {
+        localStorage.setItem('access_token', result.access_token)
       }
-      toast({title: 'Вход выполнен'});
-    },
-    onError: (e: any) => {
-      toast({title: e.response?.data?.message || 'Ошибка', variant: 'destructive'});
-    },
-  });
+      return result
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return { mutate, isLoading, isPending: isLoading }
 }
 
 export function useRegister() {
-  return useMutation({
-    mutationFn: (data: UserCreate) => registerApiV1AuthRegisterPost(data),
-    onSuccess: () => {
-      toast({title: 'Регистрация выполнена'});
-    },
-    onError: (e: any) => {
-      toast({title: e.response?.data?.message || 'Ошибка', variant: 'destructive'});
-    },
-  });
-}
+  const [isLoading, setIsLoading] = useState(false)
 
-export function useCurrentUser() {
-  const token = useUserStore((s) => s.token);
-  return useQuery({
-    queryKey: ['auth', 'me'],
-    queryFn: () => getCurrentUserProfileApiV1AuthMeGet(),
-    retry: false,
-    enabled: !!token,
-  });
+  const mutate = async (data: any) => {
+    try {
+      setIsLoading(true)
+      await registerApiV1AuthRegisterPost({ client, body: data })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return { mutate, isLoading, isPending: isLoading }
 }

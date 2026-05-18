@@ -1,8 +1,23 @@
 import datetime as dt
+import enum as pydantic_enum
 
 import pydantic
 
-from app.models.test_constructor import AttemptStatus, QuestionType
+
+# --- Question Types (Pydantic Enums for API validation) ---
+
+class QuestionType(str, pydantic_enum.Enum):
+    SINGLE_CHOICE = "SINGLE_CHOICE"
+    MULTIPLE_CHOICE = "MULTIPLE_CHOICE"
+    TEXT = "TEXT"
+    ESSAY = "ESSAY"
+
+
+class AttemptStatus(str, pydantic_enum.Enum):
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    EXPIRED = "expired"
+    ABANDONED = "abandoned"
 
 
 # --- Tag ---
@@ -102,6 +117,9 @@ class TestCreate(pydantic.BaseModel):
     description: str | None = None
     is_public: bool = False
     time_limit_minutes: int | None = pydantic.Field(None, ge=1)
+    attempt_limit: int | None = pydantic.Field(None, ge=1)
+    track_time: bool = True
+    completion_message: str | None = None
     tag_names: list[str] = pydantic.Field(default_factory=list)
 
 
@@ -110,6 +128,9 @@ class TestUpdate(pydantic.BaseModel):
     description: str | None = None
     is_public: bool | None = None
     time_limit_minutes: int | None = pydantic.Field(None, ge=1)
+    attempt_limit: int | None = pydantic.Field(None, ge=1)
+    track_time: bool | None = None
+    completion_message: str | None = None
     tag_names: list[str] | None = None
 
 
@@ -120,6 +141,7 @@ class TestResponse(pydantic.BaseModel):
     description: str | None
     is_public: bool
     time_limit_minutes: int | None
+    track_time: bool
     questions_count: int = 0
     tags: list[TagResponse] = []
     created_at: dt.datetime
@@ -133,6 +155,8 @@ class TestDetailResponse(TestResponse):
 
 
 class TestAuthorDetailResponse(TestResponse):
+    attempt_limit: int | None
+    completion_message: str | None
     questions: list[QuestionAuthorResponse] = []
 
 

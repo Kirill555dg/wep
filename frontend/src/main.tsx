@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import {BrowserRouter} from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
+import { TopBar } from '@/widgets/top-bar'
 import AppRouter from './app/router'
 import Providers from './app/providers'
 import './shared/styles/globals.css'
@@ -8,7 +9,10 @@ import './shared/styles/globals.css'
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Providers>
-      <AppRouter />
+      <BrowserRouter>
+        <TopBar />          {/* minimal top bar — no header, no footer */}
+        <AppRouter />
+      </BrowserRouter>
     </Providers>
   </React.StrictMode>
 )

@@ -8,7 +8,7 @@ import pydantic_settings
 class Settings(pydantic_settings.BaseSettings):
     APP_NAME: str = "Test Constructor API"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     API_V1_PREFIX: str = "/api/v1"
 

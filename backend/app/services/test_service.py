@@ -23,6 +23,9 @@ class TestService:
             "description": data.description,
             "is_public": data.is_public,
             "time_limit_minutes": data.time_limit_minutes,
+            "attempt_limit": data.attempt_limit,
+            "track_time": data.track_time,
+            "completion_message": data.completion_message,
         })
         if data.tag_names:
             tag_ids = [(await self.tag_repo.get_or_create(name)).id for name in data.tag_names]

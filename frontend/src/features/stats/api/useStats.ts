@@ -1,32 +1,13 @@
-import {useQuery} from '@tanstack/react-query';
-import {
-  getAuthorStatsApiV1StatsMeGet,
-  getTestStatsApiV1StatsTestsTestIdGet,
-} from '@/shared/api/client/stats';
+import { useQuery } from '@tanstack/react-query'
+import { getAuthorStatsApiV1StatsMeGet } from '@/shared/api'
+import { client } from '@/shared/api/generated/client.gen'
 
 export function useAuthorStats() {
   return useQuery({
     queryKey: ['author-stats'],
     queryFn: async () => {
-      const res = await getAuthorStatsApiV1StatsMeGet();
-      if ('data' in res && 'status' in res && res.status >= 200 && res.status < 300) {
-        return res.data;
-      }
-      throw new Error('Failed to load author stats');
+      const res = await getAuthorStatsApiV1StatsMeGet({ client })
+      return res.data
     },
-  });
-}
-
-export function useTestStats(testId: number) {
-  return useQuery({
-    queryKey: ['test-stats', testId],
-    queryFn: async () => {
-      const res = await getTestStatsApiV1StatsTestsTestIdGet(testId);
-      if ('data' in res && 'status' in res && res.status >= 200 && res.status < 300) {
-        return res.data;
-      }
-      throw new Error('Failed to load test stats');
-    },
-    enabled: !!testId,
-  });
+  })
 }
