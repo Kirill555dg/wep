@@ -26,6 +26,7 @@ export {
 
   // Attempts
   startAttemptApiV1AttemptsPost,
+  listMyAttemptsApiV1AttemptsGet,
   getAttemptApiV1AttemptsAttemptIdGet,
   submitAnswerApiV1AttemptsAttemptIdAnswersPost,
   finishAttemptApiV1AttemptsAttemptIdFinishPost,
@@ -37,6 +38,7 @@ export {
 
   // Stats
   getAuthorStatsApiV1StatsMeGet,
+  getCalendarApiV1StatsCalendarGet,
   getTestStatsApiV1StatsTestsTestIdGet,
 
   // Media
@@ -68,7 +70,10 @@ export type {
   AttemptResultResponse,
   AttemptStartRequest,
   AnswerSubmitRequest,
+  AttemptSummary,
   AuthorStatsResponse,
+  CalendarResponse,
+  PageAttemptSummary,
   TestStatsResponse,
   CatalogSearchParams,
   ErrorResponse,
