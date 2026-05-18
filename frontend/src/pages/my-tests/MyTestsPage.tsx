@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Settings, Trash2, ListChecks } from 'lucide-react'
 import {
   listMyTestsApiV1TestsGet,
-  createTestApiV1TestsPost,
   deleteTestApiV1TestsTestIdDelete,
   client,
 } from '@/shared/api'
@@ -144,26 +143,6 @@ export default function MyTestsPage() {
     return true
   })
 
-  const createMutation = useMutation({
-    mutationFn: () =>
-      createTestApiV1TestsPost({
-        client,
-        body: {
-          title: '',
-          is_public: false,
-          attempt_limit: null,
-          tag_names: [],
-        },
-      }),
-    onSuccess: (res) => {
-      navigate(`/tests/${res.data!.id}/edit`)
-    },
-    onError: (err) => {
-      const { message } = getApiError(err)
-      showError(message)
-    },
-  })
-
   const deleteMutation = useMutation({
     mutationFn: (id: number) =>
       deleteTestApiV1TestsTestIdDelete({
@@ -193,10 +172,7 @@ export default function MyTestsPage() {
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">Мои тесты</h1>
-        <Button
-          onClick={() => createMutation.mutate()}
-          disabled={createMutation.isPending}
-        >
+        <Button onClick={() => navigate('/tests/new/edit')}>
           <Plus className="w-4 h-4 mr-1" />
           Новый тест
         </Button>
@@ -241,7 +217,7 @@ export default function MyTestsPage() {
           <p className="text-gray-500 mb-4">
             У вас пока нет тестов. Создайте первый!
           </p>
-          <Button onClick={() => createMutation.mutate()}>
+          <Button onClick={() => navigate('/tests/new/edit')}>
             <Plus className="w-4 h-4 mr-1" />
             Создать тест
           </Button>
