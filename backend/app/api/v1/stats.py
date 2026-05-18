@@ -61,7 +61,7 @@ async def get_calendar(
 
     stmt = (
         sa.select(
-            sa.func.date_trunc("day", tc_models.Attempt.started_at).label("day"),
+            sa.func.date(tc_models.Attempt.started_at).label("day"),
             sa.func.count(tc_models.Attempt.id).label("count"),
         )
         .where(
@@ -70,7 +70,7 @@ async def get_calendar(
             tc_models.Attempt.started_at >= start_date,
             tc_models.Attempt.started_at < end_date,
         )
-        .group_by(sa.func.date_trunc("day", tc_models.Attempt.started_at))
+        .group_by(sa.func.date(tc_models.Attempt.started_at))
     )
 
     result = await db.execute(stmt)
