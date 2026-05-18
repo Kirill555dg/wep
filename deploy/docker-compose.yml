@@ -41,9 +41,7 @@ services:
       - wep_network
 
   backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME:-yourusername}/test-constructor-backend:latest
     container_name: wep_backend
     restart: unless-stopped
     environment:
@@ -63,6 +61,23 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8023/api/v1/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wep_network
+
+  frontend:
+    image: ${DOCKER_USERNAME:-yourusername}/test-constructor-frontend:latest
+    container_name: wep_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

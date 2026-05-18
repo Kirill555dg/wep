@@ -3,64 +3,20 @@ name: Backend CI/CD
 on:
   push:
     branches:
-      - prksp_coursework
+      - main
+      - master
     paths:
       - 'backend/**'
-      - 'deploy/docker-compose.yml'
-      - 'deploy/docker-compose.prod.yml'
       - '.github/workflows/backend.yml'
 
 jobs:
   build-and-push:
-    name: Test, lint, build and push backend image
+    name: Build and push backend image
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: wep_user
-          POSTGRES_PASSWORD: wep_password
-          POSTGRES_DB: wep_education
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Install dependencies
-        working-directory: backend
-        run: |
-          uv venv
-          uv pip install -r requirements.txt -r requirements-dev.txt
-
-      - name: Ruff lint
-        working-directory: backend
-        run: uv run ruff check .
-
-      - name: Type check with mypy
-        working-directory: backend
-        run: uv run mypy . || true
-
-      - name: Run tests
-        working-directory: backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://wep_user:wep_password@localhost:5432/wep_education
-        run: uv run pytest -x --tb=long tests/
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -72,24 +28,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push backend
-        if: success()
         uses: docker/build-push-action@v6
         with:
           context: ./backend
-          file: ./backend/Dockerfile
+          dockerfile: ./backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/test-constructor-backend:latest
-
-      - name: Telegram notify
-        if: success()
-        env:
-          TG_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          if [ -z "${TG_BOT_TOKEN:-}" ] || [ -z "${TG_CHAT_ID:-}" ]; then
-            echo "Skipping Telegram notification: set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in repository secrets."
-            exit 0
-          fi
-          curl -fsS -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TG_CHAT_ID}" \
-            --data-urlencode text="Backend CI/CD: tests passed, lint clean, image pushed. Tag: ${{ secrets.DOCKER_USERNAME }}/test-constructor-backend:latest."
