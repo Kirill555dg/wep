@@ -17,9 +17,9 @@ export default function AppRouter() {
       <Route path="/" element={<Navigate to="/catalog" replace />} />
       <Route path="/catalog" element={<CatalogPage />} />
       <Route path="/tests/:testId" element={<TestViewPage />} />
+      <Route path="/tests/new/edit" element={<CreateTestPage />} />
       <Route path="/tests/:testId/take" element={<TakeTestPage />} />
       <Route path="/tests/:testId/edit" element={<TakeTestPage editMode />} />
-      <Route path="/tests/new/edit" element={<CreateTestPage />} />
       <Route path="/tests/:testId/questions/:questionId/typst" element={<TypstEditorPage />} />
       <Route path="/history" element={<HistoryPage />} />
       <Route path="/my-tests" element={<MyTestsPage />} />
